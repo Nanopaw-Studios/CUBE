@@ -2144,8 +2144,7 @@ MonoBehaviour:
   LeftUp: 0
   RightUp: 0
   timeBetween: 1
-  Pose:
-  - {fileID: 2523550893260569595, guid: ad23a943e48d68f4cacac773a67aae67, type: 3}
+  PoseIndexes: 
 --- !u!1 &1882215686565555802
 GameObject:
   m_ObjectHideFlags: 0
@@ -3011,6 +3010,7 @@ GameObject:
   - component: {fileID: 6672268784947243200}
   - component: {fileID: 1736624701071914483}
   - component: {fileID: 1521422221491162215}
+  - component: {fileID: 5808734553404935424}
   m_Layer: 6
   m_Name: Collider
   m_TagString: Player
@@ -3111,6 +3111,24 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: -0.0000076293945, y: 0.0000038146973, z: 0}
+--- !u!114 &5808734553404935424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2963272496316104751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 210dada208bfbef4abc7fd2dd356977e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CollisionCallback
+  collisionEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  collisionExited:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &2970424812084312642
 GameObject:
   m_ObjectHideFlags: 0
@@ -5400,6 +5418,7 @@ GameObject:
   - component: {fileID: 6236658264408242413}
   - component: {fileID: 5142198532529002959}
   - component: {fileID: 4846410338160408091}
+  - component: {fileID: 4538152374127744256}
   m_Layer: 8
   m_Name: BaseCharacter
   m_TagString: Player
@@ -5453,7 +5472,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BasePlayer
   playerType: 1
-  equippedSurvivor: {fileID: 11400000, guid: ed1c7ff6a9aafb54c9ff583b2e0af010, type: 2}
+  equippedSurvivor: {fileID: 11400000, guid: 69b9307b0683e714d9154c58bf015590, type: 2}
   equippedKiller: {fileID: 11400000, guid: 5b43e81e501c72c4e96d7356e7e59dcc, type: 2}
 --- !u!114 &6258506952167929150
 MonoBehaviour:
@@ -5492,6 +5511,7 @@ MonoBehaviour:
   observableSearch: 2
   ObservedComponents:
   - {fileID: 776051107670459183}
+  - {fileID: 2829208356146133689}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -5677,6 +5697,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b42edea898b6f7429a40e0ce8153c8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+--- !u!114 &4538152374127744256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4360496906041607540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9336eeeddaad57441a2c1b20c1f71fbc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  damageColliders:
+  - {fileID: 5808734553404935424}
+  - {fileID: 1787537367023644854}
+  basePlayer: {fileID: 6010820129828816600}
+  stats: {fileID: 6258506952167929150}
 --- !u!1 &4385198401687824320
 GameObject:
   m_ObjectHideFlags: 0
@@ -5981,6 +6018,7 @@ GameObject:
   - component: {fileID: 4962601670876046443}
   - component: {fileID: 2890136557992641364}
   - component: {fileID: 6426350836291945444}
+  - component: {fileID: 1787537367023644854}
   m_Layer: 6
   m_Name: Collider
   m_TagString: Player
@@ -6081,6 +6119,24 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: -0.0000076293945, y: 0.0000038146973, z: 0}
+--- !u!114 &1787537367023644854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4843789133385376553}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 210dada208bfbef4abc7fd2dd356977e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CollisionCallback
+  collisionEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  collisionExited:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &4927391579382235218
 GameObject:
   m_ObjectHideFlags: 0
@@ -7882,10 +7938,19 @@ MonoBehaviour:
   CameraObject: {fileID: 8387486782991835757}
   SpawnedObject: {fileID: 0}
   WeaponSpawned: 0
+  AllPoses:
+  - {fileID: 5776401975736072747, guid: 5f32a4a80beac264e91bf66a325ae4ce, type: 3}
+  - {fileID: 5776401975736072747, guid: d6c4c95153279714e8ecd172b08351ac, type: 3}
+  - {fileID: 5776401975736072747, guid: 6241b388968f0c344a7e0cc29773bff0, type: 3}
+  - {fileID: 5776401975736072747, guid: 9350d139681093146854aec99b0165b2, type: 3}
+  - {fileID: 5776401975736072747, guid: 716fe5af6cbae5d43a132cfd7277693e, type: 3}
+  - {fileID: 5776401975736072747, guid: e945255e8feb89d478b5c3a63499a835, type: 3}
+  - {fileID: 5776401975736072747, guid: 69388e9e9bfb99747b4e4cfee7219979, type: 3}
+  - {fileID: 5776401975736072747, guid: efd20b4f8fa9c554fa03fa69f6ef4980, type: 3}
   drag: 0.1
   control: 1
   DoingAnimation: 0
-  rotP: 30
+  rotP: 25
 --- !u!1 &6388608419872559473
 GameObject:
   m_ObjectHideFlags: 0
@@ -9129,16 +9194,7 @@ MonoBehaviour:
   gamepadSensitivity: 150
   smoothTime: 0.01
   PlayerBody: {fileID: 4883887757714572179}
-  playerInput: {fileID: 6973511575943275761}
-  lookAction:
-    m_Name: Look
-    m_Type: 0
-    m_ExpectedControlType: 
-    m_Id: 7e287722-545b-4374-8726-403e5d7f0315
-    m_Processors: 
-    m_Interactions: 
-    m_SingletonActionBindings: []
-    m_Flags: 0
+  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!114 &8878974143517614619
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10551,3 +10607,5 @@ MonoBehaviour:
   - {fileID: 5776401975736072747, guid: 6241b388968f0c344a7e0cc29773bff0, type: 3}
   - {fileID: 5776401975736072747, guid: 716fe5af6cbae5d43a132cfd7277693e, type: 3}
   - {fileID: 5776401975736072747, guid: 5f32a4a80beac264e91bf66a325ae4ce, type: 3}
+  LeftPoseIndexes: 0100000003000000
+  RightPoseIndexes: 0200000004000000

@@ -1,10 +1,9 @@
-using NUnit.Framework;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
-public class PoseHandler : MonoBehaviour
+public class PoseHandler : MonoBehaviourPun, IPunObservable
 {
     public PosePreset RestPose;
     public PosePreset CurrentTargetPose;
@@ -15,6 +14,10 @@ public class PoseHandler : MonoBehaviour
     public GameObject SpawnedObject;
     public bool WeaponSpawned = false;
 
+    public PosePreset[] AllPoses;
+
+    private int currentPoseIndex = 0;
+
     Rig data;
 
     public float drag = 0.05f;
@@ -23,125 +26,235 @@ public class PoseHandler : MonoBehaviour
     public bool DoingAnimation = false;
     public Action onArmHandle;
 
-    public float rotP;
+    public float rotP = 30f;
+
     private void Start()
     {
         data = transform.parent.parent.GetComponentInChildren<Rig>();
+
+        // 🔥 CRITICAL: ensure we always have a pose
+        if (RestPose != null)
+        {
+            CurrentTargetPose = RestPose;
+        }
+        else if (AllPoses != null && AllPoses.Length > 0)
+        {
+            CurrentTargetPose = AllPoses[0];
+        }
+
+        currentPoseIndex = 0;
+
+        Debug.Log("PoseHandler initialized with pose: " + CurrentTargetPose?.name);
     }
 
     private void FixedUpdate()
     {
-        /*if (Vector3.Distance(data.hip.transform.position, CurrentTargetPose.Hip.position) > 3f || data.control < 0.5f)
+        if (!photonView.IsMine) return;
+
+        if (CurrentTargetPose == null)
         {
-            CurrentTargetPose.transform.position = data.Ground;
-        }*/
-        
-        if (CurrentTargetPose != null)
-        {
-            CurrentTargetPose.gameObject.TryGetComponent(out WeaponPosePreset preset);
-            if (preset != null)
-            {
-                if (!WeaponSpawned)
-                {
-                    SpawnedObject = Instantiate(preset.Weapon.gameObject, Vector3.zero, Quaternion.identity, data.allRigs[8].transform);
-                    if (SpawnedObject)
-                    {
-                        SpawnedObject.transform.localPosition = preset.PositionOffset; // Use PositionOffset instead
-                        SpawnedObject.transform.localRotation = Quaternion.Euler(preset.RotationOffset); // Use localRotation
-                        WeaponSpawned = true;
-                    }
-                }
-                else
-                {
-                    // Use the same approach as instantiation for consistency
-                    SpawnedObject.transform.localPosition = preset.PositionOffset;
-                    SpawnedObject.transform.localRotation = Quaternion.Euler(preset.RotationOffset);
-                }
-            }
-            else if (preset == null)
-            {
-                if (SpawnedObject)
-                {
-                    WeaponSpawned = false;
-                    Destroy(SpawnedObject);
-                }
-            }
-            CurrentTargetPose.transform.rotation = RotationObject.rotation;
-            if (CurrentTargetPose.LetHeadMovement)
-            {
-                CurrentTargetPose.transform.rotation = Quaternion.Euler(CameraObject.rotation.eulerAngles.x, RotationObject.rotation.eulerAngles.y, RotationObject.rotation.eulerAngles.z);
-            }
-            DoPose(CurrentTargetPose);
-        }
-    }
-    void DoPose(PosePreset p)
-    {
-        int num = -1;
-        foreach (Rigidbody i in data.allRigs)
-        {
-            try
-            {
-                num++;
-                Transform pose = p.GetPose(num);
-                Follow(i, pose, p, false, true, 1);
-            }
-            catch (System.Exception e)
-            {
-            }
-        }
-    }
-    public void Animation(PosePreset[] poses, float TimeBetween, bool cancelled)
-    {
-        if (cancelled)
-        {
-            CurrentTargetPose = RestPose;
-            DoingAnimation = false;
-            StopAllCoroutines();
-            Invoke("IMANGRY", 0.05f);
+            Debug.LogWarning("CurrentTargetPose is NULL");
             return;
+        }
+
+        // Debug to confirm it's running
+        // Debug.Log("Running pose: " + CurrentTargetPose.name);
+
+        HandleWeapon();
+
+        if (RotationObject != null)
+        {
+            CurrentTargetPose.transform.rotation = RotationObject.rotation;
+        }
+
+        if (CurrentTargetPose.LetHeadMovement && CameraObject != null)
+        {
+            CurrentTargetPose.transform.rotation =
+                Quaternion.Euler(CameraObject.rotation.eulerAngles.x,
+                                 RotationObject.rotation.eulerAngles.y,
+                                 RotationObject.rotation.eulerAngles.z);
+        }
+
+        DoPose(CurrentTargetPose);
+    }
+
+    void HandleWeapon()
+    {
+        if (CurrentTargetPose == null) return;
+
+        CurrentTargetPose.gameObject.TryGetComponent(out WeaponPosePreset preset);
+
+        if (preset != null)
+        {
+            if (!WeaponSpawned)
+            {
+                photonView.RPC(nameof(RPC_SpawnWeapon), RpcTarget.All, currentPoseIndex);
+            }
         }
         else
         {
-            DoingAnimation = true;
-            StartCoroutine(AnimationSequence(poses, TimeBetween));
+            if (SpawnedObject)
+            {
+                photonView.RPC(nameof(RPC_DestroyWeapon), RpcTarget.All);
+            }
         }
     }
 
-    public void IMANGRY()
+    [PunRPC]
+    void RPC_SpawnWeapon(int poseIndex)
     {
-        onArmHandle?.Invoke();
-    }
+        if (AllPoses == null || poseIndex >= AllPoses.Length) return;
 
-    IEnumerator AnimationSequence(PosePreset[] poses, float timeBetween)
-    {
-        foreach (PosePreset pose in poses)
+        var preset = AllPoses[poseIndex].GetComponent<WeaponPosePreset>();
+        if (preset == null) return;
+
+        if (SpawnedObject == null && data.allRigs.Count > 8)
         {
-            yield return StartCoroutine(ChangePose(timeBetween, pose));
+            SpawnedObject = Instantiate(preset.Weapon.gameObject, data.allRigs[8].transform);
+
+            SpawnedObject.transform.localPosition = preset.PositionOffset;
+            SpawnedObject.transform.localRotation = Quaternion.Euler(preset.RotationOffset);
+
+            WeaponSpawned = true;
         }
-        CurrentTargetPose = RestPose;
+    }
+
+    [PunRPC]
+    void RPC_DestroyWeapon()
+    {
+        if (SpawnedObject)
+        {
+            Destroy(SpawnedObject);
+            WeaponSpawned = false;
+        }
+    }
+
+    void DoPose(PosePreset p)
+    {
+        int num = -1;
+
+        foreach (Rigidbody i in data.allRigs)
+        {
+            num++;
+
+            // Skip if not enabled
+            if (!p.IsEnabled(num)) continue;
+
+            Transform pose = p.GetPose(num);
+
+            if (pose == null)
+            {
+                Debug.LogWarning($"Enabled bone {num} is NULL in {p.name}");
+                continue;
+            }
+
+            Follow(i, pose);
+        }
+    }
+
+    public void SetPose(int index)
+    {
+        if (AllPoses == null || AllPoses.Length == 0)
+        {
+            Debug.LogError("AllPoses is EMPTY!");
+            return;
+        }
+
+        if (index < 0 || index >= AllPoses.Length)
+        {
+            Debug.LogError($"Invalid pose index: {index}");
+            return;
+        }
+
+        currentPoseIndex = index;
+        CurrentTargetPose = AllPoses[index];
+
+        //Debug.Log("SetPose → " + CurrentTargetPose.name);
+
+        if (photonView.IsMine)
+        {
+            photonView.RPC(nameof(RPC_SetPose), RpcTarget.Others, index);
+        }
+    }
+
+    [PunRPC]
+    void RPC_SetPose(int index)
+    {
+        if (AllPoses == null || index >= AllPoses.Length) return;
+
+        currentPoseIndex = index;
+        CurrentTargetPose = AllPoses[index];
+    }
+
+    public void Animation(int[] poseIndexes, float timeBetween)
+    {
+        if (!photonView.IsMine) return;
+
+        if (poseIndexes == null || poseIndexes.Length == 0)
+        {
+            Debug.LogError("Animation called with EMPTY poseIndexes!");
+            return;
+        }
+
+        StopAllCoroutines();
+        StartCoroutine(AnimationSequence(poseIndexes, timeBetween));
+
+        photonView.RPC(nameof(RPC_PlayAnimation), RpcTarget.Others, poseIndexes, timeBetween);
+    }
+
+    [PunRPC]
+    void RPC_PlayAnimation(int[] poseIndexes, float timeBetween)
+    {
+        StopAllCoroutines();
+        StartCoroutine(AnimationSequence(poseIndexes, timeBetween));
+    }
+
+    IEnumerator AnimationSequence(int[] poses, float timeBetween)
+    {
+        DoingAnimation = true;
+
+        foreach (int index in poses)
+        {
+            SetPose(index);
+            yield return new WaitForSeconds(timeBetween);
+        }
+
+        SetPose(0); // RestPose assumed index 0
         onArmHandle?.Invoke();
         DoingAnimation = false;
     }
 
-    IEnumerator ChangePose(float Time, PosePreset NextPose)
-    {
-        CurrentTargetPose.transform.rotation = Quaternion.Euler(Vector3.zero);
-        CurrentTargetPose = NextPose;
-        yield return new WaitForSeconds(Time);
-    }
-
-    private void Follow(Rigidbody rig, Transform target, PosePreset pose, bool localAnim = false, bool disableStanding = true, float multiplier = 1f)
+    private void Follow(Rigidbody rig, Transform target)
     {
         Vector3 forward = target.forward;
         Vector3 up = target.up;
-        Vector3 vector = (0f - Vector3.Angle(forward, rig.transform.forward)) * Vector3.Cross(forward, rig.transform.forward).normalized;
-        Vector3 vector2 = (0f - Vector3.Angle(up, rig.transform.up)) * Vector3.Cross(up, rig.transform.up).normalized;
-        rig.AddTorque(Time.fixedDeltaTime * data.control * 200f * multiplier * rotP * (vector + vector2), ForceMode.Acceleration);
-        rig.angularVelocity -= rig.angularVelocity * drag * multiplier * control;
-        Vector3 position = target.position;
-        Vector3 vector3 = position - rig.transform.position;
-        //rig.AddForce(vector3 * 200f * multiplier * control * P * Time.fixedDeltaTime, ForceMode.Acceleration);
-        rig.linearVelocity -= rig.linearVelocity * drag * multiplier * control;
+
+        Vector3 torque =
+            (0f - Vector3.Angle(forward, rig.transform.forward)) *
+            Vector3.Cross(forward, rig.transform.forward).normalized +
+            (0f - Vector3.Angle(up, rig.transform.up)) *
+            Vector3.Cross(up, rig.transform.up).normalized;
+
+        rig.AddTorque(Time.fixedDeltaTime * data.control * 200f * rotP * torque, ForceMode.Acceleration);
+
+        rig.angularVelocity -= rig.angularVelocity * drag * control;
+        rig.linearVelocity -= rig.linearVelocity * drag * control;
     }
 
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            stream.SendNext(currentPoseIndex);
+        }
+        else
+        {
+            int index = (int)stream.ReceiveNext();
+
+            if (!photonView.IsMine && AllPoses != null && index < AllPoses.Length)
+            {
+                CurrentTargetPose = AllPoses[index];
+            }
+        }
+    }
 }

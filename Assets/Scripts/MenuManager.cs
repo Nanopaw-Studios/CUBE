@@ -33,4 +33,10 @@ public class MenuManager : MonoBehaviour
     {
         Application.OpenURL(url);
     }
+
+    public void Quit(int exitCode)
+    {
+        Application.Quit(exitCode);
+        Debug.Log("Quit with exit code: " + exitCode);
+    }
 }

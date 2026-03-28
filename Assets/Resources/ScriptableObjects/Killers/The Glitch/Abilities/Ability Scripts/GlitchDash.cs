@@ -26,8 +26,12 @@ public class GlitchDash : Ability
         // Instantiate dash effects
         if (DashEffectsPrefab != null)
         {
-            GameObject dashEffects = Instantiate(DashEffectsPrefab, new Vector3(torso.localPosition.x, 0.5f, torso.localPosition.z), Quaternion.Euler(new Vector3(-180, 0, 0)), torso);
-            Object.Destroy(dashEffects, 1f); // Destroy effects after 2 seconds
+            GameObject dashEffects = Instantiate(
+            DashEffectsPrefab,
+            new Vector3(torso.position.x, 0.5f, torso.position.z),
+            Quaternion.Euler(torso.rotation.eulerAngles + new Vector3(-180, 0, 0)),
+            null);
+            Object.Destroy(dashEffects, 2f); // Destroy effects after 2 seconds
         }
 
         Transform[] bones = player.transform.Find("RIG").GetComponentsInChildren<Transform>();

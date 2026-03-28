@@ -8,38 +8,44 @@ public class AnimationArmHandler : AnimationHandler
     public PosePreset[] LeftPoses;
     public PosePreset[] RightPoses;
 
+    public int[] LeftPoseIndexes;
+    public int[] RightPoseIndexes;
 
     public override void HandleLeftHandAnimation(bool cancelled)
     {
-        if (!cancelled)
+        Debug.Log("LEFT HANDLER CALLED"); // 👈 ADD THIS
+        var poseHandler = InputArmController.armController.PoseHandler;
+
+        if (cancelled)
         {
-            if (!LeftUp && !RightUp)
-            {
-                InputArmController.armController.PoseHandler.Animation(LeftPoses, timeBetween, cancelled);
-                LeftUp = true;
-            }
-        }
-        else
-        {
-            InputArmController.armController.PoseHandler.CurrentTargetPose = InputArmController.armController.PoseHandler.RestPose;
+            poseHandler.SetPose(0); // Rest pose
             LeftUp = false;
+            return;
+        }
+
+        if (!LeftUp && !RightUp)
+        {
+            poseHandler.Animation(LeftPoseIndexes, timeBetween);
+            LeftUp = true;
         }
     }
 
     public override void HandleRightHandAnimation(bool cancelled)
     {
-        if (!cancelled)
+        Debug.Log("RIGHT HANDLER CALLED"); // 👈 ADD THIS
+        var poseHandler = InputArmController.armController.PoseHandler;
+
+        if (cancelled)
         {
-            if (!RightUp && !LeftUp)
-            {
-                InputArmController.armController.PoseHandler.Animation(RightPoses, timeBetween, cancelled);
-                RightUp = true;
-            }
-        }
-        else
-        {
-            InputArmController.armController.PoseHandler.Animation(RightPoses, timeBetween, cancelled);
+            poseHandler.SetPose(0);
             RightUp = false;
+            return;
+        }
+
+        if (!RightUp && !LeftUp)
+        {
+            poseHandler.Animation(RightPoseIndexes, timeBetween);
+            RightUp = true;
         }
     }
 

@@ -3,7 +3,7 @@ using UnityEngine;
 public class AnimationPistolHandler : AnimationHandler
 {
 
-    public WeaponPosePreset[] Pose;
+    public int[] PoseIndexes;
 
     public override void HandleLeftHandAnimation(bool cancelled)
     {
@@ -20,13 +20,13 @@ public class AnimationPistolHandler : AnimationHandler
             Debug.Log("Aim");
             if (!RightUp && !LeftUp)
             {
-                InputArmController.armController.PoseHandler.Animation(Pose, timeBetween, cancelled);
+                InputArmController.armController.PoseHandler.Animation(PoseIndexes, timeBetween);
                 RightUp = true;
             }
         }
         else
         {
-            InputArmController.armController.PoseHandler.CurrentTargetPose = RestPose;
+            InputArmController.armController.PoseHandler.SetPose(0);
             RightUp = false;
         }
     }

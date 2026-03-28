@@ -2,7 +2,7 @@ using Photon.Pun;
 using System;
 using UnityEngine;
 
-public class PlayerPuncher : MonoBehaviour
+public class PlayerPuncher : MonoBehaviourPunCallbacks
 {
     public BasePlayer player;
     private KillerType killerType;
@@ -12,7 +12,6 @@ public class PlayerPuncher : MonoBehaviour
 
     private void Start()
     {
-
         if (armHandler != null)
         {
             armHandler.onArmHandle += Punch;
@@ -31,7 +30,7 @@ public class PlayerPuncher : MonoBehaviour
 
     private void Punch()
     {
-        if (killerType == null) return;
+        if (killerType == null && !photonView.IsMine) return;
 
         Vector3 size = killerType.punchHitboxSize;
 

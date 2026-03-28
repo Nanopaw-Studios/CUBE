@@ -38,4 +38,12 @@ public class PosePreset : MonoBehaviour
         }
         return null;
     }
+
+    public bool IsEnabled(int index)
+    {
+        if (index < 0 || index >= targets.Count)
+            return false;
+
+        return targets[index].enabled;
+    }
 }
