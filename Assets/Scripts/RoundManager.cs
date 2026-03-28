@@ -253,33 +253,45 @@ public class RoundManager : MonoBehaviourPunCallbacks
         currentTime = (int)Math.Ceiling(remaining);
     }
 
-    private void ApplyRolesAndColors(int[] actorNumbers, int[] roleValues, string[] colorHexes)
+private void ApplyRolesAndColors(int[] actorNumbers, int[] roleValues, string[] colorHexes)
+{
+    if (actorNumbers == null || roleValues == null || colorHexes == null) return;
+
+    for (int i = 0; i < actorNumbers.Length; i++)
     {
-        if (actorNumbers == null || roleValues == null || colorHexes == null) return;
+        int actor = actorNumbers[i];
+        int roleValue = i < roleValues.Length ? roleValues[i] : -1;
+        string color = i < colorHexes.Length ? colorHexes[i] : string.Empty;
 
-        for (int i = 0; i < actorNumbers.Length; i++)
+        foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
         {
-            int actor = actorNumbers[i];
-            int roleValue = i < roleValues.Length ? roleValues[i] : -1;
-            string color = i < colorHexes.Length ? colorHexes[i] : string.Empty;
+            PhotonView pv = go.GetComponent<PhotonView>();
+            if (pv == null || pv.OwnerActorNr != actor) continue;
 
-            foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
+            // 1. Update the Role
+            BasePlayer basePlayer = go.GetComponent<BasePlayer>();
+            if (basePlayer != null && roleValue >= 0)
             {
-                PhotonView pv = go.GetComponent<PhotonView>();
-                if (pv == null || pv.OwnerActorNr != actor) continue;
+                basePlayer.SetPlayerType((BasePlayer.PlayerType)roleValue);
+            }
 
-                BasePlayer basePlayer = go.GetComponent<BasePlayer>();
-                if (basePlayer != null && roleValue >= 0)
-                {
-                    basePlayer.SetPlayerType((BasePlayer.PlayerType)roleValue);
-                }
-
-                PlayerCustomizer customizer = go.GetComponent<PlayerCustomizer>();
-                if (customizer != null && !string.IsNullOrEmpty(color))
+            // 2. Update the Customizer
+            PlayerCustomizer customizer = go.GetComponent<PlayerCustomizer>();
+            if (customizer != null && !string.IsNullOrEmpty(color))
+            {
+                // Only FORCE the material change if we are actually in Intermission
+                if (intermissionActive)
                 {
                     customizer.ChangeColor(color);
+                }
+                else
+                {
+                    // If in a round, just update the stored hex without changing the material
+                    // (Assuming you add a SetLocalHex method or make localHex public)
+                    customizer.ChangeColorCalled(color); 
                 }
             }
         }
     }
+}
 }

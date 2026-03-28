@@ -1,17 +1,22 @@
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using UnityEngine;
+using System.Collections;
 
 public class PlayerCustomizer : MonoBehaviourPunCallbacks
 {
     [Header("Renderers to skin / color")]
     public Renderer[] customizedBones;
 
-    private Material instanceMaterial; // PlayerMat instance used in intermission
+    private bool isInIntermission = false;
+    private Material instanceMaterial; // Only used for intermission colors
     private RoundManager roundManager;
 
-    // Stored player color (hex) so we can restore it on intermission
+    // Stored player color (hex)
     private string localHex;
+    private BasePlayer.PlayerType pendingPlayerType;
+    private string pendingCharacterId;
+    private bool hasPendingRole = false;
 
     private void Start()
     {
@@ -21,7 +26,6 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             roundManager.OnRoundStart += RoundStarted;
             roundManager.OnIntermissionStart += IntermissionStarted;
 
-            // If we join while an intermission is already running, immediately restore player color
             if (roundManager.intermissionActive)
             {
                 IntermissionStarted();
@@ -29,7 +33,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         }
         else
         {
-            Debug.LogWarning("[PlayerCustomizer] RoundManager not found (Multiplayer object missing?)");
+            Debug.LogWarning("[PlayerCustomizer] RoundManager not found.");
         }
     }
 
@@ -42,99 +46,101 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         }
     }
 
-    /// <summary>
-    /// We no longer decide the skin here – that comes from ServerManager via RPC.
-    /// This is mostly a hook if you want to clear intermission state when the round starts.
-    /// </summary>
     private void RoundStarted()
     {
-        // Going into a round; we’ll get an ApplyRoleAndCharacter RPC shortly.
-        // Clear reference so we don’t think we’re still using PlayerMat.
-        instanceMaterial = null;
-    }
+        StopAllCoroutines();
+        isInIntermission = false;
 
-    /// <summary>
-    /// Called by RoundManager when intermission begins.
-    /// Revert back to PlayerMat with the stored color.
-    /// </summary>
-    private void IntermissionStarted()
-    {
-        // If we don't have a saved color yet, you can either early-out
-        // or choose a default (e.g. white). I'll fallback to default white.
-        string hexToUse = string.IsNullOrEmpty(localHex) ? "FFFFFF" : localHex;
-
-        // Immediately revert locally
-        ChangeColor(hexToUse);
-
-        // Make sure everybody sees the lobby color
-        if (photonView.IsMine)
+        if (instanceMaterial != null)
         {
-            photonView.RPC("ChangeColor", RpcTarget.AllBuffered, hexToUse);
+            Destroy(instanceMaterial);
+            instanceMaterial = null;
+        }
+
+        // Force-clear bones so no stale intermission material lingers
+        foreach (Renderer bone in customizedBones)
+        {
+            if (bone == null) continue;
+            var mats = bone.sharedMaterials;
+            for (int i = 0; i < mats.Length; i++) mats[i] = null;
+            bone.sharedMaterials = mats;
+        }
+
+        Debug.Log($"[PlayerCustomizer] RoundStarted â€” hasPendingRole={hasPendingRole}, isInIntermission={isInIntermission}");
+
+        if (hasPendingRole)
+        {
+            hasPendingRole = false;
+            ApplyRole(pendingPlayerType, pendingCharacterId);
         }
     }
 
-    // ---------------------------
-    //  CENTRALIZED ROLE + SKIN
-    // ---------------------------
+    private void IntermissionStarted()
+    {
+        isInIntermission = true;
+        StartCoroutine(ApplyIntermissionNextFrame());
+    }
 
-    /// <summary>
-    /// Centralized RPC: ServerManager (or whoever assigns roles) should call this
-    /// once per player when the round setup is finished.
-    ///
-    /// Example call:
-    /// playerCustomizer.photonView.RPC(
-    ///     \"ApplyRoleAndCharacter\",
-    ///     RpcTarget.AllBuffered,
-    ///     BasePlayer.PlayerType.Killer,
-    ///     killerType._Name);
-    /// </summary>
+    private IEnumerator ApplyIntermissionNextFrame()
+    {
+        yield return null;
+        RefreshIntermissionAppearance();
+    }
+
+    private void RefreshIntermissionAppearance()
+    {
+        string hexToUse = string.IsNullOrEmpty(localHex) ? "FFFFFF" : localHex;
+        ChangeColor(hexToUse);
+
+        if (photonView.IsMine)
+        {
+            photonView.RPC(nameof(ChangeColor), RpcTarget.OthersBuffered, hexToUse);
+        }
+    }
+
     [PunRPC]
     public void ApplyRoleAndCharacter(BasePlayer.PlayerType playerType, string characterId)
     {
-        // We’re in round mode now, no longer using PlayerMat instance.
+        Debug.Log($"[PlayerCustomizer] ApplyRoleAndCharacter â€” playerType={playerType}, characterId={characterId}, isInIntermission={isInIntermission}");
+
+        if (isInIntermission)
+        {
+            pendingPlayerType = playerType;
+            pendingCharacterId = characterId;
+            hasPendingRole = true;
+
+            Debug.Log($"[PlayerCustomizer] Intermission active â€” caching role, not applying material.");
+
+            RefreshIntermissionAppearance();
+            return;
+        }
+
+        ApplyRole(playerType, characterId);
+    }
+
+    private void ApplyRole(BasePlayer.PlayerType playerType, string characterId)
+    {
+        Debug.Log($"[PlayerCustomizer] ApplyRole â€” playerType={playerType}, characterId={characterId}");
+
         instanceMaterial = null;
 
         if (playerType == BasePlayer.PlayerType.Killer)
-        {
             ApplyKillerCustomisation(characterId);
-        }
         else
-        {
             ApplySurvivorCustomisation(characterId);
-        }
-    }
-
-    // Keep these as RPCs for backward compatibility if anything still uses them.
-    // Internally they just call the shared helpers.
-
-    [PunRPC]
-    public void SetSurvivorCustomisationByName(string id)
-    {
-        ApplySurvivorCustomisation(id);
-    }
-
-    [PunRPC]
-    public void SetKillerCustomisationByName(string id)
-    {
-        ApplyKillerCustomisation(id);
     }
 
     private void ApplySurvivorCustomisation(string id)
     {
-        instanceMaterial = null; // ensure PlayerMat isn't treated as current
-
         SurvivorType survivorType = CharacterDatabase.GetSurvivorByName(id);
         if (survivorType == null)
         {
-            Debug.LogWarning($"[PlayerCustomizer] SurvivorType '{id}' not found in CharacterDatabase.");
+            Debug.LogWarning($"[PlayerCustomizer] SurvivorType '{id}' not found.");
             return;
         }
 
         Material mat = survivorType.character.bodyMaterial;
-        foreach (Renderer bone in customizedBones)
-        {
-            bone.material = mat;
-        }
+        SetMaterialsOnBones(mat);
 
         foreach (Accessory accessory in survivorType.character.accessories)
         {
@@ -147,7 +153,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             }
             else
             {
-                Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on player.");
+                Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found.");
             }
         }
     }
@@ -157,25 +163,32 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         KillerType killerType = CharacterDatabase.GetKillerByName(id);
         if (killerType == null)
         {
-            Debug.LogWarning($"[PlayerCustomizer] KillerType '{id}' not found in CharacterDatabase.");
+            Debug.LogWarning($"[PlayerCustomizer] KillerType '{id}' not found.");
             return;
         }
 
         Material mat = killerType.character.bodyMaterial;
-        foreach (Renderer bone in customizedBones)
-        {
-            bone.material = mat;
-        }
+        SetMaterialsOnBones(mat);
 
-        // Enable weapon-hand IK/animation once we're a Killer
         Transform itemPoses = transform.Find("ItemPoses");
         if (itemPoses != null)
         {
             InputArmController armController = itemPoses.GetComponent<InputArmController>();
-            if (armController != null)
+            if (armController != null) armController.enabled = true;
+        }
+    }
+
+    private void SetMaterialsOnBones(Material targetMat)
+    {
+        foreach (Renderer bone in customizedBones)
+        {
+            if (bone == null) continue;
+            Material[] mats = new Material[bone.sharedMaterials.Length];
+            for (int i = 0; i < mats.Length; i++)
             {
-                armController.enabled = true;
+                mats[i] = targetMat;
             }
+            bone.sharedMaterials = mats;
         }
     }
 
@@ -183,15 +196,14 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     //  INTERMISSION COLOR LOGIC
     // ---------------------------
 
-    /// <summary>
-    /// Called from UI to change the player's lobby color.
-    /// This wraps the RPC so it propagates to everyone.
-    /// </summary>
     public void ChangeColorCalled(string hex)
     {
         if (!photonView.IsMine) return;
+        if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
+            hex = hex.Substring(1);
 
-        photonView.RPC("ChangeColor", RpcTarget.AllBuffered, hex);
+        ChangeColor(hex);
+        photonView.RPC(nameof(ChangeColor), RpcTarget.OthersBuffered, hex);
     }
 
     public string GetCurrentHex()
@@ -202,7 +214,17 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     [PunRPC]
     public void ChangeColor(string hex)
     {
+        // Strip # prefix if present â€” FromHex expects raw hex digits only
+        if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
+            hex = hex.Substring(1);
+
         localHex = hex;
+
+        if (!isInIntermission)
+        {
+            Debug.LogWarning($"[PlayerCustomizer] ChangeColor called during a round â€” ignoring. hex={hex}");
+            return;
+        }
 
         Color converted = PlayfabManager.FromHex(hex);
 
@@ -216,12 +238,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             }
 
             instanceMaterial = new Material(baseMat);
-            instanceMaterial.name = "Instanced_PlayerMat";
+            instanceMaterial.name = "Intermission_Mat_" + photonView.ViewID;
 
-            foreach (Renderer bone in customizedBones)
-            {
-                bone.material = instanceMaterial;
-            }
+            SetMaterialsOnBones(instanceMaterial);
         }
 
         instanceMaterial.SetColor("_MainColor", converted);

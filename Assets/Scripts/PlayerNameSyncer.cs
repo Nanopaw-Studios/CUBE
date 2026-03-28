@@ -23,41 +23,47 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
     private void Start()
     {
         if (!photonView.IsMine) return;
-
-        // 1) Get name locally (you already do this)
+    
         string playerName = PlayfabManager.GetPlayerName();
-
-        // 2) Get title id from PlayFab user data (you implement this call)
-        // Example: returns "Supporter" (or "" if none equipped)
-
+    
         string titleId = "";
         string verification = "";
-
+    
+        bool titleLoaded = false;
+        bool verificationLoaded = false;
+    
+        void TryApply()
+        {
+            if (!titleLoaded || !verificationLoaded) return;
+    
+            var props = new Hashtable
+            {
+                { PROP_NAME, playerName },
+                { PROP_TITLE, titleId },
+                { PROP_VERIFICATION, verification }
+            };
+    
+            PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+        }
+    
         PlayfabManager.Instance.GetUserDataValue("PlayerTitle", titleId1 =>
         {
-            if (string.IsNullOrEmpty(titleId1))
-                titleId = ""; // default / none
-
-            titleId = titleId1;
-            // apply
+            titleId = string.IsNullOrEmpty(titleId1) ? "" : titleId1;
+            titleLoaded = true;
+    
+            // Apply locally immediately (optional but nice)
             TitleStyleRegistry.Apply(titleText, titleId);
+    
+            TryApply();
         });
-
+    
         PlayfabManager.Instance.GetUserDataValue("VerificationStatus", verification1 =>
         {
-            if (string.IsNullOrEmpty(verification1))
-                verification = ""; // default
-            verification = verification1;
+            verification = string.IsNullOrEmpty(verification1) ? "" : verification1;
+            verificationLoaded = true;
+    
+            TryApply();
         });
-
-        // 3) Publish BOTH to Photon custom properties (late-join safe)
-        var props = new Hashtable
-        {
-            { PROP_NAME, playerName },
-            { PROP_TITLE, titleId },
-            { PROP_VERIFICATION, verification }
-        };
-        PhotonNetwork.LocalPlayer.SetCustomProperties(props);
     }
 
     public override void OnPlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, Hashtable changedProps)
