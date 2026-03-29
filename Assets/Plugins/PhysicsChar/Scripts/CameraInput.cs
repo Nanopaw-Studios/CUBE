@@ -7,19 +7,24 @@ public class CameraInput : MonoBehaviour
     public float mouseSensitivity = 20f;
     public float gamepadSensitivity = 100f;
 
-    [Header("Smoothing")]
-    public float smoothTime = 0.05f;
-    public Rotation_MM PlayerBody;
+    [Header("Input Smoothing")]
+    public float inputSmoothTime = 0.03f;
+    private Vector2 currentInput;
+    private Vector2 inputVelocity;
 
-    [Header("Input System")]
+    [Header("Rotation Smoothing (Optional)")]
+    public float rotationSmoothTime = 0.05f;
+    private float xRotationVelocity;
+    private float yRotationVelocity;
+
+    [Header("References")]
+    public Rotation_MM PlayerBody;
     public InputActionAsset inputActions;
 
     private InputAction lookAction;
 
     private float xRotation;
     private float yRotation;
-    private float xRotationVelocity;
-    private float yRotationVelocity;
 
     private const string KEY_MOUSE_SENSITIVITY = "MouseSensitivity";
     private const string KEY_GAMEPAD_SENSITIVITY = "GamepadSensitivity";
@@ -42,11 +47,8 @@ public class CameraInput : MonoBehaviour
             return;
         }
 
-        // Try common patterns
-        lookAction = inputActions.FindAction("Player/Look", false);
-
-        if (lookAction == null)
-            lookAction = inputActions.FindAction("Look", false);
+        lookAction = inputActions.FindAction("Player/Look", false)
+                   ?? inputActions.FindAction("Look", false);
 
         if (lookAction == null)
         {
@@ -54,8 +56,6 @@ public class CameraInput : MonoBehaviour
             DumpActions();
             return;
         }
-
-        Debug.Log($"[CameraInput] Found Look action: {lookAction.name}");
 
         inputActions.Enable();
         lookAction.Enable();
@@ -68,45 +68,46 @@ public class CameraInput : MonoBehaviour
         yRotation = NormalizeAngle(euler.y);
     }
 
-    private void OnEnable()
-    {
-        lookAction?.Enable();
-    }
-
-    private void OnDisable()
-    {
-        lookAction?.Disable();
-    }
-
     private void Update()
     {
-        if (lookAction == null)
-            return;
+        if (lookAction == null) return;
 
-        Vector2 lookInput = lookAction.ReadValue<Vector2>();
-
-        if (lookInput.sqrMagnitude <= 0.000001f)
-            return;
+        Vector2 rawInput = lookAction.ReadValue<Vector2>();
 
         bool isGamepad = lookAction.activeControl != null &&
                          lookAction.activeControl.device is Gamepad;
 
         float sensitivity = isGamepad ? gamepadSensitivity : mouseSensitivity;
-
         float multiplier = isGamepad ? Time.deltaTime : 1f;
 
-        float mouseX = lookInput.x * sensitivity * multiplier;
-        float mouseY = lookInput.y * sensitivity * multiplier;
+        // 🎯 Smooth INPUT instead of rotation
+        currentInput = Vector2.SmoothDamp(
+            currentInput,
+            rawInput,
+            ref inputVelocity,
+            inputSmoothTime
+        );
 
-        yRotation += mouseX;
-        xRotation -= mouseY;
+        Vector2 processedInput = currentInput * sensitivity * multiplier;
+
+        yRotation += processedInput.x;
+        xRotation -= processedInput.y;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
-        float currentX = NormalizeAngle(transform.localEulerAngles.x);
-        float currentY = NormalizeAngle(transform.localEulerAngles.y);
+        // Optional extra smoothing layer (can set to 0 if you want raw feel)
+        float smoothX = Mathf.SmoothDampAngle(
+            transform.localEulerAngles.x,
+            xRotation,
+            ref xRotationVelocity,
+            rotationSmoothTime
+        );
 
-        float smoothX = Mathf.SmoothDampAngle(currentX, xRotation, ref xRotationVelocity, smoothTime);
-        float smoothY = Mathf.SmoothDampAngle(currentY, yRotation, ref yRotationVelocity, smoothTime);
+        float smoothY = Mathf.SmoothDampAngle(
+            transform.localEulerAngles.y,
+            yRotation,
+            ref yRotationVelocity,
+            rotationSmoothTime
+        );
 
         transform.localRotation = Quaternion.Euler(smoothX, smoothY, 0f);
 
