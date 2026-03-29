@@ -1,4 +1,4 @@
-Shader "Hidden/VLB_HD_URP_Default"
+Shader "Hidden/VLB_HD_URP_GPUInstancing"
 {
     Properties
     {
@@ -94,7 +94,7 @@ Shader "Hidden/VLB_HD_URP_Default"
                 #pragma vertex vert
                 #pragma fragment frag
                 #pragma multi_compile_fog
-                
+                #pragma multi_compile_instancing
                 #pragma multi_compile_local __ VLB_ALPHA_AS_BLACK
                 #pragma multi_compile_local __ VLB_NOISE_3D
                 #pragma multi_compile_local __ VLB_COLOR_GRADIENT_MATRIX_HIGH

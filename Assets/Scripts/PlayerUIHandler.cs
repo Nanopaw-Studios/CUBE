@@ -7,6 +7,7 @@ public class PlayerUIHandler : MonoBehaviour
 {
     public RoundManager roundManager;
     private BasePlayerStats playerStats;
+    private BasePlayer localBasePlayer;
 
     [Header("UI References")]
     public TMP_Text timerText;
@@ -37,26 +38,20 @@ public class PlayerUIHandler : MonoBehaviour
     private void Start()
     {
         playerStats = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer().GetComponent<BasePlayerStats>();
+        localBasePlayer = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer().GetComponent<BasePlayer>();
         if (playerStats == null)
         {
             Debug.LogError("BasePlayerStats component not found on the player!");
-        }
-
-        GameObject canvas = this.gameObject;
-        if (canvas == null)
-        {
-            Debug.LogError("Canvas not found!");
-            return;
         }
     }
 
     private void Update()
     {
-        playerStats = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer().GetComponent<BasePlayerStats>();
-        if (playerStats == null)
+        if (playerStats == null || localBasePlayer == null)
         {
-            Debug.LogError("BasePlayerStats component not found on the player! looking again");
-            playerStats = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer().GetComponent<BasePlayerStats>();
+            var player = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer();
+            playerStats = player.GetComponent<BasePlayerStats>();
+            localBasePlayer = player.GetComponent<BasePlayer>();
         }
 
         if (playerStats != null)
@@ -77,7 +72,7 @@ public class PlayerUIHandler : MonoBehaviour
             }
         }
 
-        if (stats != null && maliceValue != null)
+        if (stats != null && maliceValue != null && playerStats != null)
         {
             maliceValue.text = playerStats.malice.ToString();
         }
@@ -92,10 +87,17 @@ public class PlayerUIHandler : MonoBehaviour
 
         if (survivorUI != null && roundManager != null)
         {
-            if (roundManager.roundActive)
-            {
-                survivorUI.SetActive(true);
+            // Only show in-round UI when the round is active AND this player has been
+            // assigned a role (not a mid-round joiner sitting in intermission).
+            bool hasRole = localBasePlayer != null &&
+                           (localBasePlayer.GetPlayerType() == BasePlayer.PlayerType.Killer ||
+                            localBasePlayer.GetPlayerType() == BasePlayer.PlayerType.Survivor);
+            bool showUI = roundManager.roundActive && hasRole && !roundManager.intermissionActive;
 
+            survivorUI.SetActive(showUI);
+
+            if (showUI)
+            {
                 if (playerNameText != null) playerNameText.text = PhotonNetwork.NickName;
                 if (pingText != null) pingText.text = $"Ping: {PhotonNetwork.GetPing()}ms";
                 if (versionText != null) versionText.text = $"v{Application.version}";
@@ -111,10 +113,6 @@ public class PlayerUIHandler : MonoBehaviour
                         updateTimer = 0f;
                     }
                 }
-            }
-            else
-            {
-                survivorUI.SetActive(false);
             }
         }
     }

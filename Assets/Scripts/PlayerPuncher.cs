@@ -30,7 +30,7 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
 
     private void Punch()
     {
-        if (killerType == null && !photonView.IsMine) return;
+        if (!photonView.IsMine || killerType == null) return;
 
         Vector3 size = killerType.punchHitboxSize;
 
@@ -42,5 +42,13 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
         Quaternion yRotation = Quaternion.Euler(0f, hips.eulerAngles.y, 0f);
        
         // new hitbox system
+        Collider[] hits = Physics.OverlapBox(center, size / 2f, yRotation, LayerMask.GetMask("Player"));
+        foreach (var hit in hits)
+        {
+            PlayerHitboxManager targetHitbox = hit.GetComponentInParent<PlayerHitboxManager>();
+            if (targetHitbox == null || targetHitbox.photonView.IsMine) continue;
+
+            targetHitbox.photonView.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, killerType.PunchDamage);
+        }
     }
 }

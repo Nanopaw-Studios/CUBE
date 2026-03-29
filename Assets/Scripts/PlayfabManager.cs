@@ -98,8 +98,18 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     void TryFindMoneyText()
     {
-        // Your current hierarchy:
-        // Canvas/Stats/Money/MaliceValue (this is weirdly named, but fine)
+        // Prefer the reference from PlayerUIHandler to avoid Canvas name ambiguity
+        // when multiple Canvas objects exist (e.g. per-player HUDs in multiplayer).
+        PlayerUIHandler uiHandler = FindFirstObjectByType<PlayerUIHandler>();
+        if (uiHandler != null && uiHandler.moneyText != null)
+        {
+            moneyText = uiHandler.moneyText;
+            Debug.Log("[PlayfabManager] Money text found via PlayerUIHandler.");
+            RefreshCubeCoins();
+            return;
+        }
+
+        // Fallback: traverse the hierarchy by name.
         GameObject canvas = GameObject.Find("Canvas");
         if (canvas == null) return;
 
@@ -115,7 +125,7 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         moneyText = text.GetComponent<TMP_Text>();
         if (moneyText != null)
         {
-            Debug.Log("Money text found!");
+            Debug.Log("[PlayfabManager] Money text found via Canvas hierarchy.");
             RefreshCubeCoins();
         }
     }
@@ -278,7 +288,7 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        // Optional fast-fail (UI responsiveness). Real authority is PlayFab’s response.
+        // Optional fast-fail (UI responsiveness). Real authority is PlayFabï¿½s response.
         if (CachedCC < cost)
         {
             onResult?.Invoke(false, CachedCC);

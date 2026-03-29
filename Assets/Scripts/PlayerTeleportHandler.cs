@@ -34,8 +34,7 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
-    /// Teleport this player to a WORLD position/rotation.
-    /// IMPORTANT: targetPosition must be world-space.
+    /// Teleport this player to a world position/rotation. Only callable on the owning client.
     /// </summary>
     public void InitiateTeleport(Vector3 targetPosition, Quaternion? targetRotation = null, bool snapToGround = true)
     {
@@ -55,6 +54,12 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     [PunRPC]
     public void NetworkTeleportPlayer(Vector3 targetPosition, bool hasRotation, Quaternion targetRotation, bool snapToGround)
     {
+        // Remotes do NOT run the physics teleport â€” RagdollNetwork will naturally
+        // lerp to the new positions once the owner broadcasts them after moving.
+        // Running PerformTeleport on remotes causes their kinematic bone positions
+        // to be overwritten by the teleport, then immediately fought by RagdollNetwork.Update().
+        if (!pv.IsMine) return;
+
         StartCoroutine(PerformTeleport(targetPosition, hasRotation ? targetRotation : (Quaternion?)null, snapToGround));
     }
 
@@ -70,7 +75,7 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
             yield break;
         }
 
-        // 1) Calculate safe target position
+        // 1) Find a safe ground position
         Vector3 finalTargetPos = targetPosition;
         if (snapToGround)
         {
@@ -78,93 +83,92 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
             if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 50f, groundMask, QueryTriggerInteraction.Ignore))
                 finalTargetPos = hit.point + Vector3.up * groundOffset;
             else
-                Debug.LogWarning($"[Teleport] No ground found below teleport target at {targetPosition}. Using raw position.");
+                Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Using raw position.");
         }
 
-        // 2) Gather and freeze rigidbodies (ragdoll)
+        // 2) Freeze all ragdoll rigidbodies so physics doesn't fight the move
         var rbs = rigRoot.GetComponentsInChildren<Rigidbody>(true);
         foreach (var rb in rbs)
         {
             rb.isKinematic = true;
-#if UNITY_6000_0_OR_NEWER
             rb.linearVelocity = Vector3.zero;
-#else
-            rb.velocity = Vector3.zero;
-#endif
             rb.angularVelocity = Vector3.zero;
             rb.Sleep();
         }
 
-        // Also freeze root rigidbody if you have one (prevents physics from fighting the teleport)
         bool rootWasKinematic = false;
         if (rootRb != null)
         {
             rootWasKinematic = rootRb.isKinematic;
             rootRb.isKinematic = true;
-#if UNITY_6000_0_OR_NEWER
             rootRb.linearVelocity = Vector3.zero;
-#else
-            rootRb.velocity = Vector3.zero;
-#endif
             rootRb.angularVelocity = Vector3.zero;
             rootRb.Sleep();
         }
 
         yield return new WaitForFixedUpdate();
 
-        // =========================================================
-        // IMPORTANT: ABSOLUTE SET (NOT +=)
-        //
-        // Compute the CURRENT world-space offset from rigRoot to the prefab root.
-        // Then place the prefab root so rigRoot ends up exactly on finalTargetPos.
-        // This avoids any “position added to” feel if something else changed the root
-        // between frames (parent motion, physics, late network corrections, etc.).
-        // =========================================================
+        // 3) Compute the delta from the rig root's current world position to the target.
+        //    Apply this same delta to every bone so the entire pose shifts by the same offset.
+        Vector3 hipCurrentPos = rigRoot.position;
+        Vector3 positionDelta = finalTargetPos - hipCurrentPos;
 
-        Vector3 rootMinusRig = transform.position - rigRoot.position; // world delta
-        Quaternion newRootRot = transform.rotation;
-
+        Quaternion rotationDelta = Quaternion.identity;
         if (targetRotation.HasValue)
-        {
-            // Rotate the whole character so rigRoot matches the desired rotation.
-            // We rotate the rootMinusRig offset too so the root stays consistent.
-            Quaternion deltaRot = targetRotation.Value * Quaternion.Inverse(rigRoot.rotation);
-            newRootRot = deltaRot * transform.rotation;
-            rootMinusRig = deltaRot * rootMinusRig;
-        }
+            rotationDelta = targetRotation.Value * Quaternion.Inverse(rigRoot.rotation);
 
-        Vector3 newRootPos = finalTargetPos + rootMinusRig;
-
-        Physics.SyncTransforms();
-
-        // 4) Force RB poses to match transforms
         foreach (var rb in rbs)
         {
-            rb.position = newRootPos;
-            rb.rotation = newRootRot;
+            if (targetRotation.HasValue)
+            {
+                Vector3 relativeToHip = rb.position - hipCurrentPos;
+                rb.position = finalTargetPos + rotationDelta * relativeToHip;
+                rb.rotation = rotationDelta * rb.rotation;
+            }
+            else
+            {
+                rb.position += positionDelta;
+            }
         }
 
-        // Optional: snap network targets to avoid smoothing from old pose
-        var net = GetComponent<RagdollNetwork>();
-        if (net != null) net.ForceSnapToCurrentPose(0.15f);
+        // 4) Move the prefab root transform to stay aligned with the rig
+        Vector3 rootMinusHip = transform.position - hipCurrentPos;
+        if (targetRotation.HasValue)
+        {
+            transform.position = finalTargetPos + rotationDelta * rootMinusHip;
+            transform.rotation = rotationDelta * transform.rotation;
+        }
+        else
+        {
+            transform.position += positionDelta;
+        }
 
         Physics.SyncTransforms();
 
-        // 5) Unfreeze next fixed updates
-        StartCoroutine(UnfreezeRigidbodiesNextFixedUpdate(rbs, rootWasKinematic));
+        // 5) Tell RagdollNetwork to snap its send-gate references so the next
+        //    serialized packet immediately reflects the new position (no stale gate).
+        //    Only update owner-side targets â€” never touch remote bones.
+        var net = GetComponent<RagdollNetwork>();
+        if (net != null) net.SnapSendGate();
+
+        // 6) Unfreeze after two fixed frames so physics settles at the new position
+        StartCoroutine(UnfreezeRigidbodies(rbs, rootWasKinematic));
 
         isTeleporting = false;
     }
 
-    private IEnumerator UnfreezeRigidbodiesNextFixedUpdate(Rigidbody[] rbs, bool rootWasKinematic)
+    private IEnumerator UnfreezeRigidbodies(Rigidbody[] rbs, bool rootWasKinematic)
     {
         yield return new WaitForFixedUpdate();
         yield return new WaitForFixedUpdate();
 
         foreach (var rb in rbs)
         {
-            rb.WakeUp();
             rb.isKinematic = false;
+            rb.WakeUp();
         }
+
+        if (rootRb != null)
+            rootRb.isKinematic = rootWasKinematic;
     }
 }

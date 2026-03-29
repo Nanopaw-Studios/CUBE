@@ -57,16 +57,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             instanceMaterial = null;
         }
 
-        // Force-clear bones so no stale intermission material lingers
-        foreach (Renderer bone in customizedBones)
-        {
-            if (bone == null) continue;
-            var mats = bone.sharedMaterials;
-            for (int i = 0; i < mats.Length; i++) mats[i] = null;
-            bone.sharedMaterials = mats;
-        }
-
-        Debug.Log($"[PlayerCustomizer] RoundStarted — hasPendingRole={hasPendingRole}, isInIntermission={isInIntermission}");
+        Debug.Log($"[PlayerCustomizer] RoundStarted — hasPendingRole={hasPendingRole}");
 
         if (hasPendingRole)
         {
@@ -90,12 +81,34 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     private void RefreshIntermissionAppearance()
     {
         string hexToUse = string.IsNullOrEmpty(localHex) ? "FFFFFF" : localHex;
-        ChangeColor(hexToUse);
 
+        // Apply locally — isInIntermission is already true here
+        ApplyIntermissionColor(hexToUse);
+
+        // Tell others: use OthersBuffered so late joiners pick it up.
+        // Remotes call ApplyRoleColor directly so the isInIntermission guard doesn't block them.
         if (photonView.IsMine)
         {
-            photonView.RPC(nameof(ChangeColor), RpcTarget.OthersBuffered, hexToUse);
+            photonView.RPC(nameof(RPC_SyncIntermissionColor), RpcTarget.OthersBuffered, hexToUse);
         }
+    }
+
+    /// <summary>
+    /// Received by remote clients to apply the intermission color unconditionally,
+    /// bypassing the isInIntermission guard which is unreliable across clients.
+    /// </summary>
+    [PunRPC]
+    public void RPC_SyncIntermissionColor(string hex)
+    {
+        if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
+            hex = hex.Substring(1);
+
+        localHex = hex;
+
+        // Only paint the color if we are currently in intermission on this client.
+        // If a round is active, the role material is already applied — just store it.
+        if (isInIntermission)
+            ApplyIntermissionColor(hex);
     }
 
     [PunRPC]
@@ -148,12 +161,13 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             if (accTransform != null)
             {
                 GameObject accInstance = Instantiate(accessory.prefab, accTransform);
-                accInstance.transform.localPosition = Vector3.zero;
-                accInstance.transform.localRotation = Quaternion.identity;
+                // Apply the offsets defined in the Accessory ScriptableObject field.
+                accInstance.transform.localPosition = accessory.localPosition;
+                accInstance.transform.localRotation = accessory.localRotation;
             }
             else
             {
-                Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found.");
+                Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}.");
             }
         }
     }
@@ -202,8 +216,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
             hex = hex.Substring(1);
 
-        ChangeColor(hex);
-        photonView.RPC(nameof(ChangeColor), RpcTarget.OthersBuffered, hex);
+        localHex = hex;
+        ApplyIntermissionColor(hex);
+        photonView.RPC(nameof(RPC_SyncIntermissionColor), RpcTarget.OthersBuffered, hex);
     }
 
     public string GetCurrentHex()
@@ -226,6 +241,26 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             return;
         }
 
+        ApplyIntermissionColor(hex);
+    }
+
+    /// <summary>
+    /// Applies the intermission color material directly without the isInIntermission guard.
+    /// Used when syncing late-joining clients who receive color data during a round.
+    /// </summary>
+    public void ForceApplyIntermissionColor(string hex)
+    {
+        if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
+            hex = hex.Substring(1);
+
+        localHex = hex;
+        // Only apply visually if we are actually in intermission right now
+        if (isInIntermission)
+            ApplyIntermissionColor(hex);
+    }
+
+    private void ApplyIntermissionColor(string hex)
+    {
         Color converted = PlayfabManager.FromHex(hex);
 
         if (instanceMaterial == null)

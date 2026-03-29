@@ -164,12 +164,49 @@ public class RoundManager : MonoBehaviourPunCallbacks
             if (intermissionActive)
             {
                 OnIntermissionStart?.Invoke();
+
+                // Teleport the local player to intermission spawn so late joiners
+                // don't end up in the map via a stale buffered round teleport.
+                StartCoroutine(TeleportLocalPlayerToIntermission(spawnPosition, spawnRotation));
             }
             else if (roundActive)
             {
                 OnRoundStart?.Invoke();
             }
         }
+    }
+
+    private System.Collections.IEnumerator TeleportLocalPlayerToIntermission(Vector3 position, Quaternion rotation)
+    {
+        // Poll until the local owned player GameObject is available — spawning is async
+        const float timeout = 10f;
+        float elapsed = 0f;
+        PlayerTeleportHandler teleporter = null;
+
+        while (elapsed < timeout)
+        {
+            foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
+            {
+                PhotonView pv = go.GetComponent<PhotonView>();
+                if (pv == null || !pv.IsMine) continue;
+
+                teleporter = go.GetComponent<PlayerTeleportHandler>();
+                break;
+            }
+
+            if (teleporter != null) break;
+
+            elapsed += 0.1f;
+            yield return new WaitForSecondsRealtime(0.1f);
+        }
+
+        if (teleporter == null)
+        {
+            Debug.LogWarning("[RoundManager] TeleportLocalPlayerToIntermission: local player not found within timeout.");
+            yield break;
+        }
+
+        teleporter.InitiateTeleport(position, rotation, snapToGround: true);
     }
 
     private IEnumerator Timer()
@@ -187,6 +224,9 @@ public class RoundManager : MonoBehaviourPunCallbacks
                 else if (intermissionActive)
                 {
                     double nextEnd = PhotonNetwork.Time + roundTime;
+                    // Clear the buffered StartIntermission so late joiners don't receive
+                    // a stale intermission state once the round has started.
+                    PhotonNetwork.RemoveRPCs(photonView);
                     photonView.RPC("StartRound", RpcTarget.AllBuffered, nextEnd);
                 }
             }
@@ -220,11 +260,15 @@ public class RoundManager : MonoBehaviourPunCallbacks
                     stats.photonView.RPC("AdjustMalice", RpcTarget.AllBuffered, -5);
                 }
             }
-        }
 
-        RefreshIntermissionSpawnFromPoint();
-        double endTime = PhotonNetwork.Time + intermissionTime;
-        photonView.RPC("StartIntermission", RpcTarget.AllBuffered, SyncedIntermissionSpawnPos, SyncedIntermissionSpawnRot, endTime);
+            RefreshIntermissionSpawnFromPoint();
+            double endTime = PhotonNetwork.Time + intermissionTime;
+
+            // Flush stale buffered RPCs on this view so late joiners don't receive
+            // an old StartRound when the round has ended.
+            PhotonNetwork.RemoveRPCs(photonView);
+            photonView.RPC("StartIntermission", RpcTarget.AllBuffered, SyncedIntermissionSpawnPos, SyncedIntermissionSpawnRot, endTime);
+        }
     }
 
     public int GetCurrentTime()
@@ -279,17 +323,8 @@ private void ApplyRolesAndColors(int[] actorNumbers, int[] roleValues, string[] 
             PlayerCustomizer customizer = go.GetComponent<PlayerCustomizer>();
             if (customizer != null && !string.IsNullOrEmpty(color))
             {
-                // Only FORCE the material change if we are actually in Intermission
-                if (intermissionActive)
-                {
-                    customizer.ChangeColor(color);
-                }
-                else
-                {
-                    // If in a round, just update the stored hex without changing the material
-                    // (Assuming you add a SetLocalHex method or make localHex public)
-                    customizer.ChangeColorCalled(color); 
-                }
+                // Store the hex and conditionally show it — works regardless of round state
+                customizer.ForceApplyIntermissionColor(color);
             }
         }
     }

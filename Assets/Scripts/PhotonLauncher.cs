@@ -150,8 +150,29 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         Debug.Log("Joined a room...");
+        if (PhotonNetwork.IsMasterClient)
+            EnsureSpawned();
+        else
+            StartCoroutine(SpawnAfterStateSync());
+    }
+
+    private IEnumerator SpawnAfterStateSync()
+    {
+        // Wait until RoundManager has received a valid synced state
+        float timeout = 5f;
+        float elapsed = 0f;
+        while (elapsed < timeout)
+        {
+            // SyncedIntermissionSpawnPos is non-zero once SyncState RPC arrives
+            if (roundManager != null &&
+                (roundManager.roundActive || roundManager.intermissionActive))
+                break;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
         EnsureSpawned();
     }
+
 
     public override void OnLeftRoom()
     {
@@ -189,15 +210,58 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
             roundManager.UpdateIntermissionSpawn(intermissionSpawn);
         }
 
-        // You can now choose spawn and teleport here if you want
-        int killerIndex = Random.Range(0, killerSpawns.Count);
-        int survivorIndex = Random.Range(0, survivorSpawns.Count);
+        StartCoroutine(TeleportToRoleSpawnWhenReady());
+    }
 
-        Transform chosenSpawn = (Random.value < 0.5f)
-            ? killerSpawns[killerIndex]
-            : survivorSpawns[survivorIndex];
+    /// <summary>
+    /// Waits until the local player is spawned and their role is assigned,
+    /// then teleports them to the correct spawn point for their role.
+    /// </summary>
+    private System.Collections.IEnumerator TeleportToRoleSpawnWhenReady()
+    {
+        // Wait until LocalPlayerInstance exists (handles late joiners)
+        float timeout = 10f;
+        float elapsed = 0f;
+        while (LocalPlayerInstance == null && elapsed < timeout)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
 
-        Debug.Log("Teleporting to: " + chosenSpawn.position);
+        if (LocalPlayerInstance == null)
+        {
+            Debug.LogWarning("[PhotonLauncher] TeleportToRoleSpawnWhenReady: LocalPlayerInstance is still null after timeout.");
+            yield break;
+        }
+
+        // Wait one more frame to allow SetPlayerType RPC to arrive
+        yield return null;
+
+        BasePlayer basePlayer = LocalPlayerInstance.GetComponent<BasePlayer>();
+        if (basePlayer == null)
+        {
+            Debug.LogWarning("[PhotonLauncher] TeleportToRoleSpawnWhenReady: No BasePlayer on LocalPlayerInstance.");
+            yield break;
+        }
+
+        Transform chosenSpawn = null;
+
+        if (basePlayer.GetPlayerType() == BasePlayer.PlayerType.Killer && killerSpawns.Count > 0)
+        {
+            chosenSpawn = killerSpawns[Random.Range(0, killerSpawns.Count)];
+        }
+        else if (survivorSpawns.Count > 0)
+        {
+            chosenSpawn = survivorSpawns[Random.Range(0, survivorSpawns.Count)];
+        }
+
+        if (chosenSpawn == null)
+        {
+            Debug.LogWarning("[PhotonLauncher] TeleportToRoleSpawnWhenReady: No valid spawn point found.");
+            yield break;
+        }
+
+        Debug.Log($"[PhotonLauncher] Teleporting {basePlayer.GetPlayerType()} to: {chosenSpawn.position}");
         TeleportPlayer(chosenSpawn.position, chosenSpawn.rotation);
     }
 
@@ -222,8 +286,16 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
     {
         if (LocalPlayerInstance == null) return;
         Debug.Log("Intermission started — teleporting to intermission spawn.");
-        Vector3 spawnPos = intermissionSpawn.position;
-        Quaternion? spawnRot = intermissionSpawn.rotation;
-        TeleportPlayer(spawnPos, spawnRot);
+
+        Vector3 basePos = roundManager.SyncedIntermissionSpawnPos;
+        Quaternion spawnRot = roundManager.SyncedIntermissionSpawnRot;
+
+        // Spread players in a circle around the spawn point to avoid collisions
+        const float spreadRadius = 1.5f;
+        int actorNr = PhotonNetwork.LocalPlayer.ActorNumber;
+        float angle = actorNr * Mathf.PI * 2f / Mathf.Max(PhotonNetwork.CurrentRoom.PlayerCount, 1);
+        Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spreadRadius;
+
+        TeleportPlayer(basePos + offset, spawnRot);
     }
 }

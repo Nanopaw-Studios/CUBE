@@ -126,15 +126,36 @@ public class PlayerAbilityManager : MonoBehaviour
             return;
         }
 
-        StartCoroutine(BuildAbilitiesWithDelay());
-
         if (passiveLoop != null) StopCoroutine(passiveLoop);
         passiveLoop = StartCoroutine(PassiveTickLoop());
+
+        StartCoroutine(BuildAbilitiesWithDelay());
     }
 
     private IEnumerator BuildAbilitiesWithDelay()
     {
+        // Wait for SetPlayerType and ApplyRoleAndCharacter RPCs to arrive
+        float timeout = 5f;
+        float elapsed = 0f;
+
+        while (elapsed < timeout)
+        {
+            if (TryResolveLocalPlayer())
+            {
+                var type = player.GetPlayerType();
+                bool hasCharacter = (type == BasePlayer.PlayerType.Survivor && player.GetEquippedSurvivor() != null)
+                                 || (type == BasePlayer.PlayerType.Killer  && player.GetEquippedKiller()   != null);
+                if (hasCharacter)
+                    break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
         BuildAbilitiesUI();
+
+        // Second build after a short delay to catch any late material/skin sync
         yield return new WaitForSeconds(1.5f);
         BuildAbilitiesUI();
     }

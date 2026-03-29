@@ -53,7 +53,13 @@ public class SprintingSC : MonoBehaviour
         if (playerStats == null) Debug.LogError("BasePlayerStats component not found in parent hierarchy.");
 
         if (movement != null)
-            originalForce = movement.Force;
+        {
+            // If Force isn't set yet, wait a frame before caching it
+            if (movement.Force > 0f)
+                originalForce = movement.Force;
+            else
+                StartCoroutine(CacheOriginalForceNextFrame());
+        }
     }
 
     private void Update()
@@ -121,7 +127,7 @@ public class SprintingSC : MonoBehaviour
             }
             else
             {
-                // not moving — treat as walk state while keeping sprint toggle
+                // not moving ï¿½ treat as walk state while keeping sprint toggle
                 data.Currentstate = StateType.Walk;
             }
 
@@ -163,6 +169,13 @@ public class SprintingSC : MonoBehaviour
         }
 
         staminaRegenCoroutine = null;
+    }
+
+    private IEnumerator CacheOriginalForceNextFrame()
+    {
+        yield return null;
+        if (movement != null && movement.Force > 0f)
+            originalForce = movement.Force;
     }
 
     private void OnEnable()

@@ -10,52 +10,67 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
     public BasePlayer basePlayer;
     public BasePlayerStats stats;
 
-    void Awake()
+    private static readonly int PlayerLayer = 3; // "Player" layer
+
+    void Start()
     {
-        if(basePlayer == null || stats == null)
+        if (basePlayer == null) basePlayer = GetComponent<BasePlayer>();
+        if (stats == null) stats = GetComponent<BasePlayerStats>();
+
+        // Ensure hitbox collider GameObjects are on the Player layer so physics
+        // collision matrix works and OverlapBox queries find them correctly.
+        foreach (CollisionCallback callback in damageColliders)
         {
-            basePlayer = GetComponent<BasePlayer>();
-            stats = GetComponent<BasePlayerStats>();
+            if (callback == null) continue;
+            callback.gameObject.layer = PlayerLayer;
         }
-        foreach(CollisionCallback callback in damageColliders)
+
+        // Only the local owner's hitboxes should fire outgoing hits.
+        if (photonView.IsMine)
         {
-            callback.collisionEntered.AddListener(CollisionEntered);
+            foreach (CollisionCallback callback in damageColliders)
+            {
+                if (callback != null)
+                    callback.collisionEntered.AddListener(CollisionEntered);
+            }
         }
     }
 
     void CollisionEntered(Collision collision)
     {
-        if (!photonView.IsMine) return;
+        // Only the killer can deal collision damage
+        if (basePlayer.GetPlayerType() != BasePlayer.PlayerType.Killer) return;
 
-        PhotonView targetView = collision.collider.GetComponentInParent<PhotonView>();
+        KillerType killerType = basePlayer.GetEquippedKiller();
+        if (killerType == null) return;
 
-        if (targetView != null && !targetView.IsMine)
-        {
-            int damage = basePlayer.GetEquippedKiller().PunchDamage;
+        PlayerHitboxManager targetHitbox = collision.collider.GetComponentInParent<PlayerHitboxManager>();
+        if (targetHitbox == null) return;
 
-            targetView.RPC(
-                "RPC_OnHit",
-                RpcTarget.All,
-                damage
-            );
+        PhotonView targetView = targetHitbox.photonView;
+        if (targetView == null || targetView.IsMine) return;
 
-            Debug.Log($"Hit player {targetView.Owner.NickName} for {damage}");
-        }
+        int damage = killerType.PunchDamage;
+        targetView.RPC(nameof(RPC_OnHit), RpcTarget.All, damage);
+        Debug.Log($"[HitboxManager] Collision hit: {targetView.Owner.NickName} for {damage}");
     }
 
+    /// <summary>
+    /// Called via RPC on all clients when this player is hit.
+    /// </summary>
     [PunRPC]
-    void RPC_OnHit(int damage)
+    public void RPC_OnHit(int damage)
     {
-        Debug.Log($"Damage received: {damage}");
-        
-        stats.health -= damage;
+        Debug.Log($"[HitboxManager] {gameObject.name} received {damage} damage.");
+        stats.TakeDamage(damage);
     }
 
     new void OnDisable()
     {
-        foreach(CollisionCallback callback in damageColliders)
+        foreach (CollisionCallback callback in damageColliders)
         {
-            callback.collisionEntered.RemoveListener(CollisionEntered);
+            if (callback != null)
+                callback.collisionEntered.RemoveListener(CollisionEntered);
         }
     }
 }
