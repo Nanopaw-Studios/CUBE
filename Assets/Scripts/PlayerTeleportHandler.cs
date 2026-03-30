@@ -73,21 +73,20 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
             yield break;
         }
 
-        // 1) Find a safe ground position.
-        //    Ray starts raycastUpwardOffset units ABOVE the target so elevated spawns
-        //    (intermission platforms, high-up spawn points) are handled correctly.
-        //    Excludes triggers and the Player layer to avoid landing inside another player.
+        // 1) Find a safe ground position for the player's root transform.
+        // Use the current "feet offset" so we don't place the body pivot below the floor.
         Vector3 finalTargetPos = targetPosition;
+        float feetOffset = EstimateFeetOffset();
         if (snapToGround)
         {
             Vector3 rayStart = targetPosition + Vector3.up * 5f;
             RaycastHit hitInfo;
             if (Physics.Raycast(rayStart, Vector3.down, out hitInfo, 80f, groundMask, QueryTriggerInteraction.Ignore))
-                finalTargetPos = hitInfo.point + Vector3.up * groundOffset;
+                finalTargetPos = hitInfo.point + Vector3.up * (feetOffset + groundOffset);
             else
             {
                 Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Keeping current position to avoid void teleport.");
-                finalTargetPos = rigRoot.position;
+                finalTargetPos = transform.position;
             }
         }
 
@@ -113,28 +112,37 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
         yield return new WaitForFixedUpdate();
 
-        // 3) Only apply a position delta — never rotate individual bones.
-        //    Rotating the whole pose via a delta quaternion causes the "spider" pose
-        //    because bones not in a neutral T-pose get rotated in world space
-        //    relative to the hip, stretching them into impossible positions.
-        //    Shifting every bone by the same world-space offset lets physics re-settle naturally.
-        Vector3 hipCurrentPos = rigRoot.position;
-        Vector3 positionDelta = finalTargetPos - hipCurrentPos;
+        // 3) Compute delta from the root transform. This avoids rig-root pivot offsets.
+        Vector3 rootCurrentPos = transform.position;
+        Vector3 positionDelta = finalTargetPos - rootCurrentPos;
+
+        Quaternion rotationDelta = Quaternion.identity;
+        if (targetRotation.HasValue)
+            rotationDelta = targetRotation.Value * Quaternion.Inverse(transform.rotation);
 
         foreach (var rb in rbs)
         {
-            rb.position += positionDelta;
+            if (targetRotation.HasValue)
+            {
+                Vector3 relativeToRoot = rb.position - rootCurrentPos;
+                rb.position = finalTargetPos + rotationDelta * relativeToRoot;
+                rb.rotation = rotationDelta * rb.rotation;
+            }
+            else
+            {
+                rb.position += positionDelta;
+            }
         }
 
-        // 4) Move the prefab root transform to stay aligned with the rig
-        transform.position += positionDelta;
-
-        // Apply yaw-only rotation on the root transform (not individual bones) so the
-        // player faces the intended direction without corrupting the ragdoll pose.
+        // 4) Move the prefab root transform to target
         if (targetRotation.HasValue)
         {
-            Quaternion yawOnly = Quaternion.Euler(0f, targetRotation.Value.eulerAngles.y, 0f);
-            transform.rotation = yawOnly;
+            transform.position = finalTargetPos;
+            transform.rotation = targetRotation.Value;
+        }
+        else
+        {
+            transform.position = finalTargetPos;
         }
 
         Physics.SyncTransforms();
@@ -157,6 +165,28 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         StartCoroutine(UnfreezeRigidbodies(rbs, rootWasKinematic));
 
         isTeleporting = false;
+    }
+
+    private float EstimateFeetOffset()
+    {
+        float rootY = transform.position.y;
+        float lowestY = rootY;
+        bool found = false;
+
+        var cols = GetComponentsInChildren<Collider>(true);
+        foreach (var c in cols)
+        {
+            if (c == null || !c.enabled || c.isTrigger) continue;
+            float minY = c.bounds.min.y;
+            if (!found || minY < lowestY)
+            {
+                lowestY = minY;
+                found = true;
+            }
+        }
+
+        if (!found) return 1f;
+        return Mathf.Max(0.1f, rootY - lowestY);
     }
 
     private IEnumerator UnfreezeRigidbodies(Rigidbody[] rbs, bool rootWasKinematic)

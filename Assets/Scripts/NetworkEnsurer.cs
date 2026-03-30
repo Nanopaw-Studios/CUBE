@@ -1,5 +1,6 @@
 using Photon.Pun;
 using UnityEngine;
+using System.Collections;
 
 public class NetworkEnsurer : MonoBehaviourPunCallbacks
 {
@@ -17,7 +18,18 @@ public class NetworkEnsurer : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        ApplyVisibility();
+        StartCoroutine(ApplyVisibilityNextFrame());
+    }
 
+    private IEnumerator ApplyVisibilityNextFrame()
+    {
+        yield return null;
+        ApplyVisibility();
+    }
+
+    private void ApplyVisibility()
+    {
         // Ensure local objects are enabled only for the local player
         foreach (var obj in localObjects)
         {
@@ -52,6 +64,7 @@ public class NetworkEnsurer : MonoBehaviourPunCallbacks
 
         foreach (var obj in allObjects)
         {
+            if (obj == null) continue;
             obj.gameObject.SetActive(true);
         }
     }
