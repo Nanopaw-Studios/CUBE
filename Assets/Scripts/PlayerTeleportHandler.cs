@@ -9,13 +9,17 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     [Tooltip("Root of the ragdoll rig. If left null, will try to Find(\"RIG\").")]
     [SerializeField] private Transform rigRoot;
 
-    [SerializeField] private Rigidbody[] teleportBodies;
-
     [Tooltip("Layer mask used to find valid ground below a spawn point.")]
     [SerializeField] private LayerMask groundMask = ~0;
 
     [Tooltip("How far above the ground the player should be placed.")]
     [SerializeField] private float groundOffset = 0.5f;
+
+    [Tooltip("How far above the spawn point the ground raycast starts. Increase if spawns are on elevated platforms.")]
+    [SerializeField] private float raycastUpwardOffset = 50f;
+
+    [Tooltip("Maximum downward distance the ground raycast will search.")]
+    [SerializeField] private float raycastMaxDistance = 200f;
 
     private PhotonView pv;
     private Rigidbody rootRb;
@@ -35,6 +39,7 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
     /// <summary>
     /// Teleport this player to a world position/rotation. Only callable on the owning client.
+    /// Set snapToGround to false for spawn points that are already correctly placed (e.g. intermission platforms).
     /// </summary>
     public void InitiateTeleport(Vector3 targetPosition, Quaternion? targetRotation = null, bool snapToGround = true)
     {
@@ -51,8 +56,6 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     {
         // Remotes do NOT run the physics teleport — RagdollNetwork will naturally
         // lerp to the new positions once the owner broadcasts them after moving.
-        // Running PerformTeleport on remotes causes their kinematic bone positions
-        // to be overwritten by the teleport, then immediately fought by RagdollNetwork.Update().
         if (!pv.IsMine) return;
 
         StartCoroutine(PerformTeleport(targetPosition, hasRotation ? targetRotation : (Quaternion?)null, snapToGround));
@@ -146,7 +149,6 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
         // 5) Tell RagdollNetwork to snap its send-gate references so the next
         //    serialized packet immediately reflects the new position (no stale gate).
-        //    Only update owner-side targets — never touch remote bones.
         var net = GetComponent<RagdollNetwork>();
         if (net != null) net.SnapSendGate();
 

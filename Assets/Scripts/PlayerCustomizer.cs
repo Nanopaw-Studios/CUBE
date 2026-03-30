@@ -53,11 +53,11 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         isInIntermission = false;
         ClearSpawnedAccessories();
 
-        if (instanceMaterial != null)
-        {
-            Destroy(instanceMaterial);
-            instanceMaterial = null;
-        }
+        // Destroy the intermission color material instance AFTER applying the role material
+        // so there is no frame where bones have a null/destroyed material (which causes them
+        // to become invisible — including the arm/hand bones the local player sees as their "hands").
+        Material oldInstance = instanceMaterial;
+        instanceMaterial = null;
 
         Debug.Log($"[PlayerCustomizer] RoundStarted — hasPendingRole={hasPendingRole}");
 
@@ -66,6 +66,10 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             hasPendingRole = false;
             ApplyRole(pendingPlayerType, pendingCharacterId);
         }
+
+        // Safe to destroy old instance now that new materials are applied (or no role yet).
+        if (oldInstance != null)
+            Destroy(oldInstance);
     }
 
     private void IntermissionStarted()
@@ -144,6 +148,29 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             ApplyKillerCustomisation(characterId);
         else
             ApplySurvivorCustomisation(characterId);
+
+        // Discard the intermission instance AFTER role materials are already applied so bones
+        // are never left with a null/destroyed material (which makes the local player's hands
+        // invisible on their own screen).
+        if (instanceMaterial != null)
+        {
+            Destroy(instanceMaterial);
+            instanceMaterial = null;
+        }
+    }
+
+    /// <summary>
+    /// Removes all previously spawned accessory GameObjects tagged as such so
+    /// repeated role assignments don't stack duplicates on the same bones.
+    /// </summary>
+    private void DestroySpawnedAccessories()
+    {
+        const string AccessoryTag = "SpawnedAccessory";
+        foreach (Transform child in GetComponentsInChildren<Transform>(true))
+        {
+            if (child != null && child.CompareTag(AccessoryTag))
+                Destroy(child.gameObject);
+        }
     }
 
     private void ApplySurvivorCustomisation(string id)
@@ -164,7 +191,6 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             if (accTransform != null)
             {
                 GameObject accInstance = Instantiate(accessory.prefab, accTransform);
-                // Apply the offsets defined in the Accessory ScriptableObject field.
                 accInstance.transform.localPosition = accessory.localPosition;
                 accInstance.transform.localRotation = accessory.localRotation;
                 spawnedAccessories.Add(accInstance);
@@ -208,15 +234,22 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
     private void SetMaterialsOnBones(Material targetMat)
     {
+        if (targetMat == null)
+        {
+            Debug.LogWarning("[PlayerCustomizer] SetMaterialsOnBones: targetMat is null — skipping to avoid invisible bones.");
+            return;
+        }
+
         foreach (Renderer bone in customizedBones)
         {
             if (bone == null) continue;
+
+            // Use material array copy (not sharedMaterials) so we don't mutate the shared asset.
             Material[] mats = new Material[bone.sharedMaterials.Length];
             for (int i = 0; i < mats.Length; i++)
-            {
                 mats[i] = targetMat;
-            }
-            bone.sharedMaterials = mats;
+
+            bone.materials = mats;
         }
     }
 
