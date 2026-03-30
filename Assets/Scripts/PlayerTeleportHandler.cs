@@ -14,6 +14,8 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
     [Tooltip("How far above the ground the player should be placed.")]
     [SerializeField] private float groundOffset = 0.5f;
+    [Tooltip("Maximum allowed vertical correction when snapping to ground. Prevents snapping to far-below void colliders.")]
+    [SerializeField] private float maxGroundSnapDistance = 6f;
 
     [Tooltip("How far above the spawn point the ground raycast starts. Increase if spawns are on elevated platforms.")]
     [SerializeField] private float raycastUpwardOffset = 50f;
@@ -73,20 +75,30 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
             yield break;
         }
 
-        // 1) Find a safe ground position for the player's root transform.
-        // Use the current "feet offset" so we don't place the body pivot below the floor.
+        // 1) Find a safe destination for the player's root transform.
         Vector3 finalTargetPos = targetPosition;
         float feetOffset = EstimateFeetOffset();
         if (snapToGround)
         {
-            Vector3 rayStart = targetPosition + Vector3.up * 5f;
+            Vector3 rayStart = targetPosition + Vector3.up * 3f;
             RaycastHit hitInfo;
             if (Physics.Raycast(rayStart, Vector3.down, out hitInfo, 80f, groundMask, QueryTriggerInteraction.Ignore))
-                finalTargetPos = hitInfo.point + Vector3.up * (feetOffset + groundOffset);
+            {
+                float verticalDelta = Mathf.Abs(hitInfo.point.y - targetPosition.y);
+                if (verticalDelta <= maxGroundSnapDistance)
+                {
+                    finalTargetPos = new Vector3(targetPosition.x, hitInfo.point.y + groundOffset, targetPosition.z);
+                }
+                else
+                {
+                    Debug.LogWarning($"[Teleport] Ground hit too far from target ({verticalDelta:F2}m). Using target position without snap.");
+                    finalTargetPos = targetPosition;
+                }
+            }
             else
             {
-                Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Keeping current position to avoid void teleport.");
-                finalTargetPos = transform.position;
+                // No usable ground hit; trust the requested position rather than forcing an old/current position.
+                finalTargetPos = targetPosition;
             }
         }
 
