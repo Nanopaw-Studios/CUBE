@@ -17,6 +17,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     private BasePlayer.PlayerType pendingPlayerType;
     private string pendingCharacterId;
     private bool hasPendingRole = false;
+    private readonly System.Collections.Generic.List<GameObject> spawnedAccessories = new System.Collections.Generic.List<GameObject>();
 
     private void Start()
     {
@@ -50,6 +51,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         StopAllCoroutines();
         isInIntermission = false;
+        ClearSpawnedAccessories();
 
         if (instanceMaterial != null)
         {
@@ -136,6 +138,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         Debug.Log($"[PlayerCustomizer] ApplyRole — playerType={playerType}, characterId={characterId}");
 
         instanceMaterial = null;
+        ClearSpawnedAccessories();
 
         if (playerType == BasePlayer.PlayerType.Killer)
             ApplyKillerCustomisation(characterId);
@@ -164,12 +167,23 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 // Apply the offsets defined in the Accessory ScriptableObject field.
                 accInstance.transform.localPosition = accessory.localPosition;
                 accInstance.transform.localRotation = accessory.localRotation;
+                spawnedAccessories.Add(accInstance);
             }
             else
             {
                 Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}.");
             }
         }
+    }
+
+    private void ClearSpawnedAccessories()
+    {
+        for (int i = spawnedAccessories.Count - 1; i >= 0; i--)
+        {
+            GameObject accessory = spawnedAccessories[i];
+            if (accessory != null) Destroy(accessory);
+        }
+        spawnedAccessories.Clear();
     }
 
     private void ApplyKillerCustomisation(string id)
