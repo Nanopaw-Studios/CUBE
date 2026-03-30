@@ -89,10 +89,9 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         if (snapToGround)
         {
             Vector3 rayStart = targetPosition + Vector3.up * 5f;
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 80f, groundMask, QueryTriggerInteraction.Ignore))
-                finalTargetPos = hit.point + Vector3.up * groundOffset;
-                Debug.Log($"[Teleport] Ground found at {hit.point} (collider: {hit.collider.name}). Placing player at {finalTargetPos}.");
-            }
+            RaycastHit hitInfo;
+            if (Physics.Raycast(rayStart, Vector3.down, out hitInfo, 80f, groundMask, QueryTriggerInteraction.Ignore))
+                finalTargetPos = hitInfo.point + Vector3.up * groundOffset;
             else
             {
                 Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Keeping current position to avoid void teleport.");
