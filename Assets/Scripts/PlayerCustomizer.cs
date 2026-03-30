@@ -187,7 +187,6 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
         foreach (Accessory accessory in survivorType.character.accessories)
         {
-            // Deep search — bones can be many levels below the player root.
             Transform accTransform = FindDeepChild(transform, accessory.boneName);
             if (accTransform != null)
             {
@@ -225,7 +224,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         Material mat = killerType.character.bodyMaterial;
         SetMaterialsOnBones(mat);
 
-        Transform itemPoses = transform.Find("ItemPoses");
+        Transform itemPoses = FindDeepChild(transform, "ItemPoses");
         if (itemPoses != null)
         {
             InputArmController armController = itemPoses.GetComponent<InputArmController>();
@@ -252,6 +251,23 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
             bone.materials = mats;
         }
+    }
+
+    private Transform FindDeepChild(Transform parent, string childName)
+    {
+        if (parent == null || string.IsNullOrEmpty(childName)) return null;
+
+        // Fast path for direct children
+        Transform direct = parent.Find(childName);
+        if (direct != null) return direct;
+
+        foreach (Transform child in parent)
+        {
+            Transform found = FindDeepChild(child, childName);
+            if (found != null) return found;
+        }
+
+        return null;
     }
 
     // ---------------------------
