@@ -47,6 +47,9 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         bool hasRotation = targetRotation.HasValue;
         Quaternion rotation = targetRotation ?? Quaternion.identity;
 
+        // Keep only the most recent teleport RPC for this player to avoid stale buffered
+        // teleports firing after round/intermission transitions.
+        PhotonNetwork.RemoveRPCs(pv);
         // Buffered so late joiners also get the last teleport
         pv.RPC(nameof(NetworkTeleportPlayer), RpcTarget.AllBuffered, targetPosition, hasRotation, rotation, snapToGround);
     }
@@ -80,10 +83,14 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         if (snapToGround)
         {
             Vector3 rayStart = targetPosition + Vector3.up * 5f;
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 50f, groundMask, QueryTriggerInteraction.Ignore))
-                finalTargetPos = hit.point + Vector3.up * groundOffset;
+            RaycastHit hitInfo;
+            if (Physics.Raycast(rayStart, Vector3.down, out hitInfo, 80f, groundMask, QueryTriggerInteraction.Ignore))
+                finalTargetPos = hitInfo.point + Vector3.up * groundOffset;
             else
-                Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Using raw position.");
+            {
+                Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Keeping current position to avoid void teleport.");
+                finalTargetPos = rigRoot.position;
+            }
         }
 
         // 2) Freeze all ragdoll rigidbodies so physics doesn't fight the move
@@ -150,6 +157,15 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         //    Only update owner-side targets — never touch remote bones.
         var net = GetComponent<RagdollNetwork>();
         if (net != null) net.SnapSendGate();
+
+        // 5.5) Force pose back to rest after teleport so arm animations don't get stuck in a "spider" pose.
+        var poseHandler = GetComponentInChildren<PoseHandler>(true);
+        if (poseHandler != null)
+        {
+            poseHandler.StopAllCoroutines();
+            poseHandler.SetPose(0);
+            poseHandler.DoingAnimation = false;
+        }
 
         // 6) Unfreeze after two fixed frames so physics settles at the new position
         StartCoroutine(UnfreezeRigidbodies(rbs, rootWasKinematic));
