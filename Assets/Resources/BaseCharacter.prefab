@@ -5670,11 +5670,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   rigRoot: {fileID: 6937505995580553567}
-  teleportBodies: []
+  hipBone: {fileID: 131705486822120083}
   groundMask:
     serializedVersion: 2
     m_Bits: 1
   groundOffset: 3
+  maxGroundSnapDistance: 6
+  raycastUpwardOffset: 50
+  raycastMaxDistance: 200
 --- !u!114 &5142198532529002959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7727,6 +7730,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   player: {fileID: 6010820129828816600}
+  hitCooldownSeconds: 0.35
   armHandler: {fileID: 2829208356146133689}
 --- !u!1 &6327116356161997593
 GameObject:
