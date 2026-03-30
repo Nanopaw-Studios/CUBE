@@ -171,7 +171,14 @@ public class RoundManager : MonoBehaviourPunCallbacks
             }
             else if (roundActive)
             {
-                OnRoundStart?.Invoke();
+                // A mid-round joiner should NOT be placed on the map with active players.
+                // Send them to the intermission spawn instead and fire intermission events
+                // so their UI and abilities reflect a spectator/waiting state until the
+                // next intermission begins naturally.
+                intermissionActive = true;
+                roundActive = false;
+                OnIntermissionStart?.Invoke();
+                StartCoroutine(TeleportLocalPlayerToIntermission(spawnPosition, spawnRotation));
             }
         }
     }
@@ -206,7 +213,9 @@ public class RoundManager : MonoBehaviourPunCallbacks
             yield break;
         }
 
-        teleporter.InitiateTeleport(position, rotation, snapToGround: true);
+        // Intermission spawns are pre-placed safe points — skip ground-snapping so the
+        // raycast can't miss under a floating platform and land the player in the void below.
+        teleporter.InitiateTeleport(position, rotation, snapToGround: false);
     }
 
     private IEnumerator Timer()
