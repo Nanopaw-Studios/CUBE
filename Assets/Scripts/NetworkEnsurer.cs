@@ -10,7 +10,9 @@ public class NetworkEnsurer : MonoBehaviourPunCallbacks
     [Header("Remote (Objects to disable for everyone but remote players)")]
     public GameObject[] remoteObjects;
     public MonoBehaviour[] remoteScripts;
-    public MeshRenderer[] remoteRenderers;
+    public Renderer[] remoteRenderers;
+    [Tooltip("If true, local player renderers stay visible even if placed in remoteRenderers by mistake.")]
+    public bool keepLocalRenderersVisible = true;
 
     [Header("Keep these alive at all times!")]
     public GameObject[] allObjects;
@@ -42,7 +44,10 @@ public class NetworkEnsurer : MonoBehaviourPunCallbacks
         // Enable/disable remote renderers
         foreach (var renderer in remoteRenderers)
         {
-            renderer.enabled = !photonView.IsMine;
+            if (renderer == null) continue;
+            renderer.enabled = keepLocalRenderersVisible && photonView.IsMine
+                ? true
+                : !photonView.IsMine;
         }
 
         foreach (var obj in allObjects)

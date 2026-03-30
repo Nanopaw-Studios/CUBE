@@ -17,6 +17,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     private BasePlayer.PlayerType pendingPlayerType;
     private string pendingCharacterId;
     private bool hasPendingRole = false;
+    private readonly System.Collections.Generic.List<GameObject> spawnedAccessories = new System.Collections.Generic.List<GameObject>();
 
     private void Start()
     {
@@ -50,6 +51,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         StopAllCoroutines();
         isInIntermission = false;
+        ClearSpawnedAccessories();
 
         if (instanceMaterial != null)
         {
@@ -136,6 +138,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         Debug.Log($"[PlayerCustomizer] ApplyRole — playerType={playerType}, characterId={characterId}");
 
         instanceMaterial = null;
+        ClearSpawnedAccessories();
 
         if (playerType == BasePlayer.PlayerType.Killer)
             ApplyKillerCustomisation(characterId);
@@ -157,19 +160,30 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
         foreach (Accessory accessory in survivorType.character.accessories)
         {
-            Transform accTransform = transform.Find(accessory.boneName);
+            Transform accTransform = FindDeepChild(transform, accessory.boneName);
             if (accTransform != null)
             {
                 GameObject accInstance = Instantiate(accessory.prefab, accTransform);
                 // Apply the offsets defined in the Accessory ScriptableObject field.
                 accInstance.transform.localPosition = accessory.localPosition;
                 accInstance.transform.localRotation = accessory.localRotation;
+                spawnedAccessories.Add(accInstance);
             }
             else
             {
                 Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}.");
             }
         }
+    }
+
+    private void ClearSpawnedAccessories()
+    {
+        for (int i = spawnedAccessories.Count - 1; i >= 0; i--)
+        {
+            GameObject accessory = spawnedAccessories[i];
+            if (accessory != null) Destroy(accessory);
+        }
+        spawnedAccessories.Clear();
     }
 
     private void ApplyKillerCustomisation(string id)
@@ -184,7 +198,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         Material mat = killerType.character.bodyMaterial;
         SetMaterialsOnBones(mat);
 
-        Transform itemPoses = transform.Find("ItemPoses");
+        Transform itemPoses = FindDeepChild(transform, "ItemPoses");
         if (itemPoses != null)
         {
             InputArmController armController = itemPoses.GetComponent<InputArmController>();
@@ -204,6 +218,23 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             }
             bone.sharedMaterials = mats;
         }
+    }
+
+    private Transform FindDeepChild(Transform parent, string childName)
+    {
+        if (parent == null || string.IsNullOrEmpty(childName)) return null;
+
+        // Fast path for direct children
+        Transform direct = parent.Find(childName);
+        if (direct != null) return direct;
+
+        foreach (Transform child in parent)
+        {
+            Transform found = FindDeepChild(child, childName);
+            if (found != null) return found;
+        }
+
+        return null;
     }
 
     // ---------------------------
