@@ -16,6 +16,8 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
     [Tooltip("How far above the ground the player should be placed.")]
     [SerializeField] private float groundOffset = 0.5f;
+    [Tooltip("Maximum allowed vertical correction when snapping to ground. Prevents snapping to far-below void colliders.")]
+    [SerializeField] private float maxGroundSnapDistance = 6f;
 
     private PhotonView pv;
     private Rigidbody rootRb;
@@ -38,17 +40,12 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     /// </summary>
     public void InitiateTeleport(Vector3 targetPosition, Quaternion? targetRotation = null, bool snapToGround = true)
     {
-        if (!pv.IsMine)
-        {
-            Debug.LogWarning("[Teleport] Cannot teleport a player you don't own!");
-            return;
-        }
-
         bool hasRotation = targetRotation.HasValue;
         Quaternion rotation = targetRotation ?? Quaternion.identity;
 
-        // Buffered so late joiners also get the last teleport
-        pv.RPC(nameof(NetworkTeleportPlayer), RpcTarget.AllBuffered, targetPosition, hasRotation, rotation, snapToGround);
+        // Do not buffer teleports. Spawn/round logic should decide position for late joiners,
+        // and buffered teleports can replay at incorrect times after round transitions.
+        pv.RPC(nameof(NetworkTeleportPlayer), RpcTarget.All, targetPosition, hasRotation, rotation, snapToGround);
     }
 
     [PunRPC]
@@ -75,15 +72,30 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
             yield break;
         }
 
-        // 1) Find a safe ground position
+        // 1) Find a safe destination for the player's root transform.
         Vector3 finalTargetPos = targetPosition;
         if (snapToGround)
         {
-            Vector3 rayStart = targetPosition + Vector3.up * 5f;
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 50f, groundMask, QueryTriggerInteraction.Ignore))
-                finalTargetPos = hit.point + Vector3.up * groundOffset;
+            Vector3 rayStart = targetPosition + Vector3.up * 3f;
+            RaycastHit hitInfo;
+            if (Physics.Raycast(rayStart, Vector3.down, out hitInfo, 80f, groundMask, QueryTriggerInteraction.Ignore))
+            {
+                float verticalDelta = Mathf.Abs(hitInfo.point.y - targetPosition.y);
+                if (verticalDelta <= maxGroundSnapDistance)
+                {
+                    finalTargetPos = new Vector3(targetPosition.x, hitInfo.point.y + groundOffset, targetPosition.z);
+                }
+                else
+                {
+                    Debug.LogWarning($"[Teleport] Ground hit too far from target ({verticalDelta:F2}m). Using target position without snap.");
+                    finalTargetPos = targetPosition;
+                }
+            }
             else
-                Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Using raw position.");
+            {
+                // No usable ground hit; trust the requested position rather than forcing an old/current position.
+                finalTargetPos = targetPosition;
+            }
         }
 
         // 2) Freeze all ragdoll rigidbodies so physics doesn't fight the move
@@ -108,21 +120,20 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
         yield return new WaitForFixedUpdate();
 
-        // 3) Compute the delta from the rig root's current world position to the target.
-        //    Apply this same delta to every bone so the entire pose shifts by the same offset.
-        Vector3 hipCurrentPos = rigRoot.position;
-        Vector3 positionDelta = finalTargetPos - hipCurrentPos;
+        // 3) Compute delta from the root transform. This avoids rig-root pivot offsets.
+        Vector3 rootCurrentPos = transform.position;
+        Vector3 positionDelta = finalTargetPos - rootCurrentPos;
 
         Quaternion rotationDelta = Quaternion.identity;
         if (targetRotation.HasValue)
-            rotationDelta = targetRotation.Value * Quaternion.Inverse(rigRoot.rotation);
+            rotationDelta = targetRotation.Value * Quaternion.Inverse(transform.rotation);
 
         foreach (var rb in rbs)
         {
             if (targetRotation.HasValue)
             {
-                Vector3 relativeToHip = rb.position - hipCurrentPos;
-                rb.position = finalTargetPos + rotationDelta * relativeToHip;
+                Vector3 relativeToRoot = rb.position - rootCurrentPos;
+                rb.position = finalTargetPos + rotationDelta * relativeToRoot;
                 rb.rotation = rotationDelta * rb.rotation;
             }
             else
@@ -131,16 +142,15 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
             }
         }
 
-        // 4) Move the prefab root transform to stay aligned with the rig
-        Vector3 rootMinusHip = transform.position - hipCurrentPos;
+        // 4) Move the prefab root transform to target
         if (targetRotation.HasValue)
         {
-            transform.position = finalTargetPos + rotationDelta * rootMinusHip;
-            transform.rotation = rotationDelta * transform.rotation;
+            transform.position = finalTargetPos;
+            transform.rotation = targetRotation.Value;
         }
         else
         {
-            transform.position += positionDelta;
+            transform.position = finalTargetPos;
         }
 
         Physics.SyncTransforms();
@@ -150,6 +160,15 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         //    Only update owner-side targets — never touch remote bones.
         var net = GetComponent<RagdollNetwork>();
         if (net != null) net.SnapSendGate();
+
+        // 5.5) Force pose back to rest after teleport so arm animations don't get stuck in a "spider" pose.
+        var poseHandler = GetComponentInChildren<PoseHandler>(true);
+        if (poseHandler != null)
+        {
+            poseHandler.StopAllCoroutines();
+            poseHandler.SetPose(0);
+            poseHandler.DoingAnimation = false;
+        }
 
         // 6) Unfreeze after two fixed frames so physics settles at the new position
         StartCoroutine(UnfreezeRigidbodies(rbs, rootWasKinematic));

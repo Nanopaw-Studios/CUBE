@@ -7,6 +7,8 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
     public BasePlayer player;
     private KillerType killerType;
     private RoundManager roundManager;
+    [SerializeField] private float hitCooldownSeconds = 0.35f;
+    private float lastHitTime = -999f;
 
     public PoseHandler armHandler;
 
@@ -31,6 +33,8 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
     private void Punch()
     {
         if (!photonView.IsMine || killerType == null) return;
+        if (Time.time - lastHitTime < hitCooldownSeconds) return;
+        lastHitTime = Time.time;
 
         Vector3 size = killerType.punchHitboxSize;
 
@@ -47,8 +51,11 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
         {
             PlayerHitboxManager targetHitbox = hit.GetComponentInParent<PlayerHitboxManager>();
             if (targetHitbox == null || targetHitbox.photonView.IsMine) continue;
+            BasePlayerStats targetStats = targetHitbox.GetComponent<BasePlayerStats>();
+            if (targetStats == null || targetStats.photonView == null) continue;
 
-            targetHitbox.photonView.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, killerType.PunchDamage);
+            // Damage is applied through the target's own PhotonView so ownership and state stay consistent.
+            targetStats.photonView.RPC(nameof(BasePlayerStats.TakeDamage), RpcTarget.All, killerType.PunchDamage);
         }
     }
 }

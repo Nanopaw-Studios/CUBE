@@ -47,11 +47,6 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         {
             if (t.name.Contains("Spawn"))
             {
-                if (t.name.Contains("Intermission"))
-                {
-                    intermissionSpawn = t;
-                }
-
                 if (t.name.Contains("Killer"))
                 {
                     if (!killerSpawns.Exists(x => x.name == t.name))
@@ -237,6 +232,13 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         // Wait one more frame to allow SetPlayerType RPC to arrive
         yield return null;
 
+        if (roundManager != null && !roundManager.roundActive)
+        {
+            // If we're not in an active round (e.g. intermission / round just ended),
+            // never run stale role teleports.
+            yield break;
+        }
+
         BasePlayer basePlayer = LocalPlayerInstance.GetComponent<BasePlayer>();
         if (basePlayer == null)
         {
@@ -278,7 +280,7 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsMasterClient)
         {
             int mapIndex = Random.Range(0, maps.Length);
-            photonView.RPC("ChooseMap", RpcTarget.AllBuffered, mapIndex);
+            photonView.RPC("ChooseMap", RpcTarget.All, mapIndex);
         }
     }
 
