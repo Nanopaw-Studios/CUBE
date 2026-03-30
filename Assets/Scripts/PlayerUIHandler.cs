@@ -98,7 +98,8 @@ public class PlayerUIHandler : MonoBehaviour
 
             if (showUI)
             {
-                if (playerNameText != null) playerNameText.text = PhotonNetwork.NickName;
+                // Player name only appears during intermission, never during active rounds.
+                if (playerNameText != null) playerNameText.gameObject.SetActive(false);
                 if (pingText != null) pingText.text = $"Ping: {PhotonNetwork.GetPing()}ms";
                 if (versionText != null) versionText.text = $"v{Application.version}";
 
@@ -113,6 +114,19 @@ public class PlayerUIHandler : MonoBehaviour
                         updateTimer = 0f;
                     }
                 }
+            }
+            else if (roundManager.intermissionActive)
+            {
+                // Show the player name only during intermission.
+                if (playerNameText != null)
+                {
+                    playerNameText.gameObject.SetActive(true);
+                    playerNameText.text = PhotonNetwork.NickName;
+                }
+            }
+            else
+            {
+                if (playerNameText != null) playerNameText.gameObject.SetActive(false);
             }
         }
     }
