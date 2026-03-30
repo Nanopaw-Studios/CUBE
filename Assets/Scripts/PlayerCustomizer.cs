@@ -17,6 +17,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     private BasePlayer.PlayerType pendingPlayerType;
     private string pendingCharacterId;
     private bool hasPendingRole = false;
+    private readonly System.Collections.Generic.List<GameObject> spawnedAccessories = new System.Collections.Generic.List<GameObject>();
 
     private void Start()
     {
@@ -50,6 +51,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         StopAllCoroutines();
         isInIntermission = false;
+        ClearSpawnedAccessories();
 
         // Destroy the intermission color material instance AFTER applying the role material
         // so there is no frame where bones have a null/destroyed material (which causes them
@@ -139,8 +141,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         Debug.Log($"[PlayerCustomizer] ApplyRole — playerType={playerType}, characterId={characterId}");
 
-        // Destroy any accessories from a previous round before applying new ones.
-        DestroySpawnedAccessories();
+        instanceMaterial = null;
+        ClearSpawnedAccessories();
 
         if (playerType == BasePlayer.PlayerType.Killer)
             ApplyKillerCustomisation(characterId);
@@ -192,9 +194,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 GameObject accInstance = Instantiate(accessory.prefab, accTransform);
                 accInstance.transform.localPosition = accessory.localPosition;
                 accInstance.transform.localRotation = accessory.localRotation;
-
-                // Tag the instance so DestroySpawnedAccessories can find and clean it up.
-                accInstance.tag = "SpawnedAccessory";
+                spawnedAccessories.Add(accInstance);
             }
             else
             {
@@ -203,20 +203,14 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         }
     }
 
-    /// <summary>
-    /// Recursively searches the hierarchy rooted at <paramref name="root"/> for a
-    /// child whose name exactly matches <paramref name="boneName"/>.
-    /// Unlike <c>Transform.Find</c>, this searches all descendant levels.
-    /// </summary>
-    private static Transform FindDeepChild(Transform root, string boneName)
+    private void ClearSpawnedAccessories()
     {
-        if (root.name == boneName) return root;
-        foreach (Transform child in root)
+        for (int i = spawnedAccessories.Count - 1; i >= 0; i--)
         {
-            Transform found = FindDeepChild(child, boneName);
-            if (found != null) return found;
+            GameObject accessory = spawnedAccessories[i];
+            if (accessory != null) Destroy(accessory);
         }
-        return null;
+        spawnedAccessories.Clear();
     }
 
     private void ApplyKillerCustomisation(string id)

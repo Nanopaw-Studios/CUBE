@@ -52,6 +52,9 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         bool hasRotation = targetRotation.HasValue;
         Quaternion rotation = targetRotation ?? Quaternion.identity;
 
+        // Keep only the most recent teleport RPC for this player to avoid stale buffered
+        // teleports firing after round/intermission transitions.
+        PhotonNetwork.RemoveRPCs(pv);
         // Buffered so late joiners also get the last teleport
         pv.RPC(nameof(NetworkTeleportPlayer), RpcTarget.AllBuffered, targetPosition, hasRotation, rotation, snapToGround);
     }
@@ -85,27 +88,16 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         Vector3 finalTargetPos = targetPosition;
         if (snapToGround)
         {
-            LayerMask safeGroundMask = groundMask & ~LayerMask.GetMask("Player");
-            Vector3 rayStart = targetPosition + Vector3.up * raycastUpwardOffset;
-            float totalRayDistance = raycastUpwardOffset + raycastMaxDistance;
-
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, totalRayDistance, safeGroundMask, QueryTriggerInteraction.Ignore))
-            {
+            Vector3 rayStart = targetPosition + Vector3.up * 5f;
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 80f, groundMask, QueryTriggerInteraction.Ignore))
                 finalTargetPos = hit.point + Vector3.up * groundOffset;
                 Debug.Log($"[Teleport] Ground found at {hit.point} (collider: {hit.collider.name}). Placing player at {finalTargetPos}.");
             }
             else
             {
-                // No ground found — use the raw position rather than sending the player to the void.
-                // This is intentional: it is safer to land at the exact spawn point than to fall through the map.
-                finalTargetPos = targetPosition;
-                Debug.LogWarning($"[Teleport] No ground found below {targetPosition} within {totalRayDistance} units. " +
-                                 $"Using raw spawn position. Check your groundMask or increase raycastMaxDistance.");
+                Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Keeping current position to avoid void teleport.");
+                finalTargetPos = rigRoot.position;
             }
-        }
-        else
-        {
-            Debug.Log($"[Teleport] snapToGround disabled — teleporting directly to {targetPosition}.");
         }
 
         // 2) Freeze all ragdoll rigidbodies so physics doesn't fight the move
@@ -161,8 +153,17 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
         var net = GetComponent<RagdollNetwork>();
         if (net != null) net.SnapSendGate();
 
-        // 6) Unfreeze after two fixed frames so physics settles at the new position.
-        yield return UnfreezeRigidbodies(rbs, rootWasKinematic);
+        // 5.5) Force pose back to rest after teleport so arm animations don't get stuck in a "spider" pose.
+        var poseHandler = GetComponentInChildren<PoseHandler>(true);
+        if (poseHandler != null)
+        {
+            poseHandler.StopAllCoroutines();
+            poseHandler.SetPose(0);
+            poseHandler.DoingAnimation = false;
+        }
+
+        // 6) Unfreeze after two fixed frames so physics settles at the new position
+        StartCoroutine(UnfreezeRigidbodies(rbs, rootWasKinematic));
 
         isTeleporting = false;
     }
