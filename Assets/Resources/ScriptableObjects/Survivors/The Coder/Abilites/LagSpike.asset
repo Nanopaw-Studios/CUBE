@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41e9b3d785204774984dae813a17d76f, type: 3}
+  m_Name: LagSpike
+  m_EditorClassIdentifier: Assembly-CSharp::LagSpike
+  AbilityName: Lag Spike
+  AbilityIcon: {fileID: 0}
+  AbilityIconGrayscale: {fileID: 0}
+  AbilityCooldown: 20
+  actionsAsset: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  actionMapName: Player
+  actionName: Ability2
+  isPassive: 0
+  AbilityLevel: 1
+  cubeMesh: {fileID: 0}
+  force: 400

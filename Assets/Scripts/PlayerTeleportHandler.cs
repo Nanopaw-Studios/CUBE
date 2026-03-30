@@ -9,13 +9,17 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     [Tooltip("Root of the ragdoll rig. If left null, will try to Find(\"RIG\").")]
     [SerializeField] private Transform rigRoot;
 
-    [SerializeField] private Rigidbody[] teleportBodies;
-
     [Tooltip("Layer mask used to find valid ground below a spawn point.")]
     [SerializeField] private LayerMask groundMask = ~0;
 
     [Tooltip("How far above the ground the player should be placed.")]
     [SerializeField] private float groundOffset = 0.5f;
+
+    [Tooltip("How far above the spawn point the ground raycast starts. Increase if spawns are on elevated platforms.")]
+    [SerializeField] private float raycastUpwardOffset = 50f;
+
+    [Tooltip("Maximum downward distance the ground raycast will search.")]
+    [SerializeField] private float raycastMaxDistance = 200f;
 
     private PhotonView pv;
     private Rigidbody rootRb;
@@ -35,6 +39,7 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
     /// <summary>
     /// Teleport this player to a world position/rotation. Only callable on the owning client.
+    /// Set snapToGround to false for spawn points that are already correctly placed (e.g. intermission platforms).
     /// </summary>
     public void InitiateTeleport(Vector3 targetPosition, Quaternion? targetRotation = null, bool snapToGround = true)
     {
@@ -59,8 +64,6 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     {
         // Remotes do NOT run the physics teleport — RagdollNetwork will naturally
         // lerp to the new positions once the owner broadcasts them after moving.
-        // Running PerformTeleport on remotes causes their kinematic bone positions
-        // to be overwritten by the teleport, then immediately fought by RagdollNetwork.Update().
         if (!pv.IsMine) return;
 
         StartCoroutine(PerformTeleport(targetPosition, hasRotation ? targetRotation : (Quaternion?)null, snapToGround));
@@ -78,13 +81,18 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
             yield break;
         }
 
-        // 1) Find a safe ground position
+        // 1) Find a safe ground position.
+        //    Ray starts raycastUpwardOffset units ABOVE the target so elevated spawns
+        //    (intermission platforms, high-up spawn points) are handled correctly.
+        //    Excludes triggers and the Player layer to avoid landing inside another player.
         Vector3 finalTargetPos = targetPosition;
         if (snapToGround)
         {
             Vector3 rayStart = targetPosition + Vector3.up * 5f;
             if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 80f, groundMask, QueryTriggerInteraction.Ignore))
                 finalTargetPos = hit.point + Vector3.up * groundOffset;
+                Debug.Log($"[Teleport] Ground found at {hit.point} (collider: {hit.collider.name}). Placing player at {finalTargetPos}.");
+            }
             else
             {
                 Debug.LogWarning($"[Teleport] No ground found below {targetPosition}. Keeping current position to avoid void teleport.");
@@ -114,46 +122,34 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
 
         yield return new WaitForFixedUpdate();
 
-        // 3) Compute the delta from the rig root's current world position to the target.
-        //    Apply this same delta to every bone so the entire pose shifts by the same offset.
+        // 3) Only apply a position delta — never rotate individual bones.
+        //    Rotating the whole pose via a delta quaternion causes the "spider" pose
+        //    because bones not in a neutral T-pose get rotated in world space
+        //    relative to the hip, stretching them into impossible positions.
+        //    Shifting every bone by the same world-space offset lets physics re-settle naturally.
         Vector3 hipCurrentPos = rigRoot.position;
         Vector3 positionDelta = finalTargetPos - hipCurrentPos;
 
-        Quaternion rotationDelta = Quaternion.identity;
-        if (targetRotation.HasValue)
-            rotationDelta = targetRotation.Value * Quaternion.Inverse(rigRoot.rotation);
-
         foreach (var rb in rbs)
         {
-            if (targetRotation.HasValue)
-            {
-                Vector3 relativeToHip = rb.position - hipCurrentPos;
-                rb.position = finalTargetPos + rotationDelta * relativeToHip;
-                rb.rotation = rotationDelta * rb.rotation;
-            }
-            else
-            {
-                rb.position += positionDelta;
-            }
+            rb.position += positionDelta;
         }
 
         // 4) Move the prefab root transform to stay aligned with the rig
-        Vector3 rootMinusHip = transform.position - hipCurrentPos;
+        transform.position += positionDelta;
+
+        // Apply yaw-only rotation on the root transform (not individual bones) so the
+        // player faces the intended direction without corrupting the ragdoll pose.
         if (targetRotation.HasValue)
         {
-            transform.position = finalTargetPos + rotationDelta * rootMinusHip;
-            transform.rotation = rotationDelta * transform.rotation;
-        }
-        else
-        {
-            transform.position += positionDelta;
+            Quaternion yawOnly = Quaternion.Euler(0f, targetRotation.Value.eulerAngles.y, 0f);
+            transform.rotation = yawOnly;
         }
 
         Physics.SyncTransforms();
 
         // 5) Tell RagdollNetwork to snap its send-gate references so the next
         //    serialized packet immediately reflects the new position (no stale gate).
-        //    Only update owner-side targets — never touch remote bones.
         var net = GetComponent<RagdollNetwork>();
         if (net != null) net.SnapSendGate();
 
