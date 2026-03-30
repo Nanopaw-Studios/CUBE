@@ -43,20 +43,12 @@ public class PlayerTeleportHandler : MonoBehaviourPunCallbacks
     /// </summary>
     public void InitiateTeleport(Vector3 targetPosition, Quaternion? targetRotation = null, bool snapToGround = true)
     {
-        if (!pv.IsMine)
-        {
-            Debug.LogWarning("[Teleport] Cannot teleport a player you don't own!");
-            return;
-        }
-
         bool hasRotation = targetRotation.HasValue;
         Quaternion rotation = targetRotation ?? Quaternion.identity;
 
-        // Keep only the most recent teleport RPC for this player to avoid stale buffered
-        // teleports firing after round/intermission transitions.
-        PhotonNetwork.RemoveRPCs(pv);
-        // Buffered so late joiners also get the last teleport
-        pv.RPC(nameof(NetworkTeleportPlayer), RpcTarget.AllBuffered, targetPosition, hasRotation, rotation, snapToGround);
+        // Do not buffer teleports. Spawn/round logic should decide position for late joiners,
+        // and buffered teleports can replay at incorrect times after round transitions.
+        pv.RPC(nameof(NetworkTeleportPlayer), RpcTarget.All, targetPosition, hasRotation, rotation, snapToGround);
     }
 
     [PunRPC]
