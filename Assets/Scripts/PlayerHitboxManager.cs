@@ -83,6 +83,14 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
         stats.TakeDamage(damage);
         CameraShaker.Instance.ShakeOnce(3f * (damage / 100), 4f, .1f, 1f);
 
+        // Cancel any pending ability startups on this player when they are hit
+        if (photonView.IsMine)
+        {
+            GetComponent<HealProximityRunner>()?.Cancel();
+            GetComponent<MusicCircleAbility>()?.CancelStartup();
+            GetComponent<EqualizerAbility>()?.CancelStartup();
+        }
+
         // Only the master client performs win-condition checks to avoid duplicate EndRound calls.
         if (PhotonNetwork.IsMasterClient && stats.health <= 0)
         {

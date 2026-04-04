@@ -4,26 +4,24 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "CompileBoost", menuName = "ScriptableObjects/Survivor Abilities/CompileBoost", order = 1)]
 public class CompileBoost : Ability
 {
-    GameObject playerObj;
+    [Tooltip("How long the player is frozen before the boost activates (seconds).")]
+    public float freezeDuration = 1f;
+
+    [Tooltip("How long the speed boost lasts after the freeze (seconds).")]
+    public float boostDuration = 4f;
+
+    [Tooltip("Multiplier applied to MovementSC.Force during the boost phase.")]
+    public float boostMultiplier = 2f;
 
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);
-        playerObj = player.gameObject;
 
-        BoostCompileSpeed();
-    }
+        // Reuse an existing runner if the ability fires again before it finishes.
+        CompileBoostRunner runner = player.GetComponent<CompileBoostRunner>();
+        if (runner == null)
+            runner = player.gameObject.AddComponent<CompileBoostRunner>();
 
-    public void BoostCompileSpeed()
-    {
-        MovementSC movement = playerObj.GetComponentInChildren<MovementSC>();
-
-        float speed = movement.Force * 2;
-        movement.Force = speed;
-
-        playerObj.GetComponent<BasePlayerStats>().photonView.RPC("TakeDamage", RpcTarget.Others, 5);
-
-        // Reset to 1 instead of original force
-        movement.ResetAfter(2.5f, 1f);
+        runner.Execute(freezeDuration, boostDuration, boostMultiplier);
     }
 }

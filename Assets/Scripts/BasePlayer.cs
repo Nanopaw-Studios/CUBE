@@ -50,6 +50,17 @@ public class BasePlayer : MonoBehaviourPunCallbacks
         LoadEquippedCharacters();
     }
 
+    /// <summary>
+    /// Re-syncs equipped character names once we are inside a room so Photon
+    /// custom properties are actually written (SetCustomProperties is a no-op
+    /// before the local player is in a room).
+    /// </summary>
+    public override void OnJoinedRoom()
+    {
+        if (photonView.IsMine)
+            SyncEquippedCharacterProps();
+    }
+
     public SurvivorType GetEquippedSurvivor()
     {
         return equippedSurvivor;

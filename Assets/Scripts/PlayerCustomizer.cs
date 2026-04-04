@@ -268,6 +268,27 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         Material mat = killerType.character.bodyMaterial;
         SetMaterialsOnBones(mat);
 
+        const string AccessoryTag = "SpawnedAccessory";
+        foreach (Accessory accessory in killerType.character.accessories)
+        {
+            if (accessory == null || accessory.prefab == null) continue;
+
+            Transform accTransform = FindDeepChild(transform, accessory.boneName);
+            if (accTransform != null)
+            {
+                GameObject accInstance = Instantiate(accessory.prefab, accTransform);
+                accInstance.transform.localPosition = accessory.localPosition;
+                accInstance.transform.localRotation = accessory.localRotation;
+                accInstance.tag = AccessoryTag;
+                SetLayerRecursive(accInstance, accTransform.gameObject.layer);
+                spawnedAccessories.Add(accInstance);
+            }
+            else
+            {
+                Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}.");
+            }
+        }
+
         Transform itemPoses = FindDeepChild(transform, "ItemPoses");
         if (itemPoses != null)
         {
