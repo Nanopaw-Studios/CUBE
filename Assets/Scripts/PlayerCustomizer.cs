@@ -185,6 +185,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         Material mat = survivorType.character.bodyMaterial;
         SetMaterialsOnBones(mat);
 
+        const string AccessoryTag = "SpawnedAccessory";
         foreach (Accessory accessory in survivorType.character.accessories)
         {
             Transform accTransform = FindDeepChild(transform, accessory.boneName);
@@ -193,6 +194,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 GameObject accInstance = Instantiate(accessory.prefab, accTransform);
                 accInstance.transform.localPosition = accessory.localPosition;
                 accInstance.transform.localRotation = accessory.localRotation;
+                accInstance.tag = AccessoryTag;
                 spawnedAccessories.Add(accInstance);
             }
             else

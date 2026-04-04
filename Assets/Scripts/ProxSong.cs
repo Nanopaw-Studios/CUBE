@@ -22,7 +22,7 @@ public class ProxSong : MonoBehaviour
     {
         // find our local player (this only works after Photon or your netcode has spawned players)
         localPlayer = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None)
-                      .FirstOrDefault(p => p.gameObject.GetPhotonView().IsMine) // use your own “is mine” check
+                      .FirstOrDefault(p => p.gameObject.GetPhotonView().IsMine) // use your own ï¿½is mineï¿½ check
                       ?.gameObject;
     }
 
@@ -101,11 +101,9 @@ public class ProxSong : MonoBehaviour
 
     private void Update()
     {
-        if (localPlayer == null || layers == null || basePlayer.GetPlayerType() == BasePlayer.PlayerType.Killer) return;
+        if (localPlayer == null || layers == null) return;
 
-        Transform localPlayerHips = localPlayer.transform.Find("RIG").Find("Hip");
-
-        float distance = Vector3.Distance(transform.position, localPlayerHips.transform.position);
+        float distance = GetRelevantDistance();
 
         foreach (var layer in layers)
         {
@@ -118,6 +116,42 @@ public class ProxSong : MonoBehaviour
                 layer.source.volume,
                 targetVolume,
                 fadeSpeed * Time.deltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Returns the distance used for layer fading.
+    /// Survivors use their own distance to the killer.
+    /// The killer uses the distance to their nearest survivor so they hear
+    /// chase music when someone is close, but not all round.
+    /// </summary>
+    private float GetRelevantDistance()
+    {
+        bool localIsKiller = basePlayer != null && basePlayer.gameObject.GetPhotonView().IsMine;
+
+        if (!localIsKiller)
+        {
+            // Survivor path: distance from killer to this local survivor's hips.
+            Transform hips = localPlayer.transform.Find("RIG")?.Find("Hip");
+            if (hips == null) return float.MaxValue;
+            return Vector3.Distance(transform.position, hips.position);
+        }
+        else
+        {
+            // Killer path: use the nearest survivor's distance so chase music
+            // only plays when a survivor is actually close.
+            float nearest = float.MaxValue;
+            foreach (BasePlayer other in FindObjectsByType<BasePlayer>(FindObjectsSortMode.None))
+            {
+                if (other.GetPlayerType() != BasePlayer.PlayerType.Survivor) continue;
+
+                Transform hips = other.transform.Find("RIG")?.Find("Hip");
+                if (hips == null) continue;
+
+                float dist = Vector3.Distance(transform.position, hips.position);
+                if (dist < nearest) nearest = dist;
+            }
+            return nearest;
         }
     }
 }

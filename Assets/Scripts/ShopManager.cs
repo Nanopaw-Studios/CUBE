@@ -23,6 +23,7 @@ public class ShopManager : MonoBehaviour
     [Header("References")]
     public GameObject shop;
     public InputActionReference toggleShop;
+    public RoundManager roundManager;
 
     [Header("Shop Grids")]
     public GameObject shopKillerContent;
@@ -116,6 +117,10 @@ public class ShopManager : MonoBehaviour
     private void ShopTriggered(InputAction.CallbackContext context)
     {
         if (shop == null) return;
+
+        // Shop is only accessible during intermission, not during active rounds.
+        if (roundManager != null && roundManager.roundActive)
+            return;
 
         bool newState = !shop.activeInHierarchy;
         shop.SetActive(newState);

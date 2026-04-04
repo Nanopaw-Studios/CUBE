@@ -16,54 +16,98 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
     public Sprite verifiedBadge;
     public Sprite devBadge;
 
+    [Header("Nametag Root")]
+    [Tooltip("The root GameObject of the world-space nametag canvas. Hidden during rounds.")]
+    public GameObject nametagRoot;
+
     private const string PROP_NAME = "n";
     private const string PROP_TITLE = "t";
     private const string PROP_VERIFICATION = "v";
 
+    private RoundManager roundManager;
+
     private void Start()
     {
+        roundManager = FindFirstObjectByType<RoundManager>();
+        if (roundManager != null)
+        {
+            roundManager.OnRoundStart += OnRoundStart;
+            roundManager.OnIntermissionStart += OnIntermissionStart;
+
+            // Sync initial state
+            SetNametagVisible(roundManager.intermissionActive);
+        }
+
         if (!photonView.IsMine) return;
-    
+
         string playerName = PlayfabManager.GetPlayerName();
-    
+
         string titleId = "";
         string verification = "";
-    
+
         bool titleLoaded = false;
         bool verificationLoaded = false;
-    
+
         void TryApply()
         {
             if (!titleLoaded || !verificationLoaded) return;
-    
+
             var props = new Hashtable
             {
                 { PROP_NAME, playerName },
                 { PROP_TITLE, titleId },
                 { PROP_VERIFICATION, verification }
             };
-    
+
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
         }
-    
+
         PlayfabManager.Instance.GetUserDataValue("PlayerTitle", titleId1 =>
         {
             titleId = string.IsNullOrEmpty(titleId1) ? "" : titleId1;
             titleLoaded = true;
-    
+
             // Apply locally immediately (optional but nice)
             TitleStyleRegistry.Apply(titleText, titleId);
-    
+
             TryApply();
         });
-    
+
         PlayfabManager.Instance.GetUserDataValue("VerificationStatus", verification1 =>
         {
             verification = string.IsNullOrEmpty(verification1) ? "" : verification1;
             verificationLoaded = true;
-    
+
             TryApply();
         });
+    }
+
+    private void OnDestroy()
+    {
+        if (roundManager != null)
+        {
+            roundManager.OnRoundStart -= OnRoundStart;
+            roundManager.OnIntermissionStart -= OnIntermissionStart;
+        }
+    }
+
+    private void OnRoundStart()
+    {
+        SetNametagVisible(false);
+    }
+
+    private void OnIntermissionStart()
+    {
+        SetNametagVisible(true);
+    }
+
+    /// <summary>
+    /// Shows or hides the nametag root during round/intermission transitions.
+    /// </summary>
+    private void SetNametagVisible(bool visible)
+    {
+        if (nametagRoot != null)
+            nametagRoot.SetActive(visible);
     }
 
     public override void OnPlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, Hashtable changedProps)

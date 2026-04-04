@@ -105,16 +105,16 @@ public class Settings : MonoBehaviour
 
     private void LoadSettings()
     {
-        // Audio
-        float masterVol = LoadFloatWithMigration(KEY_MASTER, null, 0f);
+        // Audio — default to -10 dB (near-max, not clamped at maximum)
+        float masterVol = LoadFloatWithMigration(KEY_MASTER, null, -10f);
         if (mixer != null) mixer.SetFloat("masterVolume", masterVol);
         if (master != null) master.SetValueWithoutNotify(masterVol);
 
-        float sfxVol = LoadFloatWithMigration(KEY_SFX, null, 0f);
+        float sfxVol = LoadFloatWithMigration(KEY_SFX, null, -10f);
         if (mixer != null) mixer.SetFloat("sfxVolume", sfxVol);
         if (sfx != null) sfx.SetValueWithoutNotify(sfxVol);
 
-        float musicVol = LoadFloatWithMigration(KEY_MUSIC, null, 0f);
+        float musicVol = LoadFloatWithMigration(KEY_MUSIC, null, -10f);
         if (mixer != null) mixer.SetFloat("musicVolume", musicVol);
         if (music != null) music.SetValueWithoutNotify(musicVol);
 

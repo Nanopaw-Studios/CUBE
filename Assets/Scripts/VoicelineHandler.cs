@@ -14,6 +14,8 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
     private SurvivorType survivor;
     private CubeCharacterData data;
 
+    private bool isRunning = false;
+
     private void Start()
     {
         roundManager = FindFirstObjectByType<RoundManager>();
@@ -34,47 +36,57 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
             this.enabled = false;
             return;
         }
-        // 
-        else if (player.GetPlayerType() == BasePlayer.PlayerType.Survivor && data.voicelines.Length < 0)
+        else if (player.GetPlayerType() == BasePlayer.PlayerType.Survivor && data.voicelines.Length == 0)
         {
             Debug.LogWarning("VoicelineHandler attached to a Survivor that does not have voicelines.");
             this.enabled = false;
             return;
         }
+
+        if (!isRunning)
+        {
+            isRunning = true;
+            StartCoroutine(IdleVoicelineLoop());
+        }
     }
 
-    private void Update()
+    private IEnumerator IdleVoicelineLoop()
     {
-        if (player == null || survivor == null) return;
+        while (enabled)
+        {
+            if (player == null || survivor == null || data == null) yield break;
+            if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor) yield break;
 
-        if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor) return;
+            var idleLines = System.Array.FindAll(
+                data.voicelines,
+                voiceLine => voiceLine.type == Voiceline.VoicelineType.Idle
+            );
 
-        // Idle lines
-        // first, get a random number between 10 and 70, this will be the time in seconds until the next idle line
-        int time = UnityEngine.Random.Range(10, 70);
+            if (idleLines.Length > 0)
+            {
+                int waitTime = UnityEngine.Random.Range(10, 70);
+                yield return new WaitForSeconds(waitTime);
 
-        var idleLines = System.Array.FindAll(
-            data.voicelines,
-            voiceLine => voiceLine.type == Voiceline.VoicelineType.Idle
-        );
+                // Re-roll the line after waiting
+                var lines = System.Array.FindAll(
+                    data.voicelines,
+                    voiceLine => voiceLine.type == Voiceline.VoicelineType.Idle
+                );
+                var selectedLine = lines[UnityEngine.Random.Range(0, lines.Length)];
 
-        if (idleLines.Length == 0) return;
-        var selectedLine = idleLines[UnityEngine.Random.Range(0, idleLines.Length)];
-        StartCoroutine(VoicelineCoroutine(selectedLine, time));
-    }
-
-    IEnumerator VoicelineCoroutine(Voiceline line, int waitTime)
-    {
-        yield return new WaitForSeconds(waitTime);
-        var lines = System.Array.FindAll(
-            data.voicelines,
-            voiceLine => voiceLine.type == line.type
-        );
-        var selectedLine = lines[UnityEngine.Random.Range(0, lines.Length)];
-
-        AudioSource audioSource = player.GetComponent<AudioSource>();
-        audioSource.clip = selectedLine.voiceline.voiceLine;
-        Debug.Log($"Playing voiceline: {selectedLine.voiceline.lineID}");
-        audioSource.Play();
+                AudioSource audioSource = player.GetComponent<AudioSource>();
+                if (audioSource != null && selectedLine?.voiceline?.voiceLine != null)
+                {
+                    audioSource.clip = selectedLine.voiceline.voiceLine;
+                    Debug.Log($"Playing voiceline: {selectedLine.voiceline.lineID}");
+                    audioSource.Play();
+                }
+            }
+            else
+            {
+                // No idle lines — stop the loop
+                yield break;
+            }
+        }
     }
 }

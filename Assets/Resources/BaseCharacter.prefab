@@ -2827,7 +2827,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TouchGround: 0
-  Length: 0.07
+  Length: 0.15
 --- !u!82 &3340450835698662715
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2850,7 +2850,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 250
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -5664,6 +5664,7 @@ MonoBehaviour:
   verificationBadge: {fileID: 315208449708932433}
   verifiedBadge: {fileID: 21300000, guid: 74fb06bb0e5086044ad8ab3d464b4acb, type: 3}
   devBadge: {fileID: 21300000, guid: aa37fda2ec0e65c41890c3d6a79cf53d, type: 3}
+  nametagRoot: {fileID: 0}
 --- !u!114 &6057265854288984646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6598,7 +6599,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 3c225fefc350b4d4fb4588c39526f2aa, type: 3}
   - {fileID: 8300000, guid: 76a5c4ce4f603f64c93c0383caf5c7d6, type: 3}
   - {fileID: 8300000, guid: 04e6d002a6760b14bb75e0aafe3be732, type: 3}
-  - {fileID: 8300000, guid: d9f1ef311b33f8340a595339804d10d0, type: 3}
   - {fileID: 8300000, guid: 65c8c0be74689a743bb5a86eb98f8815, type: 3}
   - {fileID: 8300000, guid: b48e2260994aabe4cb01922966ebdc85, type: 3}
   - {fileID: 8300000, guid: 6fd82c2259f0c1b4a895face153b5656, type: 3}
@@ -9463,7 +9463,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TouchGround: 0
-  Length: 0.07
+  Length: 0.15
 --- !u!82 &8620572978837381046
 AudioSource:
   m_ObjectHideFlags: 0
@@ -9486,7 +9486,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 250
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
