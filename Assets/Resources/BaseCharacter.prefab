@@ -5509,6 +5509,8 @@ MonoBehaviour:
   speed: 5
   malice: 0
   money: 100
+  maxStamina: 100
+  maxHealth: 100
 --- !u!114 &4079487062711702949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6574,7 +6576,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   isSprinting: 0
-  sprintSpeed: 35
+  sprintMultiplier: 1.5
   staminaPerSecondDrain: 10
   staminaPerSecondRegen: 20
   regenDelayAfterDeplete: 4

@@ -11,8 +11,13 @@ public class SprintingSC : MonoBehaviour
 
     [Header("Sprint")]
     public bool isSprinting = false;
-    public float sprintSpeed = 50f;
-    private float originalForce;
+
+    [Tooltip("Sprint speed is the character's base speed multiplied by this value.")]
+    public float sprintMultiplier = 1.5f;
+
+    // Captures movement.Force the moment sprinting begins so any runtime
+    // speed modifiers (abilities, debuffs, etc.) are preserved on restore.
+    private float preSprintForce;
 
     [Header("Stamina (points/sec) - tune these")]
     // How many stamina points are removed per second while sprinting
@@ -51,15 +56,6 @@ public class SprintingSC : MonoBehaviour
 
         playerStats = GetComponentInParent<BasePlayerStats>();
         if (playerStats == null) Debug.LogError("BasePlayerStats component not found in parent hierarchy.");
-
-        if (movement != null)
-        {
-            // If Force isn't set yet, wait a frame before caching it
-            if (movement.Force > 0f)
-                originalForce = movement.Force;
-            else
-                StartCoroutine(CacheOriginalForceNextFrame());
-        }
     }
 
     private void Update()
@@ -101,12 +97,10 @@ public class SprintingSC : MonoBehaviour
                     // if stamina reached zero (or below) force stop sprint and schedule regen with deplete delay
                     if (playerStats != null && playerStats.stamina <= 0)
                     {
-                        // clamp to zero to be safe
                         playerStats.stamina = 0;
 
-                        // turn off sprint and reset movement
                         isSprinting = false;
-                        if (movement != null) movement.Force = originalForce;
+                        if (movement != null) movement.Force = preSprintForce;
                         data.Currentstate = StateType.Walk;
 
                         staminaDrainCoroutine = null;
@@ -152,13 +146,13 @@ public class SprintingSC : MonoBehaviour
         regenAccumulator = 0f;
 
         // Regen loop
-        while (playerStats != null && playerStats.stamina < 100 && !isSprinting)
+        while (playerStats != null && playerStats.stamina < playerStats.maxStamina && !isSprinting)
         {
             regenAccumulator += staminaPerSecondRegen * Time.deltaTime;
             int healInt = Mathf.FloorToInt(regenAccumulator);
             if (healInt > 0)
             {
-                playerStats.stamina = Mathf.Min(100, playerStats.stamina + healInt);
+                playerStats.stamina = Mathf.Min(playerStats.maxStamina, playerStats.stamina + healInt);
                 regenAccumulator -= healInt;
             }
 
@@ -169,13 +163,6 @@ public class SprintingSC : MonoBehaviour
         }
 
         staminaRegenCoroutine = null;
-    }
-
-    private IEnumerator CacheOriginalForceNextFrame()
-    {
-        yield return null;
-        if (movement != null && movement.Force > 0f)
-            originalForce = movement.Force;
     }
 
     private void OnEnable()
@@ -199,13 +186,16 @@ public class SprintingSC : MonoBehaviour
     {
         // If stamina is 0, prevent sprinting
         if (playerStats != null && playerStats.stamina <= 0)
-        {
-            // optionally play a sound or UI feedback here
             return;
-        }
+
+        // Snapshot current Force so ability-modified speeds are preserved on restore.
+        preSprintForce = movement != null ? movement.Force : 0f;
 
         isSprinting = true;
-        if (movement != null) movement.Force = sprintSpeed;
+
+        // Sprint speed = current walk Force * multiplier.
+        if (movement != null)
+            movement.Force = preSprintForce * sprintMultiplier;
 
         // cancel any pending regen schedule & running regen
         regenStartTime = -1f;
@@ -222,7 +212,7 @@ public class SprintingSC : MonoBehaviour
     private void OnSprintCanceled(InputAction.CallbackContext context)
     {
         isSprinting = false;
-        if (movement != null) movement.Force = originalForce;
+        if (movement != null) movement.Force = preSprintForce;
 
         data.Currentstate = StateType.Walk;
 

@@ -15,6 +15,36 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     // cc: cube coins: money! duh!
     public int money = 100;
 
+    /// <summary>
+    /// Maximum stamina for this character, set from the ScriptableObject at round start.
+    /// </summary>
+    public int maxStamina = 100;
+
+    /// <summary>
+    /// Applies base stats from the equipped character's ScriptableObject at round start.
+    /// Called via RPC from ServerManager so all clients have consistent values.
+    /// </summary>
+    [PunRPC]
+    public void ApplyCharacterStats(int characterHealth, float characterSpeed, int characterStamina)
+    {
+        health = characterHealth > 0 ? characterHealth : 100;
+        maxHealth = health;
+        maxStamina = characterStamina > 0 ? characterStamina : 100;
+        stamina = maxStamina;
+        speed = characterSpeed > 0 ? (int)characterSpeed : 5;
+
+        // Push base speed into MovementSC so walk force matches the character's ScriptableObject speed.
+        // MovementSC.Force acts as the "current speed" and can be modified at runtime by abilities/effects.
+        MovementSC movement = GetComponentInChildren<MovementSC>();
+        if (movement != null)
+            movement.Force = speed;
+
+        Debug.Log($"[BasePlayerStats] Stats applied — health={health}, speed={speed}, stamina={stamina}/{maxStamina}");
+    }
+
+    /// <summary>Maximum health for this character, set from the ScriptableObject at round start.</summary>
+    public int maxHealth = 100;
+
     [PunRPC]
     public void TakeDamage(int damage)
     {
@@ -27,7 +57,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     public void Heal(int amount)
     {
         health += amount;
-        if (health > 100) health = 100;
+        if (health > maxHealth) health = maxHealth;
     }
     [PunRPC]
     public void UseStamina(int amount)

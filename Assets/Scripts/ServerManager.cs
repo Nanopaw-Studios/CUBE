@@ -188,6 +188,27 @@ public class ServerManager : MonoBehaviourPunCallbacks
                 type,
                 characterId
             );
+
+            // 4) Apply stats from the ScriptableObject to BasePlayerStats on this player's
+            //    owning client via RPC, so health/speed/stamina reflect the character's data.
+            CubePlayerBase characterData = type == PlayerType.Killer
+                ? (CubePlayerBase)CharacterDatabase.GetKillerByName(characterId)
+                : (CubePlayerBase)CharacterDatabase.GetSurvivorByName(characterId);
+
+            if (characterData != null)
+            {
+                pv.RPC(
+                    "ApplyCharacterStats",
+                    RpcTarget.AllBuffered,
+                    characterData.Health,
+                    characterData.Speed,
+                    characterData.Stamina
+                );
+            }
+            else
+            {
+                Debug.LogWarning($"[ServerManager] Could not resolve character data for '{characterId}' — stats not applied.");
+            }
         }
     }
 }
