@@ -1,3 +1,4 @@
+using EZCameraShake;
 using Photon.Pun;
 using UnityEngine;
 
@@ -17,6 +18,8 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     [PunRPC]
     public void TakeDamage(int damage)
     {
+        CameraShaker.Instance.ShakeOnce(3f * (damage / 1000), 4f, .1f, 1f);
+
         health -= damage;
         if (health < 0) health = 0;
     }
@@ -41,11 +44,13 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     [PunRPC]
     public void GrantMalice(int amount)
     {
+        CUBEStatusText.CreateText("You feel something <color=red>malicious</color> take over you..");
         malice += amount;
     }
     [PunRPC]
     public void RemoveMalice(int amount)
     {
+        CUBEStatusText.CreateText("You feel less malicious.");
         malice -= amount;
     }
     [PunRPC]
@@ -62,6 +67,8 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     [PunRPC]
     public void AdjustMalice(int amount)
     {
+        CUBEStatusText.CreateText("You feel something <color=red>malicious</color> take over you..");
+
         malice += amount;
         if (malice < 0) malice = 0;
         Debug.Log($"{photonView.Owner.NickName} malice now {malice}");

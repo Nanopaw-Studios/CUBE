@@ -1,4 +1,6 @@
+using ExitGames.Client.Photon;
 using Photon.Pun;
+using Photon.Realtime;
 using System;
 using UnityEngine;
 
@@ -7,6 +9,10 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     // PlayerPrefs keys for persisting the selected character names across sessions.
     private const string KillerPrefKey = "EquippedKillerName";
     private const string SurvivorPrefKey = "EquippedSurvivorName";
+
+    // Photon custom property keys used to sync equipped character names to all clients.
+    public const string PropEquippedKiller = "ek";
+    public const string PropEquippedSurvivor = "es";
 
     #region Player Type
     public enum PlayerType
@@ -69,7 +75,8 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
-    /// Equips a killer by name and persists the selection to PlayerPrefs.
+    /// Equips a killer by name, persists the selection to PlayerPrefs, and syncs the name
+    /// to all clients via Photon custom properties so the master can read it during role assignment.
     /// </summary>
     public void EquipKiller(KillerType killer)
     {
@@ -77,11 +84,13 @@ public class BasePlayer : MonoBehaviourPunCallbacks
         equippedKiller = killer;
         PlayerPrefs.SetString(KillerPrefKey, killer._Name);
         PlayerPrefs.Save();
+        SyncEquippedCharacterProps();
         Debug.Log($"[BasePlayer] Equipped killer: {killer._Name}");
     }
 
     /// <summary>
-    /// Equips a survivor by name and persists the selection to PlayerPrefs.
+    /// Equips a survivor by name, persists the selection to PlayerPrefs, and syncs the name
+    /// to all clients via Photon custom properties so the master can read it during role assignment.
     /// </summary>
     public void EquipSurvivor(SurvivorType survivor)
     {
@@ -89,11 +98,31 @@ public class BasePlayer : MonoBehaviourPunCallbacks
         equippedSurvivor = survivor;
         PlayerPrefs.SetString(SurvivorPrefKey, survivor._Name);
         PlayerPrefs.Save();
+        SyncEquippedCharacterProps();
         Debug.Log($"[BasePlayer] Equipped survivor: {survivor._Name}");
     }
 
     /// <summary>
-    /// Loads the last equipped killer and survivor from PlayerPrefs.
+    /// Publishes the currently equipped killer and survivor names as Photon player custom
+    /// properties so every client (especially the master) can read the correct values.
+    /// Only the local player's properties are ever written — Photon propagates them automatically.
+    /// </summary>
+    private void SyncEquippedCharacterProps()
+    {
+        if (!photonView.IsMine) return;
+
+        var props = new Hashtable
+        {
+            { PropEquippedKiller,   equippedKiller  != null ? equippedKiller._Name  : string.Empty },
+            { PropEquippedSurvivor, equippedSurvivor != null ? equippedSurvivor._Name : string.Empty }
+        };
+
+        PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+    }
+
+    /// <summary>
+    /// Loads the last equipped killer and survivor from PlayerPrefs and immediately syncs
+    /// the names to Photon so the master client has up-to-date data from the first frame.
     /// Falls back to the prefab-default if no selection is saved or the asset cannot be loaded.
     /// </summary>
     private void LoadEquippedCharacters()
@@ -127,6 +156,10 @@ public class BasePlayer : MonoBehaviourPunCallbacks
                 Debug.LogWarning($"[BasePlayer] Saved survivor '{name}' could not be loaded — keeping prefab default.");
             }
         }
+
+        // Sync immediately after loading so the master client sees the correct characters
+        // even if the player never opens the loadout screen this session.
+        SyncEquippedCharacterProps();
     }
 
     #endregion

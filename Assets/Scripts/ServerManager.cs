@@ -126,28 +126,58 @@ public class ServerManager : MonoBehaviourPunCallbacks
             // 1) Tell everyone what role this player is
             pv.RPC("SetPlayerType", RpcTarget.AllBuffered, type);
 
-            // 2) Decide which character ID to use based on equipped Malice selection
+            // 2) Read the character ID from the player's Photon custom properties.
+            //    These are set by BasePlayer.SyncEquippedCharacterProps() on each client's
+            //    own machine, so the master always reads the correct remote player selections
+            //    rather than its own local PlayerPrefs values.
+            Photon.Realtime.Player photonPlayer = pv.Owner;
             string characterId = null;
 
             if (type == PlayerType.Killer)
             {
-                KillerType killer = basePlayer.GetEquippedKiller();
-                if (killer == null)
+                if (photonPlayer != null &&
+                    photonPlayer.CustomProperties.TryGetValue(BasePlayer.PropEquippedKiller, out object killerNameObj) &&
+                    killerNameObj is string killerName &&
+                    !string.IsNullOrEmpty(killerName))
                 {
-                    Debug.LogWarning($"[ServerManager] Player {player.name} has no equipped KillerType.");
+                    characterId = killerName;
+                }
+                else
+                {
+                    // Fallback: read local field (valid when this player is the master client itself)
+                    KillerType killer = basePlayer.GetEquippedKiller();
+                    if (killer != null)
+                        characterId = killer._Name;
+                }
+
+                if (characterId == null)
+                {
+                    Debug.LogWarning($"[ServerManager] Could not resolve killer character for player {pv.OwnerActorNr} — skipping skin.");
                     continue;
                 }
-                characterId = killer._Name;
             }
             else
             {
-                SurvivorType survivor = basePlayer.GetEquippedSurvivor();
-                if (survivor == null)
+                if (photonPlayer != null &&
+                    photonPlayer.CustomProperties.TryGetValue(BasePlayer.PropEquippedSurvivor, out object survivorNameObj) &&
+                    survivorNameObj is string survivorName &&
+                    !string.IsNullOrEmpty(survivorName))
                 {
-                    Debug.LogWarning($"[ServerManager] Player {player.name} has no equipped SurvivorType.");
+                    characterId = survivorName;
+                }
+                else
+                {
+                    // Fallback: read local field (valid when this player is the master client itself)
+                    SurvivorType survivor = basePlayer.GetEquippedSurvivor();
+                    if (survivor != null)
+                        characterId = survivor._Name;
+                }
+
+                if (characterId == null)
+                {
+                    Debug.LogWarning($"[ServerManager] Could not resolve survivor character for player {pv.OwnerActorNr} — skipping skin.");
                     continue;
                 }
-                characterId = survivor._Name;
             }
 
             // 3) Apply role + character skin to every client via PlayerCustomizer
