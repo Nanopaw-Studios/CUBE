@@ -107,6 +107,29 @@ public class ShopManager : MonoBehaviour
         if (shop != null) shop.SetActive(false);
         if (CharDetails != null) CharDetails.SetActive(false);
         RefreshShopFromInventory();
+
+        // Force-close the shop when a round begins so it can never remain open mid-round.
+        if (roundManager != null)
+            roundManager.OnRoundStart += ForceCloseShop;
+    }
+
+    private void OnDestroy()
+    {
+        if (roundManager != null)
+            roundManager.OnRoundStart -= ForceCloseShop;
+    }
+
+    /// <summary>
+    /// Closes the shop immediately and restores gameplay cursor state.
+    /// Called when a round begins to ensure the shop is never open mid-round.
+    /// </summary>
+    private void ForceCloseShop()
+    {
+        if (shop != null && shop.activeInHierarchy)
+        {
+            shop.SetActive(false);
+            CursorManager.SetState(CursorManager.CursorState.Gameplay);
+        }
     }
 
     private void HandleCoinsChanged(int _)

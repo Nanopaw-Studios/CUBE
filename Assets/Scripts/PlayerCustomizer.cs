@@ -55,19 +55,55 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
         // Destroy the intermission color material instance AFTER applying the role material
         // so there is no frame where bones have a null/destroyed material (which causes them
-        // to become invisible — including the arm/hand bones the local player sees as their "hands").
+        // to become invisible -- including the arm/hand bones the local player sees as their "hands").
         Material oldInstance = instanceMaterial;
         instanceMaterial = null;
 
-        Debug.Log($"[PlayerCustomizer] RoundStarted — hasPendingRole={hasPendingRole}");
+        Debug.Log($"[PlayerCustomizer] RoundStarted -- hasPendingRole={hasPendingRole}");
+
+        if (hasPendingRole)
+        {
+            hasPendingRole = false;
+            ApplyRole(pendingPlayerType, pendingCharacterId);
+
+            // Safe to destroy old instance now that new materials are applied.
+            if (oldInstance != null)
+                Destroy(oldInstance);
+        }
+        else
+        {
+            // ApplyRoleAndCharacter hasn't arrived yet -- wait for it.
+            // Destroy the old instance after a short delay so the bones don't
+            // go invisible while we wait for the role RPC.
+            StartCoroutine(WaitForRoleRPC(oldInstance));
+        }
+    }
+
+    private IEnumerator WaitForRoleRPC(Material oldInstance)
+    {
+        // Wait up to 5 seconds for ApplyRoleAndCharacter to arrive.
+        const float timeout = 5f;
+        float elapsed = 0f;
+
+        while (elapsed < timeout)
+        {
+            if (hasPendingRole)
+                break;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
 
         if (hasPendingRole)
         {
             hasPendingRole = false;
             ApplyRole(pendingPlayerType, pendingCharacterId);
         }
+        else
+        {
+            Debug.LogWarning("[PlayerCustomizer] WaitForRoleRPC timed out -- role RPC never arrived.");
+        }
 
-        // Safe to destroy old instance now that new materials are applied (or no role yet).
+        // Safe to destroy old instance now.
         if (oldInstance != null)
             Destroy(oldInstance);
     }
@@ -75,6 +111,12 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     private void IntermissionStarted()
     {
         isInIntermission = true;
+
+        // Clear any pending role from the previous round so stale character data
+        // does not bleed into the next round if the RPC arrived late or out of order.
+        hasPendingRole = false;
+        pendingCharacterId = null;
+
         StartCoroutine(ApplyIntermissionNextFrame());
     }
 
@@ -141,7 +183,12 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         Debug.Log($"[PlayerCustomizer] ApplyRole — playerType={playerType}, characterId={characterId}");
 
+        // Capture the old intermission instance before nulling so we can destroy it
+        // AFTER the new role materials are applied, preventing a frame where bones
+        // have a null/destroyed material (which makes hands invisible).
+        Material oldInstance = instanceMaterial;
         instanceMaterial = null;
+
         ClearSpawnedAccessories();
 
         if (playerType == BasePlayer.PlayerType.Killer)
@@ -149,28 +196,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         else
             ApplySurvivorCustomisation(characterId);
 
-        // Discard the intermission instance AFTER role materials are already applied so bones
-        // are never left with a null/destroyed material (which makes the local player's hands
-        // invisible on their own screen).
-        if (instanceMaterial != null)
-        {
-            Destroy(instanceMaterial);
-            instanceMaterial = null;
-        }
-    }
-
-    /// <summary>
-    /// Removes all previously spawned accessory GameObjects tagged as such so
-    /// repeated role assignments don't stack duplicates on the same bones.
-    /// </summary>
-    private void DestroySpawnedAccessories()
-    {
-        const string AccessoryTag = "SpawnedAccessory";
-        foreach (Transform child in GetComponentsInChildren<Transform>(true))
-        {
-            if (child != null && child.CompareTag(AccessoryTag))
-                Destroy(child.gameObject);
-        }
+        // Safe to destroy now — bones already have the new role material.
+        if (oldInstance != null)
+            Destroy(oldInstance);
     }
 
     private void ApplySurvivorCustomisation(string id)
@@ -188,6 +216,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         const string AccessoryTag = "SpawnedAccessory";
         foreach (Accessory accessory in survivorType.character.accessories)
         {
+            if (accessory == null || accessory.prefab == null) continue;
+
             Transform accTransform = FindDeepChild(transform, accessory.boneName);
             if (accTransform != null)
             {
@@ -195,6 +225,11 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 accInstance.transform.localPosition = accessory.localPosition;
                 accInstance.transform.localRotation = accessory.localRotation;
                 accInstance.tag = AccessoryTag;
+
+                // Inherit the layer from the parent bone so the accessory is visible
+                // on the same camera culling mask as the rest of the character.
+                SetLayerRecursive(accInstance, accTransform.gameObject.layer);
+
                 spawnedAccessories.Add(accInstance);
             }
             else
@@ -202,6 +237,13 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}.");
             }
         }
+    }
+
+    private static void SetLayerRecursive(GameObject go, int layer)
+    {
+        go.layer = layer;
+        foreach (Transform child in go.transform)
+            SetLayerRecursive(child.gameObject, layer);
     }
 
     private void ClearSpawnedAccessories()

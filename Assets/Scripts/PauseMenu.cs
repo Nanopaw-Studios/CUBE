@@ -20,8 +20,6 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     private Animator pauseMenuAnimator;
     private RoundManager roundManager;
 
-    // MonoBehaviourPunCallbacks registers/deregisters Photon callbacks in
-    // OnEnable/OnDisable via base. We must call base here so OnDisconnected fires.
     public override void OnEnable()
     {
         base.OnEnable();
@@ -38,14 +36,17 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     {
         pauseMenuAnimator = GetComponent<Animator>();
         roundManager = FindFirstObjectByType<RoundManager>();
-    }    
+    }
 
     void Update()
     {
-        if(pauseAction.action.WasPressedThisFrame()) // may cause spam issues when holding
-        {  PauseStateChange();  }
+        if (pauseAction != null && pauseAction.action.WasPressedThisFrame())
+        {
+            PauseStateChange();
+        }
 
-        QuitButton.interactable = roundManager.intermissionActive;
+        if (QuitButton != null && roundManager != null)
+            QuitButton.interactable = roundManager.intermissionActive;
     }
 
     public void PauseStateChange()
@@ -58,7 +59,6 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         {
             onPause.Invoke();
             pauseMenu.SetActive(true);
-
             pauseMenuAnimator.Play("PauseFadeIn");
             CursorManager.SetState(CursorManager.CursorState.UI);
 
@@ -81,19 +81,24 @@ public class PauseMenu : MonoBehaviourPunCallbacks
 
     IEnumerator DisableAfterAnimation()
     {
-        yield return new WaitForSeconds(0.3f); // match your animation length
+        yield return new WaitForSeconds(0.3f);
         pauseMenu.SetActive(false);
     }
 
-    public void Resume() {  PauseStateChange();  }
+    public void Resume() { PauseStateChange(); }
 
+    /// <summary>
+    /// Leaves the current Photon room and returns to the main menu.
+    /// OnLeftRoom fires before the room is fully torn down, which is safe for scene loads.
+    /// If not in a room, loads the menu directly.
+    /// </summary>
     public void Quit()
     {
+        GameIsPaused = false;
+
         if (PhotonNetwork.InRoom)
         {
-            // Disconnect first; LoadLevel is called from OnDisconnected
-            // so the scene change doesn't happen while Photon is mid-teardown.
-            PhotonNetwork.Disconnect();
+            PhotonNetwork.LeaveRoom();
         }
         else
         {
@@ -101,9 +106,12 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         }
     }
 
-    public override void OnDisconnected(Photon.Realtime.DisconnectCause cause)
+    /// <summary>
+    /// Photon fires this on the local client after the room has been left cleanly.
+    /// At this point we are back on the Master Server and can safely load a new scene.
+    /// </summary>
+    public override void OnLeftRoom()
     {
-        // Safe to load the menu now that Photon has fully disconnected.
         loader.LoadLevel("Menu");
     }
 }

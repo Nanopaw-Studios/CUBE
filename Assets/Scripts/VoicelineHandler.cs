@@ -15,6 +15,7 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
     private CubeCharacterData data;
 
     private bool isRunning = false;
+    private Coroutine voicelineCoroutine = null;
 
     private void Start()
     {
@@ -27,26 +28,49 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
 
     private void RoundStarted()
     {
-        survivor = player.GetEquippedSurvivor();
-        data = survivor.character;
+        StartCoroutine(RoundStartedDelayed());
+    }
+
+    // Role assignment RPCs may arrive shortly after OnRoundStart fires, so we
+    // wait a couple of frames before reading playerType to avoid a false None result.
+    private System.Collections.IEnumerator RoundStartedDelayed()
+    {
+        yield return null;
+        yield return null;
 
         if (player.GetPlayerType() == BasePlayer.PlayerType.Killer)
         {
             Debug.LogWarning("VoicelineHandler attached to a Killer. This should be on a Survivor.");
             this.enabled = false;
-            return;
+            yield break;
         }
-        else if (player.GetPlayerType() == BasePlayer.PlayerType.Survivor && data.voicelines.Length == 0)
+
+        if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+        {
+            // Still None — not a survivor this round.
+            yield break;
+        }
+
+        survivor = player.GetEquippedSurvivor();
+        if (survivor == null)
+        {
+            Debug.LogWarning("VoicelineHandler: No equipped survivor found.");
+            yield break;
+        }
+
+        data = survivor.character;
+        if (data == null || data.voicelines.Length == 0)
         {
             Debug.LogWarning("VoicelineHandler attached to a Survivor that does not have voicelines.");
             this.enabled = false;
-            return;
+            yield break;
         }
 
         if (!isRunning)
         {
             isRunning = true;
-            StartCoroutine(IdleVoicelineLoop());
+            if (voicelineCoroutine != null) StopCoroutine(voicelineCoroutine);
+            voicelineCoroutine = StartCoroutine(IdleVoicelineLoop());
         }
     }
 
@@ -54,8 +78,16 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
     {
         while (enabled)
         {
-            if (player == null || survivor == null || data == null) yield break;
-            if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor) yield break;
+            if (player == null || survivor == null || data == null)
+            {
+                isRunning = false;
+                yield break;
+            }
+            if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+            {
+                isRunning = false;
+                yield break;
+            }
 
             var idleLines = System.Array.FindAll(
                 data.voicelines,
@@ -85,8 +117,11 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
             else
             {
                 // No idle lines — stop the loop
+                isRunning = false;
                 yield break;
             }
         }
+
+        isRunning = false;
     }
 }

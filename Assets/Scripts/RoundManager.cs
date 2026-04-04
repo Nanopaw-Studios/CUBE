@@ -12,7 +12,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
     [HideInInspector] public bool roundActive = false;
     [HideInInspector] public bool intermissionActive = false;
 
-    private int intermissionTime = 40; // 40 seconds
+    private int intermissionTime = 60;
     public Transform intermissionSpawnPoint;
 
     public event Action OnRoundStart;

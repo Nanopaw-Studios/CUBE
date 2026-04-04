@@ -26,8 +26,18 @@ public class RoleReveal : MonoBehaviour
 
     private void OnRoundStart()
     {
+        StartCoroutine(ShowRoleWhenReady());
+    }
+
+    /// <summary>
+    /// Waits for the SetPlayerType RPC to arrive before displaying the role banner,
+    /// so the text always matches the actual assigned role.
+    /// </summary>
+    private IEnumerator ShowRoleWhenReady()
+    {
         BasePlayer localPlayer = null;
 
+        // Resolve the local player.
         BasePlayer[] players = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
         foreach (BasePlayer player in players)
         {
@@ -36,6 +46,23 @@ public class RoleReveal : MonoBehaviour
                 localPlayer = player;
                 break;
             }
+        }
+
+        if (localPlayer == null)
+        {
+            Debug.LogWarning("[RoleReveal] Could not find local BasePlayer.");
+            yield break;
+        }
+
+        // Wait up to 5 seconds for SetPlayerType RPC to arrive.
+        const float timeout = 5f;
+        float elapsed = 0f;
+        while (elapsed < timeout)
+        {
+            if (localPlayer.GetPlayerType() != BasePlayer.PlayerType.None)
+                break;
+            elapsed += Time.deltaTime;
+            yield return null;
         }
 
         BasePlayer.PlayerType type = localPlayer.GetPlayerType();

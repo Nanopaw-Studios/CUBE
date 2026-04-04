@@ -1,4 +1,5 @@
 using Photon.Pun;
+using System.Collections;
 using UnityEngine;
 
 public class ChaseHandler : MonoBehaviourPunCallbacks
@@ -21,21 +22,68 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
         roundManager = FindFirstObjectByType<RoundManager>();
         if (roundManager != null)
         {
-            roundManager.OnRoundStart += RoundStarted;
+            roundManager.OnRoundStart += OnRoundStart;
+            roundManager.OnIntermissionStart += OnIntermissionStart;
         }
     }
 
-    private void RoundStarted()
+    private void OnDestroy()
     {
-        killer = player.GetEquippedKiller();
-        data = killer.character;
-
-        if (player.GetPlayerType() == BasePlayer.PlayerType.Survivor)
+        if (roundManager != null)
         {
-            Debug.LogWarning("ChaseHandler attached to a Survivor. This should be on a Killer.");
-            this.enabled = false;
-            return;
+            roundManager.OnRoundStart -= OnRoundStart;
+            roundManager.OnIntermissionStart -= OnIntermissionStart;
         }
+    }
+
+    private void OnIntermissionStart()
+    {
+        // Reset chase state and cached killer data so it doesn't bleed into the next round.
+        inChase = false;
+        killer = null;
+        data = null;
+        enabled = true;
+    }
+
+    private void OnRoundStart()
+    {
+        inChase = false;
+        killer = null;
+        data = null;
+
+        // Wait for the SetPlayerType RPC to arrive before reading the role.
+        StartCoroutine(InitWhenRoleReady());
+    }
+
+    private IEnumerator InitWhenRoleReady()
+    {
+        const float timeout = 5f;
+        float elapsed = 0f;
+
+        while (elapsed < timeout)
+        {
+            if (player != null && player.GetPlayerType() != BasePlayer.PlayerType.None)
+                break;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (player == null || player.GetPlayerType() != BasePlayer.PlayerType.Killer)
+        {
+            enabled = false;
+            yield break;
+        }
+
+        killer = player.GetEquippedKiller();
+        if (killer == null)
+        {
+            Debug.LogWarning("ChaseHandler: Killer data not found.");
+            enabled = false;
+            yield break;
+        }
+
+        data = killer.character;
+        enabled = true;
     }
 
     private void Update()

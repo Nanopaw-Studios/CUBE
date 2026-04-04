@@ -62,15 +62,12 @@ public class MenuCubeSpawner : MonoBehaviour
         // add to list
         spawnedCubes.Add(cube);
 
-        // if more than 15 cubes exist, destroy the oldest one
-        if (spawnedCubes.Count > 7)
-        {
-            GameObject oldestCube = spawnedCubes[0];
-            //spawnedCubes.RemoveAt(0);
-            //Destroy(oldestCube);
-            // lerp the size, then destroy
-            StartCoroutine(ScaleDownAndDestroy(oldestCube, 1f));
-        }
+    if (spawnedCubes.Count > 15)
+    {
+        GameObject oldestCube = spawnedCubes[0];
+        spawnedCubes.RemoveAt(0); // remove immediately
+        StartCoroutine(ScaleDownAndDestroy(oldestCube, .5f));
+    }
     }
 
     private IEnumerator ScaleDownAndDestroy(GameObject obj, float duration)

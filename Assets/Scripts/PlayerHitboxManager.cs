@@ -1,3 +1,4 @@
+using EZCameraShake;
 using Photon.Pun;
 using UnityEngine;
 
@@ -77,8 +78,10 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void RPC_OnHit(int damage)
     {
+
         Debug.Log($"[HitboxManager] {gameObject.name} received {damage} damage.");
         stats.TakeDamage(damage);
+        CameraShaker.Instance.ShakeOnce(3f * (damage / 100), 4f, .1f, 1f);
 
         // Only the master client performs win-condition checks to avoid duplicate EndRound calls.
         if (PhotonNetwork.IsMasterClient && stats.health <= 0)

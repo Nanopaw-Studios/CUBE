@@ -58,17 +58,21 @@ public class PlayerUIHandler : MonoBehaviour
         {
             if (healthBar != null)
             {
+                Slider healthSlider = healthBar.GetComponent<Slider>();
+                healthSlider.maxValue = playerStats.maxHealth;
                 smoothHealth = Mathf.Lerp(smoothHealth, playerStats.health, Time.deltaTime * lerpSpeed);
-                healthBar.GetComponent<Slider>().value = smoothHealth;
+                healthSlider.value = smoothHealth;
                 if (healthText != null)
-                    healthText.GetComponent<TMP_Text>().text = $"{playerStats.health}/100";
+                    healthText.GetComponent<TMP_Text>().text = $"{playerStats.health}/{playerStats.maxHealth}";
             }
             if (staminaBar != null)
             {
+                Slider staminaSlider = staminaBar.GetComponent<Slider>();
+                staminaSlider.maxValue = playerStats.maxStamina;
                 smoothStamina = Mathf.Lerp(smoothStamina, playerStats.stamina, Time.deltaTime * lerpSpeed);
-                staminaBar.GetComponent<Slider>().value = smoothStamina;
+                staminaSlider.value = smoothStamina;
                 if (staminaText != null)
-                    staminaText.GetComponent<TMP_Text>().text = $"{playerStats.stamina}/100";
+                    staminaText.GetComponent<TMP_Text>().text = $"{playerStats.stamina}/{playerStats.maxStamina}";
             }
         }
 
@@ -102,8 +106,6 @@ public class PlayerUIHandler : MonoBehaviour
 
             if (showUI)
             {
-                // Player name only appears during intermission, never during active rounds.
-                if (playerNameText != null) playerNameText.gameObject.SetActive(false);
                 if (pingText != null) pingText.text = $"Ping: {PhotonNetwork.GetPing()}ms";
                 if (versionText != null) versionText.text = $"v{Application.version}";
 
@@ -119,18 +121,14 @@ public class PlayerUIHandler : MonoBehaviour
                     }
                 }
             }
-            else if (roundManager.intermissionActive)
+        }
+        else if (roundManager != null)
+        {
+            if (playerNameText != null)
             {
-                // Show the player name only during intermission.
-                if (playerNameText != null)
-                {
-                    playerNameText.gameObject.SetActive(true);
+                bool showName = roundManager.intermissionActive;
+                if (showName)
                     playerNameText.text = PhotonNetwork.NickName;
-                }
-            }
-            else
-            {
-                if (playerNameText != null) playerNameText.gameObject.SetActive(false);
             }
         }
     }

@@ -34,8 +34,14 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
             roundManager.OnRoundStart += OnRoundStart;
             roundManager.OnIntermissionStart += OnIntermissionStart;
 
-            // Sync initial state
-            SetNametagVisible(roundManager.intermissionActive);
+            // Sync initial state: only show during intermission, never during an active round.
+            bool showNow = roundManager.intermissionActive && !roundManager.roundActive;
+            SetNametagVisible(showNow);
+        }
+        else
+        {
+            // No RoundManager — hide by default (safe fallback).
+            SetNametagVisible(false);
         }
 
         if (!photonView.IsMine) return;

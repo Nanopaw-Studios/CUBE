@@ -1,4 +1,5 @@
 using Photon.Pun;
+using System.Collections;
 using System.Linq;
 using UnityEngine;
 
@@ -18,9 +19,9 @@ public class ProxSong : MonoBehaviour
 
     private GameObject localPlayer;        // who we are locally
 
-    private void Awake()
+    private void Awake_DISABLED()
     {
-        // find our local player (this only works after Photon or your netcode has spawned players)
+        // Removed: localPlayer is now resolved lazily in OnRoundStart.
         localPlayer = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None)
                       .FirstOrDefault(p => p.gameObject.GetPhotonView().IsMine) // use your own �is mine� check
                       ?.gameObject;
@@ -31,8 +32,8 @@ public class ProxSong : MonoBehaviour
         roundManager = FindFirstObjectByType<RoundManager>();
         if (roundManager != null)
         {
-            // wait until the round actually starts
-            roundManager.OnRoundStart += RoundStarted;
+            roundManager.OnRoundStart += OnRoundStart;
+            roundManager.OnIntermissionStart += OnIntermissionStart;
         }
         else
         {
@@ -40,26 +41,88 @@ public class ProxSong : MonoBehaviour
         }
     }
 
-    private void RoundStarted()
+    private void OnIntermissionStart()
     {
-        // only run this on killers
+        // Always tear down audio when the round ends so we start completely
+        // fresh next round -- prevents the previous killer's theme from bleeding over.
+        CleanupAudio();
+        killer = null;
+        data = null;
+
+        // Re-enable the component so it can respond to the next OnRoundStart.
+        enabled = true;
+    }
+
+    private void OnRoundStart()
+    {
+        // Tear down any audio that survived from a prior round.
+        CleanupAudio();
+        killer = null;
+        data = null;
+
+        // Resolve the local player lazily -- not reliably available at Start time.
+        if (localPlayer == null)
+        {
+            localPlayer = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None)
+                          .FirstOrDefault(p => p.gameObject.GetPhotonView()?.IsMine == true)
+                          ?.gameObject;
+        }
+
+        // Wait for the SetPlayerType RPC before deciding whether to play music.
+        StartCoroutine(InitWhenRoleReady());
+    }
+
+    private System.Collections.IEnumerator InitWhenRoleReady()
+    {
+        // Give the SetPlayerType RPC up to 5 seconds to arrive.
+        const float timeout = 5f;
+        float elapsed = 0f;
+
+        while (elapsed < timeout)
+        {
+            if (basePlayer != null && basePlayer.GetPlayerType() != BasePlayer.PlayerType.None)
+                break;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Only proceed if this player was assigned the Killer role.
         if (basePlayer == null || basePlayer.GetPlayerType() != BasePlayer.PlayerType.Killer)
         {
-            // not a killer, no audio needed
-            enabled = false;
-            return;
+            // Survivor -- stay enabled and idle; the next OnRoundStart will try again.
+            yield break;
         }
 
         killer = basePlayer.GetEquippedKiller();
         if (killer == null)
         {
             Debug.LogWarning("ProxSong: Killer data not found.");
-            enabled = false;
-            return;
+            yield break;
         }
 
         data = killer.character;
         InitializeAudio();
+    }
+
+    private void CleanupAudio()
+    {
+        if (layers == null) return;
+        foreach (var layer in layers)
+        {
+            if (layer != null && layer.source != null)
+                Destroy(layer.source.gameObject);
+        }
+        layers = null;
+    }
+
+    private void OnDestroy()
+    {
+        if (roundManager != null)
+        {
+            roundManager.OnRoundStart -= OnRoundStart;
+            roundManager.OnIntermissionStart -= OnIntermissionStart;
+        }
+        CleanupAudio();
     }
 
     private void InitializeAudio()
@@ -127,7 +190,7 @@ public class ProxSong : MonoBehaviour
     /// </summary>
     private float GetRelevantDistance()
     {
-        bool localIsKiller = basePlayer != null && basePlayer.gameObject.GetPhotonView().IsMine;
+        bool localIsKiller = basePlayer != null && basePlayer.gameObject.GetPhotonView()?.IsMine == true;
 
         if (!localIsKiller)
         {

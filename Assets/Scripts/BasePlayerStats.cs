@@ -48,8 +48,6 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     [PunRPC]
     public void TakeDamage(int damage)
     {
-        CameraShaker.Instance.ShakeOnce(3f * (damage / 1000), 4f, .1f, 1f);
-
         health -= damage;
         if (health < 0) health = 0;
     }
@@ -69,7 +67,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     public void RecoverStamina(int amount)
     {
         stamina += amount;
-        if (stamina > 100) stamina = 100;
+        if (stamina > maxStamina) stamina = maxStamina;
     }
     [PunRPC]
     public void GrantMalice(int amount)
