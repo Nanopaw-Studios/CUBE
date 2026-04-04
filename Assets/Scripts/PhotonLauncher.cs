@@ -26,6 +26,7 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         if (roundManager != null)
         {
             roundManager.OnRoundStart += HandleRoundStart;
+            roundManager.OnRoundStart += HandleRoundStartTracking;
             roundManager.OnIntermissionStart += HandleIntermissionStart;
 
             if (intermissionSpawn != null)
@@ -67,6 +68,7 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         if (roundManager != null)
         {
             roundManager.OnRoundStart -= HandleRoundStart;
+            roundManager.OnRoundStart -= HandleRoundStartTracking;
             roundManager.OnIntermissionStart -= HandleIntermissionStart;
         }
     }
@@ -84,7 +86,7 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         PlayerTeleportHandler teleportHandler = LocalPlayerInstance.GetComponent<PlayerTeleportHandler>();
         if (teleportHandler != null)
         {
-            teleportHandler.InitiateTeleport(targetPosition, targetRotation);
+            teleportHandler.Teleport(targetPosition, targetRotation, snapToGround: true, useOffset: false);
         }
         else
         {
@@ -123,16 +125,30 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         LocalPlayerInstance = PhotonNetwork.Instantiate(playerPrefab.name, pos, rot);
         Debug.Log("Spawned local player.");
 
+        BasePlayer bp = LocalPlayerInstance.GetComponent<BasePlayer>();
+        if (roundManager != null && roundManager.roundActive)
+        {
+            bp.playerType = BasePlayer.PlayerType.None;
+        }
 
-        Color color = Resources.Load<Material>("PlayerMat").GetColor("_MainColor");
-        string hex = "#" + ColorUtility.ToHtmlStringRGB(color);
+        // Read the player's own saved color from PlayerPrefs (set by PlayerColorer via the color picker).
+        // Falling back to the shared PlayerMat would pick up whatever the Master Client last set on it,
+        // giving mid-joiners the wrong color until the next round ends.
+        string hex;
+        if (PlayerPrefs.HasKey("PlayerColor"))
+        {
+            hex = PlayerPrefs.GetString("PlayerColor");
+        }
+        else
+        {
+            Color color = Resources.Load<Material>("PlayerMat").GetColor("_MainColor");
+            hex = "#" + ColorUtility.ToHtmlStringRGB(color);
+        }
 
         var customizer = LocalPlayerInstance.GetComponent<PlayerCustomizer>();
         if (customizer != null)
         {
-            customizer.ChangeColorCalled(
-                hex
-            );
+            customizer.ChangeColorCalled(hex);
         }
     }
 
@@ -232,13 +248,21 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         // Wait one more frame to allow SetPlayerType RPC to arrive
         yield return null;
 
-        if (roundManager != null && !roundManager.roundActive)
+        if (roundManager != null)
         {
-            // If we're not in an active round (e.g. intermission / round just ended),
-            // never run stale role teleports.
-            yield break;
-        }
+            // If player joined mid-round, NEVER teleport into match
+            if (roundManager.roundActive && !roundManager.intermissionActive)
+            {
+                BasePlayer bp = LocalPlayerInstance.GetComponent<BasePlayer>();
 
+                // If they don't have a role yet → they are a mid-joiner
+                if (bp != null && bp.GetPlayerType() == BasePlayer.PlayerType.None)
+                {
+                    Debug.Log("[PhotonLauncher] Mid-round join detected → staying in intermission.");
+                    yield break;
+                }
+            }
+        }
         BasePlayer basePlayer = LocalPlayerInstance.GetComponent<BasePlayer>();
         if (basePlayer == null)
         {
@@ -248,13 +272,20 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
 
         Transform chosenSpawn = null;
 
-        if (basePlayer.GetPlayerType() == BasePlayer.PlayerType.Killer && killerSpawns.Count > 0)
+        var type = basePlayer.GetPlayerType();
+
+        if (type == BasePlayer.PlayerType.Killer && killerSpawns.Count > 0)
         {
             chosenSpawn = killerSpawns[Random.Range(0, killerSpawns.Count)];
         }
-        else if (survivorSpawns.Count > 0)
+        else if (type == BasePlayer.PlayerType.Survivor && survivorSpawns.Count > 0)
         {
             chosenSpawn = survivorSpawns[Random.Range(0, survivorSpawns.Count)];
+        }
+        else
+        {
+            Debug.Log("[PhotonLauncher] No valid role → not teleporting.");
+            yield break;
         }
 
         if (chosenSpawn == null)
@@ -284,9 +315,24 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         }
     }
 
+    // Tracks whether the local player was already in intermission before the latest
+    // OnIntermissionStart event fires (i.e. the round just ended). If they were
+    // already sitting at the intermission spawn we should NOT teleport them again.
+    private bool wasInIntermissionBeforeEvent = false;
+
     private void HandleIntermissionStart()
     {
         if (LocalPlayerInstance == null) return;
+
+        // If the player was already in intermission (mid-round joiner or previous
+        // intermission), don't teleport them again — they are already there.
+        if (wasInIntermissionBeforeEvent)
+        {
+            Debug.Log("Intermission started but player was already in intermission — skipping teleport.");
+            wasInIntermissionBeforeEvent = true; // stays true
+            return;
+        }
+
         Debug.Log("Intermission started — teleporting to intermission spawn.");
 
         Vector3 basePos = roundManager.SyncedIntermissionSpawnPos;
@@ -299,5 +345,15 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spreadRadius;
 
         TeleportPlayer(basePos + offset, spawnRot);
+
+        // Mark as in intermission so the next OnIntermissionStart won't re-teleport.
+        wasInIntermissionBeforeEvent = true;
+    }
+
+    private void HandleRoundStartTracking()
+    {
+        // When a round starts the player is no longer in intermission,
+        // so the next OnIntermissionStart (round end) should teleport them.
+        wasInIntermissionBeforeEvent = false;
     }
 }

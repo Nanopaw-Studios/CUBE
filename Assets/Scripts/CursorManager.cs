@@ -7,12 +7,25 @@ public class CursorManager : MonoBehaviour
         SetLocked();
     }
 
-    public static void SetState(bool locked)
+    public enum CursorState
     {
-        if (locked)
-        { SetLocked(); }
-        else
-        { SetVisible(); }
+        Gameplay,
+        UI
+    }
+
+    public static void SetState(CursorState state)
+    {
+        Debug.Log("Cursor state set to: " + state);
+        switch (state)
+        {
+            case CursorState.Gameplay:
+                SetLocked();
+                break;
+
+            case CursorState.UI:
+                SetVisible();
+                break;
+        }
     }
 
     public static void SetLocked()

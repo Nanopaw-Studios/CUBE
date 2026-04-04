@@ -5,230 +5,217 @@ using System.Collections.Generic;
 [RequireComponent(typeof(PhotonView))]
 public class RagdollNetwork : MonoBehaviour, IPunObservable
 {
-    public Transform hip;                      // the main bone to send
-    public Rigidbody hipRb;                    // hip's Rigidbody on owner
-    public List<Transform> keyBones;           // chest, head, hands, feet etc. (configure in inspector)
+    [Header("Setup")]
+    public Transform hip;
+    public List<Transform> keyBones;
 
     PhotonView pv;
 
-    // smoothing
-    Vector3 hipPosTarget;
-    Quaternion hipRotTarget;
-    Vector3 hipVelTarget;
-    Vector3 hipAngVelTarget;
+    struct Snapshot
+    {
+        public Vector3    hipPos;    // world-space
+        public Quaternion hipRot;    // world-space
+        public Vector3[]  bonePos;   // local-space (relative to parent bone)
+        public Quaternion[] boneRot;
+        public double     time;
+    }
 
-    // buffers for key bones
-    Vector3[] keyBonePosTarget;
-    Quaternion[] keyBoneRotTarget;
+    readonly List<Snapshot> buffer = new List<Snapshot>();
+    const int MAX_BUFFER = 32;
 
-    // interpolation speeds
-    public float positionLerp = 20f;
-    public float rotationLerp = 20f;
+    [Header("Smoothing")]
+    public float interpolationBackTime = 0.1f;
+    public float teleportThreshold    = 3f;
 
-    // Snap-to-target thresholds: below these values the lerp is skipped and target is applied directly,
-    // preventing infinite micro-oscillation around a stable pose.
-    private const float PositionSnapThreshold = 0.001f;
-    private const float RotationSnapThreshold = 0.05f;
+    // True once the first snapshot has been applied on remote clients.
+    // Prevents the T-pose flash while waiting for the second packet.
+    bool remoteInitialized;
 
-    // Send-gate thresholds: owner only broadcasts a moving=true flag when movement exceeds these values,
-    // so remotes stop lerping entirely while the owner is idle.
-    private const float PositionSendThreshold = 0.002f;
-    private const float RotationSendThreshold = 0.1f;
-    private const float VelocitySendThreshold = 0.01f;
-
-    // Last values sent by the owner, used for change detection
-    private Vector3 lastSentHipPos;
-    private Quaternion lastSentHipRot;
-
-    // Received from the owner each packet: true = owner is moving, false = owner is idle
-    private bool remoteIsMoving;
-
-    private float freezeUntilTime = 0f; // reserved for future use
-
+    // ─────────────────────────────────────────────────────────────
     void Awake()
     {
         pv = GetComponent<PhotonView>();
         if (keyBones == null) keyBones = new List<Transform>();
-
-        keyBonePosTarget = new Vector3[keyBones.Count];
-        keyBoneRotTarget = new Quaternion[keyBones.Count];
     }
 
     void Start()
     {
-        // initial targets
-        if (hip)
+        if (!pv.IsMine)
         {
-            hipPosTarget = hip.position;
-            hipRotTarget = hip.rotation;
-            lastSentHipPos = hip.position;
-            lastSentHipRot = hip.rotation;
+            SetKinematic(true);
+            foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>())
+                smr.updateWhenOffscreen = true;
         }
-
-        for (int i = 0; i < keyBones.Count; i++)
-        {
-            if (keyBones[i] != null)
-            {
-                keyBonePosTarget[i] = keyBones[i].localPosition;
-                keyBoneRotTarget[i] = keyBones[i].localRotation;
-            }
-        }
-
-        // Owner: physics active. Remotes: make physics kinematic and we will drive transforms.
-        if (pv.IsMine)
-            SetRagdollKinematic(false);
-        else
-            SetRagdollKinematic(true);
     }
-
+    // ─────────────────────────────────────────────────────────────
     void Update()
     {
-        if (pv.IsMine || !remoteIsMoving) return;
+        if (pv.IsMine || !remoteInitialized || buffer.Count == 0) return;
 
-        if (hip != null)
+        double interpTime = PhotonNetwork.Time - interpolationBackTime;
+
+        // Discard snapshots that are now too old
+        while (buffer.Count >= 2 && buffer[1].time <= interpTime)
+            buffer.RemoveAt(0);
+
+        if (buffer.Count >= 2)
         {
-            float posDist = Vector3.Distance(hip.position, hipPosTarget);
-            float rotAngle = Quaternion.Angle(hip.rotation, hipRotTarget);
+            Snapshot a = buffer[0];
+            Snapshot b = buffer[1];
+            double range = b.time - a.time;
+            float t = range > 0.0001 ? Mathf.Clamp01((float)((interpTime - a.time) / range)) : 1f;
 
-            hip.position = posDist > PositionSnapThreshold
-                ? Vector3.Lerp(hip.position, hipPosTarget, Time.deltaTime * positionLerp)
-                : hipPosTarget;
+            if (Vector3.Distance(hip.position, b.hipPos) > teleportThreshold)
+            {
+                ApplySnapshot(b);
+                buffer.Clear();
+                return;
+            }
 
-            hip.rotation = rotAngle > RotationSnapThreshold
-                ? Quaternion.Slerp(hip.rotation, hipRotTarget, Time.deltaTime * rotationLerp)
-                : hipRotTarget;
+            // Move root by delta so hip lands at the interpolated world position
+            Vector3 targetHipPos = Vector3.Lerp(a.hipPos, b.hipPos, t);
+            transform.position += targetHipPos - hip.position;
+
+            hip.rotation = Quaternion.Slerp(a.hipRot, b.hipRot, t);
+
+            int boneCount = Mathf.Min(keyBones.Count, Mathf.Min(a.bonePos.Length, b.bonePos.Length));
+            for (int i = 0; i < boneCount; i++)
+            {
+                if (keyBones[i] == null) continue;
+                keyBones[i].localPosition = Vector3.Lerp(a.bonePos[i], b.bonePos[i], t);
+                keyBones[i].localRotation = Quaternion.Slerp(a.boneRot[i], b.boneRot[i], t);
+            }
         }
-
-        for (int i = 0; i < keyBones.Count; i++)
+        else
         {
-            var t = keyBones[i];
-            if (t == null) continue;
-
-            float posDist = Vector3.Distance(t.localPosition, keyBonePosTarget[i]);
-            float rotAngle = Quaternion.Angle(t.localRotation, keyBoneRotTarget[i]);
-
-            t.localPosition = posDist > PositionSnapThreshold
-                ? Vector3.Lerp(t.localPosition, keyBonePosTarget[i], Time.deltaTime * positionLerp)
-                : keyBonePosTarget[i];
-
-            t.localRotation = rotAngle > RotationSnapThreshold
-                ? Quaternion.Slerp(t.localRotation, keyBoneRotTarget[i], Time.deltaTime * rotationLerp)
-                : keyBoneRotTarget[i];
+            // Only one snapshot — extrapolate by holding the last known pose
+            ApplySnapshot(buffer[0]);
         }
     }
 
-    // This serializes only a few transforms/velocities.
+    // ─────────────────────────────────────────────────────────────
+    void ApplySnapshot(Snapshot s)
+    {
+        // Shift root by however much is needed so hip.position lands on s.hipPos.
+        // Moving root shifts ALL children equally — hip arrives at s.hipPos without
+        // being set a second time (that's what caused the T-pose before).
+        Vector3 delta = s.hipPos - hip.position;
+        transform.position += delta;
+
+        // Rotation only — position is already correct from above
+        hip.rotation = s.hipRot;
+
+        int boneCount = Mathf.Min(keyBones.Count, s.bonePos.Length);
+        for (int i = 0; i < boneCount; i++)
+        {
+            if (keyBones[i] == null) continue;
+            keyBones[i].localPosition = s.bonePos[i];
+            keyBones[i].localRotation = s.boneRot[i];
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
-        if (stream.IsWriting && pv.IsMine)
+        if (stream.IsWriting)
         {
-            Vector3 hipPos = hip != null ? hip.position : Vector3.zero;
-            Quaternion hipRot = hip != null ? hip.rotation : Quaternion.identity;
-            Vector3 linVel = hipRb != null ? hipRb.linearVelocity : Vector3.zero;
-            Vector3 angVel = hipRb != null ? hipRb.angularVelocity : Vector3.zero;
+            // ── Owner → Network ──────────────────────────────────
+            stream.SendNext(hip.position);   // world
+            stream.SendNext(hip.rotation);   // world
+            stream.SendNext(keyBones.Count); // always send count so reader never desyncs
 
-            bool isMoving =
-                Vector3.Distance(hipPos, lastSentHipPos) > PositionSendThreshold ||
-                Quaternion.Angle(hipRot, lastSentHipRot) > RotationSendThreshold ||
-                linVel.sqrMagnitude > VelocitySendThreshold * VelocitySendThreshold ||
-                angVel.sqrMagnitude > VelocitySendThreshold * VelocitySendThreshold;
-
-            stream.SendNext(isMoving);
-            stream.SendNext(hipPos);
-            stream.SendNext(hipRot);
-            stream.SendNext(linVel);
-            stream.SendNext(angVel);
-
-            // Write key bones local transforms
-            for (int i = 0; i < keyBones.Count; i++)
+            foreach (Transform bone in keyBones)
             {
-                Transform t = keyBones[i];
-                stream.SendNext(t != null ? t.localPosition : Vector3.zero);
-                stream.SendNext(t != null ? t.localRotation : Quaternion.identity);
-            }
-
-            if (isMoving)
-            {
-                lastSentHipPos = hipPos;
-                lastSentHipRot = hipRot;
+                // Send identity for null bones so the stream length stays constant
+                stream.SendNext(bone != null ? bone.localPosition : Vector3.zero);
+                stream.SendNext(bone != null ? bone.localRotation : Quaternion.identity);
             }
         }
-        else if (stream.IsReading)
+        else
         {
-            remoteIsMoving = (bool)stream.ReceiveNext();
+            // ── Network → Remote ─────────────────────────────────
+            Snapshot s   = new Snapshot();
+            s.time       = info.SentServerTime;
+            s.hipPos     = (Vector3)stream.ReceiveNext();
+            s.hipRot     = (Quaternion)stream.ReceiveNext();
 
-            // Read hip
-            hipPosTarget = (Vector3)stream.ReceiveNext();
-            hipRotTarget = (Quaternion)stream.ReceiveNext();
-            hipVelTarget = (Vector3)stream.ReceiveNext();
-            hipAngVelTarget = (Vector3)stream.ReceiveNext();
+            int count    = (int)stream.ReceiveNext();
+            s.bonePos    = new Vector3[count];
+            s.boneRot    = new Quaternion[count];
 
-            // Read key bones
-            for (int i = 0; i < keyBones.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                keyBonePosTarget[i] = (Vector3)stream.ReceiveNext();
-                keyBoneRotTarget[i] = (Quaternion)stream.ReceiveNext();
+                s.bonePos[i] = (Vector3)stream.ReceiveNext();
+                s.boneRot[i] = (Quaternion)stream.ReceiveNext();
+            }
+
+            // ── Cap buffer so it never grows unbounded ────────────
+            if (buffer.Count >= MAX_BUFFER)
+                buffer.RemoveAt(0);
+
+            buffer.Add(s);
+
+            // ── FIX: snap to correct world position immediately ───
+            // This eliminates the float-in-air on spawn and ensures
+            // the first received pose is correct before interpolation
+            // has two samples to work with.
+            if (!remoteInitialized)
+            {
+                ApplySnapshot(s);
+                remoteInitialized = true;
             }
         }
     }
 
-    // toggle all child rigidbodies kinematic (called on start depending on owner)
-    void SetRagdollKinematic(bool kinematic)
-    {
-        Rigidbody[] rbs = GetComponentsInChildren<Rigidbody>();
-        foreach (var r in rbs)
-        {
-            r.isKinematic = kinematic;
-            r.interpolation = pv.IsMine
-                ? RigidbodyInterpolation.Interpolate
-                : RigidbodyInterpolation.None;
-        }
-    }
-
-    /// <summary>Call on the owner to notify remotes of a physics impulse on a specific bone.</summary>
-    [PunRPC]
-    public void RPC_ApplyImpulse(int boneIndex, Vector3 worldForce, Vector3 worldPoint)
-    {
-        if (pv.IsMine) return;
-
-        var bone = GetBoneByIndex(boneIndex);
-        if (bone == null) return;
-
-        var rb = bone.GetComponent<Rigidbody>();
-        if (rb != null && !rb.isKinematic)
-            rb.AddForceAtPosition(worldForce, worldPoint, ForceMode.Impulse);
-    }
-
-    Transform GetBoneByIndex(int idx)
-    {
-        if (idx < 0 || idx >= keyBones.Count) return null;
-        return keyBones[idx];
-    }
-
-
-    /// <summary>
-    /// Called on the owner immediately after a teleport. Resets the send-gate
-    /// references so the very next serialized packet reflects the new position
-    /// instead of being suppressed by the change-detection threshold.
-    /// Must only be called on the owner — never touches remote bone transforms.
-    /// </summary>
-    public void SnapSendGate()
+    // ─────────────────────────────────────────────────────────────
+    // Call on the OWNER to teleport the ragdoll and have remotes snap cleanly.
+    public void TeleportTo(Vector3 worldPosition)
     {
         if (!pv.IsMine) return;
 
-        if (hip != null)
+        // Shift every rigidbody by the delta so relative bone poses are preserved
+        Vector3 delta = worldPosition - hip.position;
+        foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
         {
-            lastSentHipPos = hip.position;
-            lastSentHipRot = hip.rotation;
+            rb.position           += delta;
+            rb.linearVelocity            = Vector3.zero;
+            rb.angularVelocity     = Vector3.zero;
         }
+
+        // Tell all remote clients to clear their stale buffer so they don't
+        // interpolate from the old location to the new one.
+        pv.RPC(nameof(RPC_OnTeleport), RpcTarget.Others);
+
+        // Flush immediately so remotes get the new position ASAP
+        PhotonNetwork.SendAllOutgoingCommands();
     }
 
-    /// <summary>
-    /// Legacy entry point — kept so nothing outside breaks if still referenced.
-    /// On the owner, delegates to SnapSendGate. On remotes, does nothing.
-    /// </summary>
-    public void ForceSnapToCurrentPose(float freezeSeconds = 0.10f)
+    [PunRPC]
+    void RPC_OnTeleport()
     {
-        SnapSendGate();
+        // Wipe stale snapshots — next received packet will snap to the
+        // correct post-teleport position via the !remoteInitialized path.
+        buffer.Clear();
+        remoteInitialized = false;
+    }
+
+    // Add this alongside TeleportTo()
+    public void NotifyRemotesOfTeleport()
+    {
+        if (!pv.IsMine) return;
+        PhotonNetwork.SendAllOutgoingCommands(); // flush new bone positions first
+        pv.RPC(nameof(RPC_OnTeleport), RpcTarget.Others);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    void SetKinematic(bool state)
+    {
+        foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
+        {
+            rb.isKinematic  = state;
+            rb.interpolation = state
+                ? RigidbodyInterpolation.None
+                : RigidbodyInterpolation.Interpolate;
+        }
     }
 }

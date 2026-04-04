@@ -183,13 +183,14 @@ public class RoundManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private System.Collections.IEnumerator TeleportLocalPlayerToIntermission(Vector3 position, Quaternion rotation)
+    private IEnumerator TeleportLocalPlayerToIntermission(Vector3 position, Quaternion rotation)
     {
-        // Poll until the local owned player GameObject is available — spawning is async
         const float timeout = 10f;
         float elapsed = 0f;
+
         PlayerTeleportHandler teleporter = null;
 
+        // 🧠 Wait for LOCAL OWNED player to fully exist
         while (elapsed < timeout)
         {
             foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
@@ -198,10 +199,11 @@ public class RoundManager : MonoBehaviourPunCallbacks
                 if (pv == null || !pv.IsMine) continue;
 
                 teleporter = go.GetComponent<PlayerTeleportHandler>();
-                break;
+                if (teleporter != null) break;
             }
 
-            if (teleporter != null) break;
+            if (teleporter != null)
+                break;
 
             elapsed += 0.1f;
             yield return new WaitForSecondsRealtime(0.1f);
@@ -209,13 +211,17 @@ public class RoundManager : MonoBehaviourPunCallbacks
 
         if (teleporter == null)
         {
-            Debug.LogWarning("[RoundManager] TeleportLocalPlayerToIntermission: local player not found within timeout.");
+            Debug.LogWarning("[RoundManager] Teleport failed: local player not found.");
             yield break;
         }
 
-        // Intermission spawns are pre-placed safe points — skip ground-snapping so the
-        // raycast can't miss under a floating platform and land the player in the void below.
-        teleporter.InitiateTeleport(position, rotation, snapToGround: false);
+        // 🧠 EXTRA SAFETY: wait one frame for ownership/rig init
+        yield return null;
+
+        Debug.Log("[RoundManager] Teleporting local player to intermission.");
+
+        // 🚀 LOCAL teleport ONLY
+        teleporter.Teleport(position, rotation, snapToGround: true, useOffset: false);
     }
 
     private IEnumerator Timer()

@@ -1,16 +1,47 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CUBEStatusText : MonoBehaviour
 {
     private static CUBEStatusText instance;
 
+    [Tooltip("Explicitly assign the HUD screen-space canvas here to avoid accidentally " +
+             "parenting status text to a world-space nametag canvas.")]
+    public Canvas targetCanvas;
+
     private void Awake()
     {
         instance = this;
+    }
+
+    /// <summary>
+    /// Returns the canvas to parent status text into.
+    /// Uses the explicitly assigned targetCanvas first, then falls back to any
+    /// ScreenSpaceOverlay canvas, then the canvas this component lives on.
+    /// </summary>
+    private static Canvas FindScreenCanvas()
+    {
+        if (instance != null && instance.targetCanvas != null)
+            return instance.targetCanvas;
+
+        // Walk up from this component to find its host canvas.
+        if (instance != null)
+        {
+            Canvas host = instance.GetComponentInParent<Canvas>(true);
+            if (host != null && host.renderMode == RenderMode.ScreenSpaceOverlay)
+                return host;
+        }
+
+        // Last resort: scan all canvases in the scene.
+        foreach (Canvas c in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+        {
+            if (c.renderMode == RenderMode.ScreenSpaceOverlay)
+                return c;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -25,7 +56,14 @@ public class CUBEStatusText : MonoBehaviour
             return null;
         }
 
-        GameObject textObj = GameObject.Instantiate(Resources.Load<GameObject>("CUBEStatusTextPrefab"), GameObject.Find("Canvas").transform);
+        Canvas targetCanvas = FindScreenCanvas();
+        if (targetCanvas == null)
+        {
+            Debug.LogWarning("CUBEStatusText: No screen-space overlay canvas found.");
+            return null;
+        }
+
+        GameObject textObj = GameObject.Instantiate(Resources.Load<GameObject>("CUBEStatusTextPrefab"), targetCanvas.transform);
         TMP_Text tmpTextComponent = textObj.GetComponent<TMP_Text>();
         if (tmpTextComponent == null)
         {

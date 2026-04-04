@@ -7,7 +7,6 @@ public class GlitchDash : Ability
     public AudioClip dashSound;
     public GameObject DashEffectsPrefab;
 
-
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);
@@ -19,7 +18,7 @@ public class GlitchDash : Ability
         // Play dash sound
         if (dashSound != null)
         {
-            AudioSource.PlayClipAtPoint(dashSound, player.transform.position);
+            AudioSource.PlayClipAtPoint(dashSound, player.transform.position, 1);
         }
 
         Transform torso = player.transform.Find("RIG").Find("Torso");

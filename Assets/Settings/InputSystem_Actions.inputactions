@@ -167,6 +167,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Pause",
+                    "type": "Button",
+                    "id": "ee8db67d-eeff-48c4-93f5-0ef99a74075a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -627,7 +636,7 @@
                     "path": "<Keyboard>/q",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "Ability1",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -635,10 +644,10 @@
                 {
                     "name": "",
                     "id": "4c4b0f08-07a3-4e2c-b8c1-b24d2693ac6d",
-                    "path": "<Gamepad>/dpad/up",
+                    "path": "<Gamepad>/leftStickPress",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Gamepad",
                     "action": "Ability1",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -649,7 +658,7 @@
                     "path": "<Keyboard>/e",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "Ability2",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -657,10 +666,10 @@
                 {
                     "name": "",
                     "id": "94a903bc-5ad9-4e1f-8c36-90a29d514556",
-                    "path": "<Gamepad>/dpad/left",
+                    "path": "<Gamepad>/rightStickPress",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Gamepad",
                     "action": "Ability2",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -750,6 +759,28 @@
                     "processors": "",
                     "groups": ";Gamepad",
                     "action": "EmoteWheel",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4f7c3310-73aa-4847-9619-0380cce67ffc",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3897f1e0-2bae-434b-9fe9-f9c077ad8bb7",
+                    "path": "<Gamepad>/start",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "Pause",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

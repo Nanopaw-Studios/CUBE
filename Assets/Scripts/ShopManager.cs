@@ -1,20 +1,3 @@
-﻿// ShopManager (survivor visibility debug + fix)
-//
-// What this version adds:
-// 1) Loud debug logging so you can instantly see WHY survivors aren't showing
-//    - survivors array count
-//    - whether shopSurvivorContent / ownedSurvivorContent are assigned
-//    - how many survivor entries were instantiated
-// 2) A safer SetActiveContent() that also ensures the TARGET's parents are active
-//    (common Unity UI gotcha: the child is set active but an inactive parent keeps it invisible)
-// 3) Optional: Default tab can be set in inspector (Killers/Survivors/Emotes)
-//
-// Most common causes of "I can't see survivors":
-// - survivors[] not assigned / empty
-// - shopSurvivorContent reference is null or points to the WRONG object
-// - the survivor panel is under an inactive parent (tab root, scroll view, etc.)
-// - your UI buttons aren't calling ShowShopSurvivors()
-
 using PlayFab;
 using PlayFab.ClientModels;
 using System;
@@ -85,6 +68,7 @@ public class ShopManager : MonoBehaviour
 
     public event Action<CubePlayerBase> OnCharacterPurchased;
     public event Action<EmoteAsset> OnEmotePurchased;
+    
 
     private void OnEnable()
     {
@@ -139,7 +123,7 @@ public class ShopManager : MonoBehaviour
         if (newState)
             RefreshShopFromInventory();
 
-        CursorManager.SetState(!newState);
+        CursorManager.SetState(newState ? CursorManager.CursorState.UI : CursorManager.CursorState.Gameplay);
     }
 
     private void RefreshShopFromInventory()
@@ -357,17 +341,12 @@ public class ShopManager : MonoBehaviour
 
     private void EnsureParentsActive(Transform t)
     {
-        // Walk up until root canvas, enabling parents.
-        // If your UI structure has dedicated tab roots, this guarantees visibility.
+        // Only ensure up to the shop root, NOT beyond
         var cur = t;
-        while (cur != null)
+        while (cur != null && cur != shop.transform)
         {
             if (!cur.gameObject.activeSelf)
                 cur.gameObject.SetActive(true);
-
-            // Stop at Canvas
-            if (cur.GetComponent<Canvas>() != null)
-                break;
 
             cur = cur.parent;
         }
@@ -381,6 +360,51 @@ public class ShopManager : MonoBehaviour
     public void ShowOwnedEmotes() => SetActiveContent(ownedEmoteContent);
 
     // --- SELECTION ---
+
+    /// <summary>
+    /// Equips the given character on the local player's BasePlayer component and
+    /// persists the selection via BasePlayer.EquipKiller / EquipSurvivor so it is
+    /// remembered across rounds and sessions.
+    /// </summary>
+    private void EquipCharacter(CubePlayerBase character)
+    {
+        if (character == null) return;
+
+        // Find the local player's BasePlayer — use PhotonLauncher's cached reference.
+        GameObject localPlayerGO = PhotonLauncher.LocalPlayerInstance;
+        if (localPlayerGO == null)
+        {
+            // Pre-game (Menu scene) — just save to PlayerPrefs directly via BasePlayer helpers
+            // by temporarily creating a throwaway instance to call the static-equivalent logic.
+            if (character is KillerType killer)
+            {
+                PlayerPrefs.SetString("EquippedKillerName", killer._Name);
+                PlayerPrefs.Save();
+                Debug.Log($"[Shop] Saved killer selection (no player in scene yet): {killer._Name}");
+            }
+            else if (character is SurvivorType survivor)
+            {
+                PlayerPrefs.SetString("EquippedSurvivorName", survivor._Name);
+                PlayerPrefs.Save();
+                Debug.Log($"[Shop] Saved survivor selection (no player in scene yet): {survivor._Name}");
+            }
+            return;
+        }
+
+        BasePlayer basePlayer = localPlayerGO.GetComponent<BasePlayer>();
+        if (basePlayer == null) return;
+
+        if (character is KillerType k)
+        {
+            basePlayer.EquipKiller(k);
+            CUBEStatusText.FadeOutAndDestroy(CUBEStatusText.CreateText($"Equipped <color=red>{k._Name}</color> as Killer"), 2f);
+        }
+        else if (character is SurvivorType s)
+        {
+            basePlayer.EquipSurvivor(s);
+            CUBEStatusText.FadeOutAndDestroy(CUBEStatusText.CreateText($"Equipped <color=green>{s._Name}</color> as Survivor"), 2f);
+        }
+    }
 
     private void OnCharacterClicked(CharacterTemplate template)
     {
@@ -406,6 +430,15 @@ public class ShopManager : MonoBehaviour
         if (Health != null) Health.text = selectedCharacter.Health + " HP";
         if (Speed != null) Speed.text = selectedCharacter.Speed + " Speed";
         if (Stamina != null) Stamina.text = selectedCharacter.Stamina + " Stamina";
+
+        // If the player owns this character, equip it immediately on click so the
+        // selection persists into the next round without needing a separate Equip button.
+        bool isOwned = !string.IsNullOrEmpty(selectedCharacter._PlayFabItemID) &&
+                       ownedItemIds.Contains(selectedCharacter._PlayFabItemID);
+        if (isOwned)
+        {
+            EquipCharacter(selectedCharacter);
+        }
 
         UpdatePurchaseButtonState();
     }

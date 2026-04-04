@@ -504,7 +504,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 503
+    m_Bits: 511
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -5419,6 +5419,7 @@ GameObject:
   - component: {fileID: 5142198532529002959}
   - component: {fileID: 4846410338160408091}
   - component: {fileID: 4538152374127744256}
+  - component: {fileID: 8031120553231613376}
   m_Layer: 8
   m_Name: BaseCharacter
   m_TagString: Player
@@ -5549,6 +5550,8 @@ MonoBehaviour:
   allObjects:
   - {fileID: 1217262322968703808}
   - {fileID: 2970424812084312642}
+  - {fileID: 2963272496316104751}
+  - {fileID: 2032222521974822665}
 --- !u!114 &8684600307360639796
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5609,7 +5612,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   hip: {fileID: 131705486822120083}
-  hipRb: {fileID: 5467880568601073071}
   keyBones:
   - {fileID: 6259064223148036047}
   - {fileID: 7839464576143017817}
@@ -5626,8 +5628,8 @@ MonoBehaviour:
   - {fileID: 5377117961876520957}
   - {fileID: 2728750627438694965}
   - {fileID: 4056051073784655233}
-  positionLerp: 20
-  rotationLerp: 20
+  interpolationBackTime: 0.1
+  teleportThreshold: 3
 --- !u!114 &2757183285728168176
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5676,8 +5678,6 @@ MonoBehaviour:
     m_Bits: 1
   groundOffset: 3
   maxGroundSnapDistance: 6
-  raycastUpwardOffset: 50
-  raycastMaxDistance: 200
 --- !u!114 &5142198532529002959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5720,6 +5720,18 @@ MonoBehaviour:
   - {fileID: 1787537367023644854}
   basePlayer: {fileID: 6010820129828816600}
   stats: {fileID: 6258506952167929150}
+--- !u!114 &8031120553231613376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4360496906041607540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48d7322d96fc1bc42a999ee25fd4cded, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::PoseHandlerNetworkRelay
 --- !u!1 &4385198401687824320
 GameObject:
   m_ObjectHideFlags: 0

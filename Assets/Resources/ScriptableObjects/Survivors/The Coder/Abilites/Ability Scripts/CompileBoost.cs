@@ -5,6 +5,7 @@ using UnityEngine;
 public class CompileBoost : Ability
 {
     GameObject playerObj;
+
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);
@@ -15,10 +16,14 @@ public class CompileBoost : Ability
 
     public void BoostCompileSpeed()
     {
-        float force = playerObj.GetComponentInChildren<MovementSC>().Force;
-        float speed = force * 2;
-        playerObj.GetComponentInChildren<MovementSC>().Force = speed;
+        MovementSC movement = playerObj.GetComponentInChildren<MovementSC>();
+
+        float speed = movement.Force * 2;
+        movement.Force = speed;
+
         playerObj.GetComponent<BasePlayerStats>().photonView.RPC("TakeDamage", RpcTarget.Others, 5);
-        playerObj.GetComponentInChildren<MovementSC>().ResetAfter(2.5f, force);
+
+        // Reset to 1 instead of original force
+        movement.ResetAfter(2.5f, 1f);
     }
 }

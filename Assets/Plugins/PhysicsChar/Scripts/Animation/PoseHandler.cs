@@ -28,9 +28,20 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
 
     public float rotP = 30f;
 
+    // Reference to the relay on the root, used to send RPCs via the root PhotonView.
+    private PoseHandlerNetworkRelay relay;
+
     private void Start()
     {
         data = transform.parent.parent.GetComponentInChildren<Rig>();
+
+        // Locate the relay on the root (walks up to root automatically since we
+        // GetComponentInParent from any depth).
+        relay = GetComponentInParent<PoseHandlerNetworkRelay>(true);
+        if (relay == null)
+        {
+            Debug.LogWarning("[PoseHandler] PoseHandlerNetworkRelay not found on root. RPCs will not be sent.");
+        }
 
         // 🔥 CRITICAL: ensure we always have a pose
         if (RestPose != null)
@@ -56,9 +67,6 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
             Debug.LogWarning("CurrentTargetPose is NULL");
             return;
         }
-
-        // Debug to confirm it's running
-        // Debug.Log("Running pose: " + CurrentTargetPose.name);
 
         HandleWeapon();
 
@@ -88,7 +96,8 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
         {
             if (!WeaponSpawned)
             {
-                photonView.RPC(nameof(RPC_SpawnWeapon), RpcTarget.All, currentPoseIndex);
+                if (relay != null)
+                    relay.photonView.RPC(nameof(PoseHandlerNetworkRelay.Relay_SetPose), RpcTarget.All, currentPoseIndex);
             }
         }
         else
@@ -166,22 +175,20 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
             return;
         }
 
-        currentPoseIndex = index;
-        CurrentTargetPose = AllPoses[index];
+        ApplyPoseLocally(index);
 
-        //Debug.Log("SetPose → " + CurrentTargetPose.name);
-
-        if (photonView.IsMine)
+        if (photonView.IsMine && relay != null)
         {
-            photonView.RPC(nameof(RPC_SetPose), RpcTarget.Others, index);
+            relay.photonView.RPC(nameof(PoseHandlerNetworkRelay.Relay_SetPose), RpcTarget.Others, index);
         }
     }
 
-    [PunRPC]
-    void RPC_SetPose(int index)
+    /// <summary>
+    /// Applies a pose locally without sending any RPC. Called by both SetPose and the relay.
+    /// </summary>
+    public void ApplyPoseLocally(int index)
     {
-        if (AllPoses == null || index >= AllPoses.Length) return;
-
+        if (AllPoses == null || index < 0 || index >= AllPoses.Length) return;
         currentPoseIndex = index;
         CurrentTargetPose = AllPoses[index];
     }
@@ -199,11 +206,16 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
         StopAllCoroutines();
         StartCoroutine(AnimationSequence(poseIndexes, timeBetween));
 
-        photonView.RPC(nameof(RPC_PlayAnimation), RpcTarget.Others, poseIndexes, timeBetween);
+        if (relay != null)
+        {
+            relay.photonView.RPC(nameof(PoseHandlerNetworkRelay.Relay_PlayAnimation), RpcTarget.Others, poseIndexes, timeBetween);
+        }
     }
 
-    [PunRPC]
-    void RPC_PlayAnimation(int[] poseIndexes, float timeBetween)
+    /// <summary>
+    /// Plays an animation locally without sending any RPC. Called by the relay.
+    /// </summary>
+    public void PlayAnimationLocally(int[] poseIndexes, float timeBetween)
     {
         StopAllCoroutines();
         StartCoroutine(AnimationSequence(poseIndexes, timeBetween));

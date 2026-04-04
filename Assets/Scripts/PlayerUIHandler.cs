@@ -90,9 +90,13 @@ public class PlayerUIHandler : MonoBehaviour
             // Only show in-round UI when the round is active AND this player has been
             // assigned a role (not a mid-round joiner sitting in intermission).
             bool hasRole = localBasePlayer != null &&
-                           (localBasePlayer.GetPlayerType() == BasePlayer.PlayerType.Killer ||
-                            localBasePlayer.GetPlayerType() == BasePlayer.PlayerType.Survivor);
-            bool showUI = roundManager.roundActive && hasRole && !roundManager.intermissionActive;
+                localBasePlayer.GetPlayerType() != BasePlayer.PlayerType.None;
+            bool showUI =
+                roundManager != null &&
+                roundManager.roundActive &&
+                !roundManager.intermissionActive &&
+                localBasePlayer != null &&
+                localBasePlayer.GetPlayerType() != BasePlayer.PlayerType.None;
 
             survivorUI.SetActive(showUI);
 

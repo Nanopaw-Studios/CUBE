@@ -79,6 +79,40 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
     {
         Debug.Log($"[HitboxManager] {gameObject.name} received {damage} damage.");
         stats.TakeDamage(damage);
+
+        // Only the master client performs win-condition checks to avoid duplicate EndRound calls.
+        if (PhotonNetwork.IsMasterClient && stats.health <= 0)
+        {
+            CheckKillerWinCondition();
+        }
+    }
+
+    /// <summary>
+    /// Checks whether all survivors are dead. If so, the master client ends the round.
+    /// </summary>
+    private void CheckKillerWinCondition()
+    {
+        // Collect all survivor players in the scene.
+        BasePlayer[] allPlayers = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
+        foreach (BasePlayer player in allPlayers)
+        {
+            if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor) continue;
+
+            BasePlayerStats survivorStats = player.GetComponent<BasePlayerStats>();
+            if (survivorStats != null && survivorStats.health > 0)
+            {
+                // At least one survivor is still alive — round continues.
+                return;
+            }
+        }
+
+        // All survivors are dead — killer wins.
+        Debug.Log("[HitboxManager] All survivors eliminated. Killer wins!");
+        RoundManager roundManager = FindFirstObjectByType<RoundManager>();
+        if (roundManager != null && roundManager.roundActive)
+        {
+            roundManager.photonView.RPC(nameof(RoundManager.EndRound), RpcTarget.All);
+        }
     }
 
     new void OnDisable()
