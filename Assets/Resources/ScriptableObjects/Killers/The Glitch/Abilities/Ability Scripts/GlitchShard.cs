@@ -31,6 +31,11 @@ public class GlitchShard : Ability
         PhotonAutoDestroy autoDestroy = shard.AddComponent<PhotonAutoDestroy>();
         autoDestroy.lifetime = shardLifetime;
 
+        // Wire up the damage component and forward the configured damage value.
+        CollisionCallback collisionCallback = shard.AddComponent<CollisionCallback>();
+        GlitchShardProjectile projectile = shard.AddComponent<GlitchShardProjectile>();
+        projectile.damage = damage;
+
         Rigidbody rb = shard.AddComponent<Rigidbody>();
         rb.sleepThreshold = 0f; // prevent the rigidbody from sleeping mid-flight
 

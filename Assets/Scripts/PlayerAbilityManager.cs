@@ -377,6 +377,10 @@ public class PlayerAbilityManager : MonoBehaviour
 
                 ability.ActivateAbility(player);
                 cooldownTimers[index] = 0f;
+
+                // Notify the reward manager that an active ability was successfully used.
+                CubeCoinRewardManager rewardManager = player.GetComponent<CubeCoinRewardManager>();
+                rewardManager?.OnAbilitySuccessfullyUsed();
             };
 
             act.performed += handler;

@@ -5437,6 +5437,7 @@ GameObject:
   - component: {fileID: 4846410338160408091}
   - component: {fileID: 4538152374127744256}
   - component: {fileID: 8031120553231613376}
+  - component: {fileID: 7952985158064879536}
   m_Layer: 8
   m_Name: BaseCharacter
   m_TagString: Player
@@ -5649,6 +5650,7 @@ MonoBehaviour:
   - {fileID: 4056051073784655233}
   interpolationBackTime: 0.1
   teleportThreshold: 3
+  maxExtrapolationTime: 0.15
 --- !u!114 &2757183285728168176
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5752,6 +5754,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48d7322d96fc1bc42a999ee25fd4cded, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp-firstpass::PoseHandlerNetworkRelay
+--- !u!114 &7952985158064879536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4360496906041607540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38b1fbda6b8d547498053ef047d17cc8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CubeCoinRewardManager
 --- !u!1 &4385198401687824320
 GameObject:
   m_ObjectHideFlags: 0

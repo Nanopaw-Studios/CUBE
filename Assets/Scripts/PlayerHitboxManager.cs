@@ -68,8 +68,20 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
             targetHitbox.basePlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor) return;
 
         int damage = killerType.PunchDamage;
+
+        // Cache the target's current health before the RPC reduces it.
+        BasePlayerStats targetStats = targetHitbox.GetComponent<BasePlayerStats>();
+        bool isKillingBlow = targetStats != null && targetStats.health - damage <= 0 && targetStats.health > 0;
+
         targetView.RPC(nameof(RPC_OnHit), RpcTarget.All, damage);
         Debug.Log($"[HitboxManager] Collision hit: {targetView.Owner.NickName} for {damage}");
+
+        // Award the local killer client when this hit eliminates a survivor.
+        if (isKillingBlow)
+        {
+            CubeCoinRewardManager rewardManager = GetComponent<CubeCoinRewardManager>();
+            rewardManager?.OnKilledSurvivor();
+        }
     }
 
     /// <summary>

@@ -12,9 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 469c24fdb3bd6431b92cc1465bd9166b, type: 3}
   m_Name: RemoteConfigDataStoreAsset
   m_EditorClassIdentifier: Unity.RemoteConfig.Editor::Unity.RemoteConfig.Editor.RemoteConfigDataStore
-  _rsKeyList: '[]'
-  _rsLastCachedKeyList: '[]'
-  _environments: "[\r\n  {\r\n    \"projectId\": \"99fd6f45-7dc0-475e-a8ce-7bd5f2e2eb0a\",\r\n   
-    \"name\": \"production\",\r\n    \"id\": \"c4eeaeff-09cb-493f-80a7-1e33ebbed841\",\r\n   
-    \"isDefault\": true,\r\n    \"createdAt\": \"2025-08-24T01:24:39Z\",\r\n    \"updatedAt\":
-    \"2025-08-24T01:24:39Z\"\r\n  }\r\n]"
+  _rsKeyList: "[\n  {\n    \"metadata\": {\n      \"entityId\": \"be41e7ab-d48f-4382-bf7c-f31e823295d6\"\n   
+    },\n    \"rs\": {\n      \"key\": \"isCubesmasEvent\",\n      \"type\": \"bool\",\n     
+    \"value\": false\n    }\n  },\n  {\n    \"metadata\": {\n      \"entityId\":
+    \"fd4dc57a-d43f-41db-a5da-9be3eddc81ca\"\n    },\n    \"rs\": {\n      \"key\":
+    \"isLoreEvent\",\n      \"type\": \"bool\",\n      \"value\": false\n    }\n 
+    },\n  {\n    \"metadata\": {\n      \"entityId\": \"48fa86f9-1727-4ceb-a485-fc26f92030e0\"\n   
+    },\n    \"rs\": {\n      \"key\": \"IsHalloweenEvent\",\n      \"type\": \"bool\",\n     
+    \"value\": false\n    }\n  }\n]"
+  _rsLastCachedKeyList: "[\n  {\n    \"metadata\": {\n      \"entityId\": \"be41e7ab-d48f-4382-bf7c-f31e823295d6\"\n   
+    },\n    \"rs\": {\n      \"key\": \"isCubesmasEvent\",\n      \"type\": \"bool\",\n     
+    \"value\": false\n    }\n  },\n  {\n    \"metadata\": {\n      \"entityId\":
+    \"fd4dc57a-d43f-41db-a5da-9be3eddc81ca\"\n    },\n    \"rs\": {\n      \"key\":
+    \"isLoreEvent\",\n      \"type\": \"bool\",\n      \"value\": false\n    }\n 
+    },\n  {\n    \"metadata\": {\n      \"entityId\": \"48fa86f9-1727-4ceb-a485-fc26f92030e0\"\n   
+    },\n    \"rs\": {\n      \"key\": \"IsHalloweenEvent\",\n      \"type\": \"bool\",\n     
+    \"value\": false\n    }\n  }\n]"
+  _environments: "[\n  {\n    \"projectId\": \"99fd6f45-7dc0-475e-a8ce-7bd5f2e2eb0a\",\n   
+    \"name\": \"production\",\n    \"id\": \"c4eeaeff-09cb-493f-80a7-1e33ebbed841\",\n   
+    \"isDefault\": true,\n    \"createdAt\": \"2025-08-24T01:24:39Z\",\n    \"updatedAt\":
+    \"2025-08-24T01:24:39Z\"\n  }\n]"

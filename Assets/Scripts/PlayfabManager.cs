@@ -132,8 +132,7 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     private void OnError(PlayFabError error)
     {
-        Debug.Log("PlayFab Error:");
-        Debug.Log(error.GenerateErrorReport());
+        Debug.LogError($"[PlayFab] Error {error.Error}: {error.GenerateErrorReport()}");
     }
 
     private void OnLoginSuccess(LoginResult result)
@@ -272,9 +271,12 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             {
                 // result.Balance is the NEW balance after add.
                 SetCachedCC(result.Balance);
-                Debug.Log($"+{amount} {cubeCoinsCode} (reason: {reason}) -> balance {result.Balance}");
+                Debug.Log($"[PlayFab] +{amount} {cubeCoinsCode} (reason: {reason}) -> balance {result.Balance}");
             },
-            OnError);
+            error =>
+            {
+                Debug.LogError($"[PlayFab] AddCubeCoins FAILED (reason: {reason}): {error.GenerateErrorReport()}");
+            });
     }
 
     /// <summary>

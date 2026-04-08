@@ -43,6 +43,27 @@ public class PlayerUIHandler : MonoBehaviour
         {
             Debug.LogError("BasePlayerStats component not found on the player!");
         }
+
+        // Keep the money UI in sync whenever CC changes (add, spend, or refresh).
+        if (PlayfabManager.Instance != null)
+        {
+            PlayfabManager.Instance.OnCubeCoinsChanged += OnCubeCoinsChanged;
+            // Seed the display with whatever is already cached.
+            if (moneyText != null)
+                moneyText.text = PlayfabManager.Instance.CachedCC.ToString();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (PlayfabManager.Instance != null)
+            PlayfabManager.Instance.OnCubeCoinsChanged -= OnCubeCoinsChanged;
+    }
+
+    private void OnCubeCoinsChanged(int newBalance)
+    {
+        if (moneyText != null)
+            moneyText.text = newBalance.ToString();
     }
 
     private void Update()
