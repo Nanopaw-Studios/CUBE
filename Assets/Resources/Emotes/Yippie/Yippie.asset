@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4f5f62da61ce8f40b4c2d19d8a08be6, type: 3}
   m_Name: Yippie
   m_EditorClassIdentifier: Assembly-CSharp::EmoteAsset
-  emoteName: New Emote
+  emoteName: Yippie
   image: {fileID: 0}
-  cost: 100
-  PlayFabItemId: emote_newemote
-  Description: A new emote.
+  cost: 1200
+  PlayFabItemId: emote_yippie
+  Description: yippie! yippie! yippie!
   keyframes:
-  - {fileID: 0}
-  emoteDuration: 1
+  - {fileID: 1873591939615622494, guid: 3c5ccb997d4edf046b6b4e9871b47acb, type: 3}
+  - {fileID: 1873591939615622494, guid: 9f1bbbfb508586349a9cc11688f701af, type: 3}
+  - {fileID: 1873591939615622494, guid: 3c5ccb997d4edf046b6b4e9871b47acb, type: 3}
+  emoteDuration: 2
   loopEmote: 0

@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4f5f62da61ce8f40b4c2d19d8a08be6, type: 3}
   m_Name: Sit
   m_EditorClassIdentifier: Assembly-CSharp::EmoteAsset
-  emoteName: New Emote
+  emoteName: Sit
   image: {fileID: 0}
-  cost: 100
-  PlayFabItemId: emote_newemote
-  Description: A new emote.
+  cost: 2000
+  PlayFabItemId: emote_sit
+  Description: its just a sit emote, what do you want me to say about it?
   keyframes:
-  - {fileID: 0}
+  - {fileID: 1873591939615622494, guid: 1118bf91787eb0d8ebca9e610e7e4c84, type: 3}
+  - {fileID: 1873591939615622494, guid: 1789745049f67dda4a37b0e5df5bd0fc, type: 3}
+  - {fileID: 1873591939615622494, guid: 1118bf91787eb0d8ebca9e610e7e4c84, type: 3}
   emoteDuration: 1
   loopEmote: 0

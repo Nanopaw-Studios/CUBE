@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4f5f62da61ce8f40b4c2d19d8a08be6, type: 3}
   m_Name: Dab
   m_EditorClassIdentifier: Assembly-CSharp::EmoteAsset
-  emoteName: New Emote
+  emoteName: Dab
   image: {fileID: 0}
-  cost: 100
-  PlayFabItemId: emote_newemote
-  Description: A new emote.
+  cost: 350
+  PlayFabItemId: emote_dab
+  Description: Dab on them haters! :>
   keyframes:
-  - {fileID: 0}
+  - {fileID: 1873591939615622494, guid: 8efca6d43ef3a3b428afce3df93ebb27, type: 3}
+  - {fileID: 1873591939615622494, guid: ad0ad77d23ad73b43bf568329cdacec6, type: 3}
+  - {fileID: 1873591939615622494, guid: 8efca6d43ef3a3b428afce3df93ebb27, type: 3}
   emoteDuration: 1
   loopEmote: 0
