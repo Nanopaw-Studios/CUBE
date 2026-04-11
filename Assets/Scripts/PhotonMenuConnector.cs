@@ -2,12 +2,13 @@ using Photon.Pun;
 using Photon.Realtime;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 {
     public static PhotonMenuConnector Instance;
     private const string ROOM_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    // (no I, O, 0, 1 — avoids confusion)
+    // (no I, O, 0, 1 ï¿½ avoids confusion)
     public static bool PlayFabPhotonAuthReady; // set true after AuthValues assigned
 
     private string GenerateRoomCode(int length = 5)
@@ -45,6 +46,16 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 
         // Optional but recommended
         PhotonNetwork.AutomaticallySyncScene = true;
+
+        SceneManager.sceneLoaded += sceneChange;
+    }
+
+    private void sceneChange(Scene arg0, LoadSceneMode arg1)
+    {
+        if(arg0.name == "Menu")
+        {
+            joinCode = GameObject.Find("Canvas").transform.Find("Join/List/InputField (TMP)").GetComponent<TMP_InputField>();
+        }
     }
 
     private void EnsureConnected()

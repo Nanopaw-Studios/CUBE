@@ -12,7 +12,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
     [HideInInspector] public bool roundActive = false;
     [HideInInspector] public bool intermissionActive = false;
 
-    private int intermissionTime = 60;
+    private int intermissionTime = 50;
     public Transform intermissionSpawnPoint;
 
     public event Action OnRoundStart;
@@ -99,6 +99,11 @@ public class RoundManager : MonoBehaviourPunCallbacks
             roleValues.ToArray(),
             colorHexes.ToArray()
         );
+
+        if (intermissionActive && HasEnoughPlayers())
+        {
+            endTimestamp = PhotonNetwork.Time + 3; // start soon
+        }
     }
 
     [PunRPC]
@@ -238,9 +243,16 @@ public class RoundManager : MonoBehaviourPunCallbacks
                 }
                 else if (intermissionActive)
                 {
+                    // 🚨 NEW: Only start round if enough players
+                    if (!HasEnoughPlayers())
+                    {
+                        // Extend intermission instead of starting
+                        endTimestamp = PhotonNetwork.Time + 5; // check again in 5s
+                        continue;
+                    }
+
                     double nextEnd = PhotonNetwork.Time + roundTime;
-                    // Clear the buffered StartIntermission so late joiners don't receive
-                    // a stale intermission state once the round has started.
+
                     PhotonNetwork.RemoveRPCs(photonView);
                     photonView.RPC("StartRound", RpcTarget.AllBuffered, nextEnd);
                 }
@@ -249,6 +261,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
             yield return new WaitForSecondsRealtime(1);
         }
     }
+
 
     [PunRPC]
     public void EndRound()
@@ -290,6 +303,23 @@ public class RoundManager : MonoBehaviourPunCallbacks
     {
         return currentTime;
     }
+    
+    public bool HasEnoughPlayers()
+    {
+        int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
+
+        // Check if room is private (you can change this depending on how you flag private rooms)
+        bool isPrivate = PhotonNetwork.CurrentRoom.IsVisible == false || PhotonNetwork.CurrentRoom.IsOpen == false;
+
+        if (isPrivate)
+        {
+            return playerCount >= 2;
+        }
+        else
+        {
+            return playerCount >= 3;
+        }
+    }
 
     public void UpdateIntermissionSpawn(Transform spawn)
     {
@@ -312,36 +342,36 @@ public class RoundManager : MonoBehaviourPunCallbacks
         currentTime = (int)Math.Ceiling(remaining);
     }
 
-private void ApplyRolesAndColors(int[] actorNumbers, int[] roleValues, string[] colorHexes)
-{
-    if (actorNumbers == null || roleValues == null || colorHexes == null) return;
-
-    for (int i = 0; i < actorNumbers.Length; i++)
+    private void ApplyRolesAndColors(int[] actorNumbers, int[] roleValues, string[] colorHexes)
     {
-        int actor = actorNumbers[i];
-        int roleValue = i < roleValues.Length ? roleValues[i] : -1;
-        string color = i < colorHexes.Length ? colorHexes[i] : string.Empty;
+        if (actorNumbers == null || roleValues == null || colorHexes == null) return;
 
-        foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
+        for (int i = 0; i < actorNumbers.Length; i++)
         {
-            PhotonView pv = go.GetComponent<PhotonView>();
-            if (pv == null || pv.OwnerActorNr != actor) continue;
+            int actor = actorNumbers[i];
+            int roleValue = i < roleValues.Length ? roleValues[i] : -1;
+            string color = i < colorHexes.Length ? colorHexes[i] : string.Empty;
 
-            // 1. Update the Role
-            BasePlayer basePlayer = go.GetComponent<BasePlayer>();
-            if (basePlayer != null && roleValue >= 0)
+            foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
             {
-                basePlayer.SetPlayerType((BasePlayer.PlayerType)roleValue);
-            }
+                PhotonView pv = go.GetComponent<PhotonView>();
+                if (pv == null || pv.OwnerActorNr != actor) continue;
 
-            // 2. Update the Customizer
-            PlayerCustomizer customizer = go.GetComponent<PlayerCustomizer>();
-            if (customizer != null && !string.IsNullOrEmpty(color))
-            {
-                // Store the hex and conditionally show it — works regardless of round state
-                customizer.ForceApplyIntermissionColor(color);
+                // 1. Update the Role
+                BasePlayer basePlayer = go.GetComponent<BasePlayer>();
+                if (basePlayer != null && roleValue >= 0)
+                {
+                    basePlayer.SetPlayerType((BasePlayer.PlayerType)roleValue);
+                }
+
+                // 2. Update the Customizer
+                PlayerCustomizer customizer = go.GetComponent<PlayerCustomizer>();
+                if (customizer != null && !string.IsNullOrEmpty(color))
+                {
+                    // Store the hex and conditionally show it — works regardless of round state
+                    customizer.ForceApplyIntermissionColor(color);
+                }
             }
         }
     }
-}
 }

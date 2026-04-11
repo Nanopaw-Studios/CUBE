@@ -17,6 +17,7 @@ public class PlayerUIHandler : MonoBehaviour
     public TMP_Text fpsText;
     public TMP_Text versionText;
     public GameObject healthBar;
+    public Image damageVingette;
     public GameObject staminaBar;
     public GameObject healthText;
     public GameObject staminaText;
@@ -85,6 +86,15 @@ public class PlayerUIHandler : MonoBehaviour
                 healthSlider.value = smoothHealth;
                 if (healthText != null)
                     healthText.GetComponent<TMP_Text>().text = $"{playerStats.health}/{playerStats.maxHealth}";
+                
+                if(smoothHealth <= 50)
+                {
+                    damageVingette.gameObject.SetActive(true);
+                }
+                else
+                {
+                    damageVingette.gameObject.SetActive(false);
+                }
             }
             if (staminaBar != null)
             {
@@ -104,10 +114,17 @@ public class PlayerUIHandler : MonoBehaviour
 
         if (timerText != null && roundManager != null)
         {
-            int timeRemaining = roundManager.GetCurrentTime();
-            int minutes = timeRemaining / 60;
-            int seconds = timeRemaining % 60;
-            timerText.text = $"{minutes}:{seconds:00}";
+            if(roundManager.HasEnoughPlayers())
+            {
+                int timeRemaining = roundManager.GetCurrentTime();
+                int minutes = timeRemaining / 60;
+                int seconds = timeRemaining % 60;
+                timerText.text = $"{minutes}:{seconds:00}";
+            }
+            else
+            {
+                timerText.text = "Waiting for enough players..";
+            }
         }
 
         if (survivorUI != null && roundManager != null)

@@ -33,19 +33,25 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     Vector3 extrapolatedHipVelocity;
     Quaternion lastExtrapolatedHipRot;
 
-    // ✅ Cached offset (fixes jitter)
+    // World-space offset from the root transform to the hip bone at rest pose.
+    // Computed in Awake from the prefab's default pose before Photon moves the object.
+    // Must remain valid after teleports — TeleportTo keeps this invariant by also
+    // moving transform.position so hip.localPosition never drifts.
     Vector3 cachedHipOffset;
 
     void Awake()
     {
         pv = GetComponent<PhotonView>();
         if (keyBones == null) keyBones = new List<Transform>();
+
+        // Awake runs before Photon repositions the object, so this captures
+        // the clean skeletal offset from the prefab's rest pose. Both local and
+        // remote clients compute the same value since they use the same prefab.
+        cachedHipOffset = hip.position - transform.position;
     }
 
     void Start()
     {
-        cachedHipOffset = hip.position - transform.position;
-
         if (!pv.IsMine)
         {
             SetKinematic(true);
@@ -198,11 +204,22 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         }
     }
 
+    /// <summary>
+    /// Teleports the ragdoll to worldPosition (targeting the hip). Also moves
+    /// transform.position by the same delta so hip.localPosition stays constant —
+    /// this prevents a double-offset on remote clients when bone localPositions
+    /// are serialized after the teleport.
+    /// </summary>
     public void TeleportTo(Vector3 worldPosition)
     {
         if (!pv.IsMine) return;
 
         Vector3 delta = worldPosition - hip.position;
+
+        // Keep root anchor in sync with the rigidbodies so cachedHipOffset
+        // stays valid and bone localPositions don't drift.
+        transform.position += delta;
+
         foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
         {
             rb.position += delta;

@@ -30,14 +30,14 @@ public class CursorManager : MonoBehaviour
 
     public static void SetLocked()
     {
-        Camera.main.transform.parent.GetComponent<CameraInput>().enabled = true;
+        Camera.main.transform.parent.parent.GetComponent<CameraInput>().enabled = true;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false ;
     }
 
     public static void SetVisible()
     {
-        Camera.main.transform.parent.GetComponent<CameraInput>().enabled = false;
+        Camera.main.transform.parent.parent.GetComponent<CameraInput>().enabled = false;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }

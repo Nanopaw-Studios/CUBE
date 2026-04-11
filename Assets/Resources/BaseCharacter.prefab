@@ -443,7 +443,6 @@ GameObject:
   - component: {fileID: 2155166886222809702}
   - component: {fileID: 5076157034231279678}
   - component: {fileID: 6374076889839161390}
-  - component: {fileID: 7629351426823292690}
   m_Layer: 8
   m_Name: C
   m_TagString: MainCamera
@@ -459,12 +458,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 832064893019074987}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8387486782991835757}
+  m_Father: {fileID: 1470917389781804549}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &1531083372901869453
 Camera:
@@ -583,22 +582,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   player: {fileID: 4360496906041607540}
   rig: {fileID: 5011767928945711400}
---- !u!114 &7629351426823292690
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 832064893019074987}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ab8353b5ebd32545867da143199a814, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EZCameraShake.CameraShaker
-  DefaultPosInfluence: {x: 0.15, y: 0.15, z: 0.15}
-  DefaultRotInfluence: {x: 1, y: 1, z: 1}
-  RestPositionOffset: {x: 0, y: 0, z: 0}
-  RestRotationOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &926813567487074352
 GameObject:
   m_ObjectHideFlags: 0
@@ -4091,7 +4074,7 @@ Transform:
   m_GameObject: {fileID: 3460760807864643177}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.316, z: 0.128}
+  m_LocalPosition: {x: 0, y: 0.24, z: 0.359}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6323,7 +6306,7 @@ MonoBehaviour:
   - {fileID: 8091544198767513243}
   - {fileID: 5688869202941135999}
   - {fileID: 5277566892499971248}
-  control: 1
+  control: 0.8
   distancetoground: 0
   sinceGrounded: 0
   standing: {fileID: 0}
@@ -6439,12 +6422,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97cd83eed3b96c34fa240252579b24df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  torque: 700
+  torque: 800
   rigs:
   - part: {fileID: 5347560816180099550}
     multiplier: 1
   - part: {fileID: 5467880568601073071}
-    multiplier: 1
+    multiplier: 2
   TargetRotation: {x: 0, y: 0, z: 0}
 --- !u!114 &5281729375018383983
 MonoBehaviour:
@@ -6480,7 +6463,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2108f7134f73dc04088402623afd9739, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gravity: 40
+  gravity: 65
 --- !u!114 &5941201523942827826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6493,7 +6476,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f524f0bdab37eab40862efb05b2a87d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Force: 0
+  Force: 125
   rigs:
   - part: {fileID: 5347560816180099550}
     multiplier: 10
@@ -9213,7 +9196,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6188818868517452256}
+  - {fileID: 1470917389781804549}
   m_Father: {fileID: 5824061413203279578}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4749997852832408924
@@ -10007,6 +9990,55 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &8452086765486731492
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1470917389781804549}
+  - component: {fileID: 176945519405216805}
+  m_Layer: 8
+  m_Name: ShakePivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1470917389781804549
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8452086765486731492}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6188818868517452256}
+  m_Father: {fileID: 8387486782991835757}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &176945519405216805
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8452086765486731492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ab8353b5ebd32545867da143199a814, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EZCameraShake.CameraShaker
+  DefaultPosInfluence: {x: 0.15, y: 0.15, z: 0.15}
+  DefaultRotInfluence: {x: 1, y: 1, z: 1}
+  RestPositionOffset: {x: 0, y: 0, z: 0}
+  RestRotationOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &8633028733661278467
 GameObject:
   m_ObjectHideFlags: 0
