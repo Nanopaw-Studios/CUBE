@@ -4,28 +4,34 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "LagSpike", menuName = "ScriptableObjects/Survivor Abilities/LagSpike", order = 1)]
 public class LagSpike : Ability
 {
-    public Mesh cubeMesh;
-
     public float force = 400f;
+    public float shardLifetime = 5f;
+    public int damage = 15;
 
-    GameObject playerObj;
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);
-        playerObj = player.gameObject;
-        ThrowShard();
+        ThrowShard(player);
     }
 
-    public void ThrowShard()
+    private void ThrowShard(BasePlayer player)
     {
-        GameObject shard = PhotonNetwork.Instantiate("GlitchShard", Vector3.zero, Quaternion.identity);
-        Rigidbody rb = shard.AddComponent<Rigidbody>();
-        GameObject player = playerObj.transform.Find("CameraHead").Find("Cam").Find("C").gameObject;
+        GameObject cam = player.transform.Find("CameraHead").Find("Cam").Find("C").gameObject;
 
-        shard.transform.position = player.transform.position + player.transform.forward * 1.5f;
-        rb.AddForce(player.transform.forward * force, ForceMode.Impulse);
+        GameObject shard = PhotonNetwork.Instantiate("GlitchShard", cam.transform.position + cam.transform.forward * 1.5f, Quaternion.identity);
+
+        // Wire up network auto-destroy so it cleans up on all clients.
+        PhotonAutoDestroy autoDestroy = shard.AddComponent<PhotonAutoDestroy>();
+        autoDestroy.lifetime = shardLifetime;
+
+        // Wire up collision and damage — mirrors GlitchShard ability setup.
+        shard.AddComponent<CollisionCallback>();
+        GlitchShardProjectile projectile = shard.AddComponent<GlitchShardProjectile>();
+        projectile.damage = damage;
+
+        Rigidbody rb = shard.AddComponent<Rigidbody>();
+        rb.sleepThreshold = 0f;
         rb.useGravity = false;
-        // TODO: make it slow the killer
-        Destroy(shard, 5f); // Clean up the shard object after 5 second
+        rb.AddForce(cam.transform.forward * force, ForceMode.Impulse);
     }
 }

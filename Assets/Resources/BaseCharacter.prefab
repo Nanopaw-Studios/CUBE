@@ -5632,7 +5632,10 @@ MonoBehaviour:
   - {fileID: 2728750627438694965}
   - {fileID: 4056051073784655233}
   interpolationBackTime: 0.1
+  jitterAdaptSpeed: 4
   teleportThreshold: 3
+  teleportBlendSpeed: 12
+  rootDamping: 8
 --- !u!114 &2757183285728168176
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6409,6 +6412,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Force: 32
+  BackwardsSpeedMultiplier: 0.5
 --- !u!114 &4883887757714572179
 MonoBehaviour:
   m_ObjectHideFlags: 0

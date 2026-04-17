@@ -8,12 +8,17 @@ using UnityEngine;
 public class CompileBoostRunner : MonoBehaviour
 {
     private Coroutine activeSequence;
+    private bool isRunning = false;
 
     /// <summary>
     /// Starts (or restarts) the freeze → boost sequence.
+    /// If already running, restores movement first before re-executing.
     /// </summary>
     public void Execute(float freezeDuration, float boostDuration, float boostMultiplier)
     {
+        // Guard: don't let the ability stack during freeze phase
+        if (isRunning) return;
+
         if (activeSequence != null)
             StopCoroutine(activeSequence);
 
@@ -22,30 +27,34 @@ public class CompileBoostRunner : MonoBehaviour
 
     private IEnumerator FreezeAndBoost(float freezeDuration, float boostDuration, float boostMultiplier)
     {
+        isRunning = true;
+
         MovementSC movement = GetComponentInChildren<MovementSC>();
         if (movement == null)
         {
             Debug.LogError("[CompileBoostRunner] MovementSC not found — cannot apply Compile Boost.");
+            isRunning = false;
             activeSequence = null;
             yield break;
         }
 
-        float originalForce = movement.Force;
+        // Capture base speed from stats so the restore is always correct,
+        // even if Force was already modified by sprint or another effect.
+        BasePlayerStats stats = GetComponent<BasePlayerStats>();
+        float baseForce = stats != null ? stats.speed : movement.Force;
 
         // --- Phase 1: Freeze ---
         movement.Force = 0f;
         yield return new WaitForSeconds(freezeDuration);
 
         // --- Phase 2: Boost ---
-        movement.Force = originalForce * boostMultiplier;
+        movement.Force = baseForce * boostMultiplier;
         yield return new WaitForSeconds(boostDuration);
 
         // --- Restore ---
-        // Only restore if Force wasn't changed externally (e.g. sprint, another ability).
-        // If it was changed, leave it as-is to respect the newer modifier.
-        if (Mathf.Approximately(movement.Force, originalForce * boostMultiplier))
-            movement.Force = originalForce;
+        movement.Force = baseForce;
 
+        isRunning = false;
         activeSequence = null;
     }
 }
