@@ -1,4 +1,5 @@
 using System.Collections;
+using NUnit.Framework;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.Events;
@@ -19,6 +20,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
 
     private Animator pauseMenuAnimator;
     private RoundManager roundManager;
+
+    private bool isLeavingRoom = false;
 
     public override void OnEnable()
     {
@@ -94,9 +97,12 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     /// </summary>
     public void Quit()
     {
+        if (isLeavingRoom) return;
+        isLeavingRoom = true;
+        
         GameIsPaused = false;
 
-        if (PhotonNetwork.InRoom)
+        if (PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Joined)
         {
             PhotonNetwork.LeaveRoom();
         }

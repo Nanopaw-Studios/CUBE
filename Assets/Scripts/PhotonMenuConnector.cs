@@ -3,6 +3,7 @@ using Photon.Realtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 {
@@ -50,11 +51,39 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
         SceneManager.sceneLoaded += sceneChange;
     }
 
-    private void sceneChange(Scene arg0, LoadSceneMode arg1)
+    private void sceneChange(Scene scene, LoadSceneMode mode)
     {
-        if(arg0.name == "Menu")
+        if (scene.name == "Menu")
         {
-            joinCode = GameObject.Find("Canvas").transform.Find("Join/List/InputField (TMP)").GetComponent<TMP_InputField>();
+            joinCode = GameObject.Find("Canvas")
+                .transform.Find("Join/List/InputField (TMP)")
+                .GetComponent<TMP_InputField>();
+
+            joiningInProgress = false;
+            intent = JoinIntent.None;
+            targetRoomName = null;
+
+            
+            // 🔥 Rebind buttons
+            Button publicBtn = GameObject.Find("Canvas")
+            .transform.Find("Play Menu/List/Public")
+            .GetComponent<Button>();
+            publicBtn.onClick.RemoveAllListeners();
+            publicBtn.onClick.AddListener(ClickPublic);
+
+            Button createBtn = GameObject.Find("Canvas")
+            .transform.Find("Play Menu/List/Host Private Game")
+            .GetComponent<Button>();
+            createBtn.onClick.RemoveAllListeners();
+            createBtn.onClick.AddListener(ClickCreatePrivate);
+
+            Button joinBtn = GameObject.Find("Cavas")
+            .transform.Find("Play Menu/List/Join Private Game")
+            .GetComponent<Button>();
+            joinBtn.onClick.RemoveAllListeners();
+            joinBtn.onClick.AddListener(ClickJoinPrivate_InputField);
+
+            Debug.Log("PhotonMenuConnector reset for menu.");
         }
     }
 
@@ -71,6 +100,10 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.IsConnected)
         {
             PhotonNetwork.ConnectUsingSettings();
+        }
+        else if (PhotonNetwork.NetworkClientState != ClientState.ConnectedToMasterServer)
+        {
+            Debug.Log("Not on Master yet, waiting...");
         }
     }
 
@@ -120,13 +153,15 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
+        joiningInProgress = false;
+
         Debug.Log($"Joined room: {PhotonNetwork.CurrentRoom.Name}");
 
-        // If you're still using a "main game scene", load it now.
-        // If you're already in it, remove this.
         if (PhotonNetwork.IsMasterClient)
         {
-            GameObject.Find("LevelLoader").GetComponent<LevelLoader>().LoadLevel("SampleScene");
+            GameObject.Find("LevelLoader")
+                .GetComponent<LevelLoader>()
+                .LoadLevel("SampleScene");
         }
     }
 
