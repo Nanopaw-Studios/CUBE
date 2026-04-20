@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -22,6 +23,7 @@ public class ShopManager : MonoBehaviour
 
     [Header("References")]
     public GameObject shop;
+    public GameObject uiSelectionActive;
     public InputActionReference toggleShop;
     public RoundManager roundManager;
 
@@ -149,7 +151,10 @@ public class ShopManager : MonoBehaviour
         shop.SetActive(newState);
 
         if (newState)
+        {
             RefreshShopFromInventory();
+            EventSystem.current.SetSelectedGameObject(uiSelectionActive);
+        }
 
         CursorManager.SetState(newState ? CursorManager.CursorState.UI : CursorManager.CursorState.Gameplay);
     }
@@ -524,6 +529,8 @@ public class ShopManager : MonoBehaviour
             canAfford = PlayfabManager.Instance.CachedCC >= cost;
 
         purchaseButton.interactable = !owned && canAfford;
+
+        EventSystem.current.SetSelectedGameObject(purchaseButton.gameObject);
     }
 
     // --- PURCHASING (unchanged logic) ---

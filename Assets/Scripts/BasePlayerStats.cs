@@ -49,6 +49,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     public void TakeDamage(int damage)
     {
         health -= damage;
+        CameraShaker.Instance.ShakeOnce(1.4f, 4f, 0f, 0.7f);
         if (health < 0) health = 0;
     }
     [PunRPC]

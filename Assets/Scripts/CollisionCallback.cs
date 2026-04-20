@@ -9,10 +9,12 @@ public class CollisionCallback : MonoBehaviourPun
 
     void OnCollisionEnter(Collision collision)
     {
+        if (!photonView.IsMine) return;
         collisionEntered.Invoke(collision);
     }
     void OnCollisionExit(Collision collision)
     {
+        if (!photonView.IsMine) return;
         collisionExited.Invoke(collision);
     }
 }

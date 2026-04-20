@@ -93,7 +93,6 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
 
         Debug.Log($"[HitboxManager] {gameObject.name} received {damage} damage.");
         stats.TakeDamage(damage);
-        CameraShaker.Instance.ShakeOnce(3f * (damage / 100), 4f, .1f, 1f);
 
         // Cancel any pending ability startups on this player when they are hit
         if (photonView.IsMine)

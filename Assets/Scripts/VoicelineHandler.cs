@@ -9,6 +9,7 @@ using UnityEngine;
 public class VoicelineHandler : MonoBehaviourPunCallbacks
 {
     public BasePlayer player;
+    public AudioSource source;
     private RoundManager roundManager;
 
     private SurvivorType survivor;
@@ -106,12 +107,11 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
                 );
                 var selectedLine = lines[UnityEngine.Random.Range(0, lines.Length)];
 
-                AudioSource audioSource = player.GetComponent<AudioSource>();
-                if (audioSource != null && selectedLine?.voiceline?.voiceLine != null)
+                if (source != null && selectedLine?.voiceline?.voiceLine != null)
                 {
-                    audioSource.clip = selectedLine.voiceline.voiceLine;
+                    source.clip = selectedLine.voiceline.voiceLine;
                     Debug.Log($"Playing voiceline: {selectedLine.voiceline.lineID}");
-                    audioSource.Play();
+                    source.Play();
                 }
             }
             else

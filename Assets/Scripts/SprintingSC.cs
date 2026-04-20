@@ -184,21 +184,21 @@ public class SprintingSC : MonoBehaviour
 
     private void OnSprintStarted(InputAction.CallbackContext context)
     {
+        if (isSprinting) return;
+
         // If stamina is 0, prevent sprinting
         if (playerStats != null && playerStats.stamina <= 0)
             return;
 
-        // Snapshot current Force so ability-modified speeds are preserved on restore.
         preSprintForce = movement != null ? movement.Force : 0f;
 
         isSprinting = true;
 
-        // Sprint speed = current walk Force * multiplier.
         if (movement != null)
             movement.Force = preSprintForce * sprintMultiplier;
 
-        // cancel any pending regen schedule & running regen
         regenStartTime = -1f;
+
         if (staminaRegenCoroutine != null)
         {
             StopCoroutine(staminaRegenCoroutine);

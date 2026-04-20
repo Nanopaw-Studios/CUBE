@@ -315,21 +315,31 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         }
     }
 
-    // Tracks whether the local player was already in intermission before the latest
-    // OnIntermissionStart event fires (i.e. the round just ended). If they were
-    // already sitting at the intermission spawn we should NOT teleport them again.
-    private bool wasInIntermissionBeforeEvent = false;
+    // Tracks whether the local player is already at the intermission area — either
+    // because they died mid-round and were sent there by DeathSC, or because a
+    // previous OnIntermissionStart already teleported them. When true, the next
+    // OnIntermissionStart will skip the teleport to avoid double-sending them.
+    private bool isAlreadyAtIntermission = false;
+
+    /// <summary>
+    /// Called by DeathSC after it has teleported the player to the intermission spawn
+    /// mid-round. Marks the player as already in the intermission area so the upcoming
+    /// round-end OnIntermissionStart will not teleport them a second time.
+    /// </summary>
+    public void MarkPlayerAtIntermission()
+    {
+        isAlreadyAtIntermission = true;
+    }
 
     private void HandleIntermissionStart()
     {
         if (LocalPlayerInstance == null) return;
 
-        // If the player was already in intermission (mid-round joiner or previous
-        // intermission), don't teleport them again — they are already there.
-        if (wasInIntermissionBeforeEvent)
+        // If the player is already at the intermission spawn (mid-round death or
+        // previous intermission), don't teleport them again — they are already there.
+        if (isAlreadyAtIntermission)
         {
-            Debug.Log("Intermission started but player was already in intermission — skipping teleport.");
-            wasInIntermissionBeforeEvent = true; // stays true
+            Debug.Log("Intermission started but player is already at intermission spawn — skipping teleport.");
             return;
         }
 
@@ -346,14 +356,14 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
 
         TeleportPlayer(basePos + offset, spawnRot);
 
-        // Mark as in intermission so the next OnIntermissionStart won't re-teleport.
-        wasInIntermissionBeforeEvent = true;
+        // Mark as at intermission so the next OnIntermissionStart won't re-teleport.
+        isAlreadyAtIntermission = true;
     }
 
     private void HandleRoundStartTracking()
     {
-        // When a round starts the player is no longer in intermission,
+        // When a round starts the player leaves intermission,
         // so the next OnIntermissionStart (round end) should teleport them.
-        wasInIntermissionBeforeEvent = false;
+        isAlreadyAtIntermission = false;
     }
 }

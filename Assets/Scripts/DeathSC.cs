@@ -71,14 +71,26 @@ public class DeathSC : MonoBehaviour
         }
         rig.control = 1;
 
-        // teleport
-        Vector3 spawnPos = photonLauncher.roundManager != null
-            ? photonLauncher.roundManager.SyncedIntermissionSpawnPos
-            : photonLauncher.intermissionSpawn.position;
-        Quaternion? spawnRot = photonLauncher.roundManager != null
-            ? photonLauncher.roundManager.SyncedIntermissionSpawnRot
-            : photonLauncher.intermissionSpawn.rotation;
-        photonLauncher.TeleportPlayer(spawnPos, spawnRot);
+        // Only teleport to the intermission spawn if intermission is currently active
+        // (i.e. the round has ended). If the round is still running, keep the player
+        // where they are — the round-end teleport will handle them when the time comes.
+        RoundManager rm = photonLauncher != null ? photonLauncher.roundManager : null;
+        bool intermissionActive = rm != null ? rm.intermissionActive : false;
+
+        if (intermissionActive)
+        {
+            Vector3 spawnPos = rm != null
+                ? rm.SyncedIntermissionSpawnPos
+                : photonLauncher.intermissionSpawn.position;
+            Quaternion spawnRot = rm != null
+                ? rm.SyncedIntermissionSpawnRot
+                : photonLauncher.intermissionSpawn.rotation;
+
+            photonLauncher.TeleportPlayer(spawnPos, spawnRot);
+
+            // Inform PhotonLauncher so the upcoming OnIntermissionStart doesn't re-teleport.
+            photonLauncher.MarkPlayerAtIntermission();
+        }
 
         // allow death to happen again
         died = false;

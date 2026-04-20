@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using EZCameraShake;
+using UnityEngine.InputSystem;
 
 public class ShakeDemo : MonoBehaviour 
 {
@@ -17,9 +18,14 @@ public class ShakeDemo : MonoBehaviour
 
 	void OnGUI()
     {
-        if (Input.GetKeyDown(KeyCode.R))
+        //if (Input.GetKeyDown(KeyCode.R))
+        //{
+        //    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        //}
+
+        if(Keyboard.current.f1Key.wasPressedThisFrame)
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            CursorManager.SetState(CursorManager.CursorState.UI);
         }
 
         Slider s = delegate(float val, string prefix, float min, float max, int pad)
