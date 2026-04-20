@@ -17,5 +17,13 @@ MonoBehaviour:
   layer2: {fileID: 8300000, guid: 8bf109ed3114a1040a354f8bf1965112, type: 3}
   layer3: {fileID: 8300000, guid: 5b07ecb29d3eae24f8721d6c2190064e, type: 3}
   layer4: {fileID: 8300000, guid: 52e7e66e10f6f1147bd4281cc584fa11, type: 3}
-  accessories: []
+  accessories:
+  - prefab: {fileID: 6177961239789660065, guid: 542a76ae948955b44a27354a418b5d61, type: 3}
+    boneName: Hand_Left
+    localPosition: {x: -0.021, y: -0.03, z: 0.56}
+    localRotation: {x: -0.70710677, y: 0, z: 0, w: 0.70710677}
+  - prefab: {fileID: 5104295580420728867, guid: 58e734dda091f5a46ae02d941f80938c, type: 3}
+    boneName: Hand_Right
+    localPosition: {x: -0.096, y: 0.068, z: 0.07}
+    localRotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
   bodyMaterial: {fileID: 2100000, guid: 44a6643de64fd0e45ac7044a6fb8de31, type: 2}

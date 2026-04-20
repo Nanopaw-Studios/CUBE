@@ -1,4 +1,4 @@
-Shader "Hidden/VLB_SD_URP_GPUInstancing"
+Shader "Hidden/VLB_SD_URP_SRPBatcher"
 {
     Properties
     {
@@ -94,7 +94,7 @@ Shader "Hidden/VLB_SD_URP_GPUInstancing"
                 #pragma vertex vert
                 #pragma fragment frag
                 #pragma multi_compile_fog
-                #pragma multi_compile_instancing
+                
                 #pragma multi_compile_local __ VLB_ALPHA_AS_BLACK
                 #pragma multi_compile_local __ VLB_NOISE_3D
                 #pragma multi_compile_local __ VLB_COLOR_GRADIENT_MATRIX_HIGH
@@ -104,6 +104,8 @@ Shader "Hidden/VLB_SD_URP_GPUInstancing"
 
 
                 #define VLB_SRP_API 1
+                #define VLB_SRP_BATCHER 1
+                #pragma enable_cbuffer
                 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
                 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
                 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
