@@ -13,10 +13,11 @@ public class CubePlayerBase : ScriptableObject
     // out of 5
     [Range(0f, 5f)]
     public int Difficulty;
-    public int Health;
+    public int Health = 100;
 
-    public float Speed;
-    public int Stamina;
+    public float Speed = 35;
+    public int Stamina = 100;
+    public float Size = 1;
 
     public Ability[] abilities;
 

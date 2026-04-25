@@ -50,14 +50,11 @@ public class PlayerAbilityManager : MonoBehaviour
         var go = GameObject.Find("Multiplayer");
         roundManager = go != null ? go.GetComponent<RoundManager>() : FindFirstObjectByType<RoundManager>();
 
-        Debug.Log($"PlayerAbilityManager.OnEnable - roundManager = {(roundManager != null ? roundManager.gameObject.name : "NULL")}");
-
         if (roundManager != null && !subscribed)
         {
             roundManager.OnRoundStart += OnRoundStart;
             roundManager.OnIntermissionStart += OnIntermissionStart;
             subscribed = true;
-            Debug.Log("PlayerAbilityManager subscribed to RoundManager events");
         }
         else if (roundManager == null)
         {
@@ -67,7 +64,6 @@ public class PlayerAbilityManager : MonoBehaviour
         if (roundManager != null && roundManager.roundActive)
         {
             abilitiesEnabled = true;
-            Debug.Log("PlayerAbilityManager detected roundActive on OnEnable -> calling OnRoundStart()");
             OnRoundStart();
         }
         else
@@ -89,7 +85,6 @@ public class PlayerAbilityManager : MonoBehaviour
             roundManager.OnRoundStart -= OnRoundStart;
             roundManager.OnIntermissionStart -= OnIntermissionStart;
             subscribed = false;
-            Debug.Log("PlayerAbilityManager unsubscribed from RoundManager events");
         }
     }
 
@@ -107,7 +102,6 @@ public class PlayerAbilityManager : MonoBehaviour
 
     private void OnIntermissionStart()
     {
-        Debug.Log("Intermission Started - disabling ability usage");
         abilitiesEnabled = false;
         SetAllCooldownTexts("Disabled");
 
@@ -117,7 +111,6 @@ public class PlayerAbilityManager : MonoBehaviour
 
     private void OnRoundStart()
     {
-        Debug.Log("Round Started - Setting up abilities");
         abilitiesEnabled = true;
 
         if (!TryResolveLocalPlayer())
@@ -173,8 +166,6 @@ public class PlayerAbilityManager : MonoBehaviour
         currentMoveset = null;
 
         var type = player.GetPlayerType();
-        Debug.Log($"[BuildAbilitiesUI] Player type: {type}");
-
         if (type == BasePlayer.PlayerType.Survivor)
         {
             survivor = player.GetEquippedSurvivor();
@@ -262,8 +253,6 @@ public class PlayerAbilityManager : MonoBehaviour
             if (cooldownText != null) cooldownText.text = abilitiesEnabled ? "Ready" : "Disabled";
             cooldownTexts.Add(cooldownText);
 
-            Debug.Log($"[AbilityInput] inputActions asset = {(inputActions != null ? inputActions.name : "NULL")}");
-
             InputAction act = null;
 
             if (inputActions != null)
@@ -285,8 +274,6 @@ public class PlayerAbilityManager : MonoBehaviour
             cooldownTimers.Add(ability.AbilityCooldown);
         }
         inputActions?.Enable();
-
-        Debug.Log($"Built ability UI for {activeMoveset.Count} ACTIVE abilities (total moveset={currentMoveset.Length})");
 
         DumpActions();
         EnsureAbilityActionsEnabled();
