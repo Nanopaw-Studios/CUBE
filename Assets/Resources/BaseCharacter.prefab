@@ -443,6 +443,7 @@ GameObject:
   - component: {fileID: 2155166886222809702}
   - component: {fileID: 5076157034231279678}
   - component: {fileID: 6374076889839161390}
+  - component: {fileID: 7640052882949784462}
   m_Layer: 8
   m_Name: C
   m_TagString: MainCamera
@@ -582,6 +583,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   player: {fileID: 4360496906041607540}
   rig: {fileID: 5011767928945711400}
+--- !u!114 &7640052882949784462
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 832064893019074987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14049acb8677cf849bb9180ea958f06e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Nanodogs.Tooklit::Nanodogs.UniversalScripts.NanoPlayerInteractor
+  interactKey: {fileID: 1781555164194001046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  interactDistance: 3
+  cam: {fileID: 1531083372901869453}
 --- !u!1 &926813567487074352
 GameObject:
   m_ObjectHideFlags: 0

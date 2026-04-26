@@ -313,13 +313,11 @@ public class RoundManager : MonoBehaviourPunCallbacks
 
         if (isPrivate)
         {
-            //return playerCount >= 2;
-            return true;
+            return playerCount >= 2;
         }
         else
         {
-            //return playerCount >= 3;
-            return true;
+            return playerCount >= 3;
         }
     }
 
