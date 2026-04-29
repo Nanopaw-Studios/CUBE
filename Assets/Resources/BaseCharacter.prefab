@@ -4274,7 +4274,7 @@ AudioSource:
   m_GameObject: {fileID: 3636579092818583654}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -3410129305424396482, guid: f8b64f148cac40d4d97dd8f61d71930f, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
@@ -4287,7 +4287,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
-  MaxDistance: 15
+  MaxDistance: 25
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -5656,6 +5656,8 @@ MonoBehaviour:
   teleportThreshold: 3
   teleportBlendSpeed: 12
   rootDamping: 8
+  maxBackTime: 0.25
+  boneDamping: 6
 --- !u!114 &2757183285728168176
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7036,7 +7038,7 @@ AudioSource:
   m_GameObject: {fileID: 5378942137735411500}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 663386939205293736, guid: f8b64f148cac40d4d97dd8f61d71930f, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
