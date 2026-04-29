@@ -45,6 +45,13 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     [Range(0f, 20f)]
     public float rootDamping = 8f;
 
+    [Tooltip("Maximum interpolation delay even under heavy jitter (seconds).")]
+    public float maxBackTime = 0.25f;
+
+    [Range(0f, 20f)]
+    [Tooltip("Smoothing applied to key bones, should match or be slightly less than rootDamping.")]
+    public float boneDamping = 6f;
+
     // ─── Runtime state ───────────────────────────────────────────
     // Adaptive back-time tracks observed packet spacing + jitter.
     float   adaptedBackTime;
@@ -58,18 +65,30 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     // True once the first snapshot has been applied on remote clients.
     bool remoteInitialized;
 
+    int _boneCount;
+    
+    Vector3[]    _recvBonePos;
+    Quaternion[] _recvBoneRot;
+    Vector3[]    _recvBoneVel;
+
     // ─────────────────────────────────────────────────────────────
     void Awake()
     {
         pv = GetComponent<PhotonView>();
         if (keyBones == null) keyBones = new List<Transform>();
         adaptedBackTime = interpolationBackTime;
+
+        int maxBones = 15;
+        _recvBonePos = new Vector3[maxBones];
+        _recvBoneRot = new Quaternion[maxBones];
+        _recvBoneVel = new Vector3[maxBones];
     }
 
     void Start()
     {
         if (!pv.IsMine)
         {
+            _boneCount = keyBones.Count;
             SetKinematic(true);
             foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>())
                 smr.updateWhenOffscreen = true;
@@ -168,8 +187,18 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         for (int i = 0; i < applyCount; i++)
         {
             if (keyBones[i] == null) continue;
-            keyBones[i].localPosition = targetBonePos[i];
-            keyBones[i].localRotation = targetBoneRot[i];
+            
+            if (boneDamping > 0f)
+            {
+                float t = 1f - Mathf.Exp(-boneDamping * Time.deltaTime);
+                keyBones[i].localPosition = Vector3.Lerp(keyBones[i].localPosition, targetBonePos[i], t);
+                keyBones[i].localRotation = Quaternion.Slerp(keyBones[i].localRotation, targetBoneRot[i], t);
+            }
+            else
+            {
+                keyBones[i].localPosition = targetBonePos[i];
+                keyBones[i].localRotation = targetBoneRot[i];
+            }
         }
     }
 
@@ -216,10 +245,10 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             s.hipPos = (Vector3)stream.ReceiveNext();
             s.hipRot = (Quaternion)stream.ReceiveNext();
 
-            int count = (int)stream.ReceiveNext();
-            s.bonePos = new Vector3[count];
-            s.boneRot = new Quaternion[count];
-            s.boneVel = new Vector3[count];
+            int count = _boneCount;
+            s.bonePos = _recvBonePos;
+            s.boneRot = _recvBoneRot;
+            s.boneVel = _recvBoneVel;
 
             for (int i = 0; i < count; i++)
             {
@@ -251,8 +280,11 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
                                                1f - Mathf.Exp(-jitterAdaptSpeed * (float)dt));
 
                 // Back-time = base + a safety margin over observed jitter
-                adaptedBackTime = Mathf.Max(interpolationBackTime,
-                                            interpolationBackTime + observedJitter * 1.5f);
+                adaptedBackTime = Mathf.Clamp(
+                    interpolationBackTime + observedJitter * 1.5f,
+                    interpolationBackTime,
+                    maxBackTime
+                );
             }
 
             lastPacketTime = PhotonNetwork.Time;
