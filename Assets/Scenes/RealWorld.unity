@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 1a44f139dc1ce8546b1e594925233564, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -8372,6 +8372,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cded085d155cde949b60f67a11dbc3bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolume
+  version: 2
+  globalVolume: 0
   mode: 1
   size: {x: 8.873363, y: 7.072727, z: 22.104399}
   overrideRendererFilters: 0
@@ -8402,8 +8404,6 @@ MonoBehaviour:
     e33: 1
   cachedHashCode: 1440050389
   fillEmptySpaces: 0
-  version: 2
-  globalVolume: 0
 --- !u!4 &1239263655
 Transform:
   m_ObjectHideFlags: 0

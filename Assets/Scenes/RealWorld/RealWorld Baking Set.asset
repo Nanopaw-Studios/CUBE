@@ -12,6 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4881f9a2c4d568047b316028d20a8dca, type: 3}
   m_Name: RealWorld Baking Set
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolumeBakingSet
+  m_SceneBakeData:
+    m_Keys:
+    - 47bf5cc52dbda7341a6cbb0bb358a3cb
+    m_Values:
+    - hasProbeVolume: 1
+      bakeScene: 1
+      bounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 81, y: 81, z: 81}
   singleSceneMode: 1
   dialogNoProbeVolumeInSetShown: 1
   settings:
@@ -156,7 +165,7 @@ MonoBehaviour:
     cellList: 0000000009000000030000000c000000010000000a000000040000000d000000
   cellSharedDataAsset:
     m_AssetGUID: 91c95ad3ffe853d4bb91b89a78fcca97
-    m_StreamableAssetPath: APVStreamingAssets\8b1abffe65bbee344af599156f3fb1d2\91c95ad3ffe853d4bb91b89a78fcca97.bytes
+    m_StreamableAssetPath: APVStreamingAssets/8b1abffe65bbee344af599156f3fb1d2/91c95ad3ffe853d4bb91b89a78fcca97.bytes
     m_ElementSize: 8192
     m_StreamableCellDescs:
       m_Keys: 0000000009000000030000000c000000010000000a000000040000000d000000
@@ -185,7 +194,7 @@ MonoBehaviour:
     - sceneHash: 558580113
       cellDataAsset:
         m_AssetGUID: 334360112017fc043b74d7867dfc3c03
-        m_StreamableAssetPath: APVStreamingAssets\8b1abffe65bbee344af599156f3fb1d2\334360112017fc043b74d7867dfc3c03.bytes
+        m_StreamableAssetPath: APVStreamingAssets/8b1abffe65bbee344af599156f3fb1d2/334360112017fc043b74d7867dfc3c03.bytes
         m_ElementSize: 131072
         m_StreamableCellDescs:
           m_Keys: 0000000009000000030000000c000000010000000a000000040000000d000000
@@ -209,7 +218,7 @@ MonoBehaviour:
         m_Asset: {fileID: 4900000, guid: 334360112017fc043b74d7867dfc3c03, type: 3}
       cellOptionalDataAsset:
         m_AssetGUID: 3cf023e187add814e8d548fd728b1f89
-        m_StreamableAssetPath: APVStreamingAssets\8b1abffe65bbee344af599156f3fb1d2\3cf023e187add814e8d548fd728b1f89.bytes
+        m_StreamableAssetPath: APVStreamingAssets/8b1abffe65bbee344af599156f3fb1d2/3cf023e187add814e8d548fd728b1f89.bytes
         m_ElementSize: 131072
         m_StreamableCellDescs:
           m_Keys: 0000000009000000030000000c000000010000000a000000040000000d000000
@@ -233,7 +242,7 @@ MonoBehaviour:
         m_Asset: {fileID: 4900000, guid: 3cf023e187add814e8d548fd728b1f89, type: 3}
       cellProbeOcclusionDataAsset:
         m_AssetGUID: ea7a372a758697f4cb8fa06aa7d5bfb1
-        m_StreamableAssetPath: APVStreamingAssets\8b1abffe65bbee344af599156f3fb1d2\ea7a372a758697f4cb8fa06aa7d5bfb1.bytes
+        m_StreamableAssetPath: APVStreamingAssets/8b1abffe65bbee344af599156f3fb1d2/ea7a372a758697f4cb8fa06aa7d5bfb1.bytes
         m_ElementSize: 32768
         m_StreamableCellDescs:
           m_Keys: 0000000009000000030000000c000000010000000a000000040000000d000000
@@ -257,7 +266,7 @@ MonoBehaviour:
         m_Asset: {fileID: 4900000, guid: ea7a372a758697f4cb8fa06aa7d5bfb1, type: 3}
   cellBricksDataAsset:
     m_AssetGUID: 437a403c037b19e4c8dc197ff93b2efb
-    m_StreamableAssetPath: APVStreamingAssets\8b1abffe65bbee344af599156f3fb1d2\437a403c037b19e4c8dc197ff93b2efb.bytes
+    m_StreamableAssetPath: APVStreamingAssets/8b1abffe65bbee344af599156f3fb1d2/437a403c037b19e4c8dc197ff93b2efb.bytes
     m_ElementSize: 16
     m_StreamableCellDescs:
       m_Keys: 0000000009000000030000000c000000010000000a000000040000000d000000
@@ -281,7 +290,7 @@ MonoBehaviour:
     m_Asset: {fileID: 4900000, guid: 437a403c037b19e4c8dc197ff93b2efb, type: 3}
   cellSupportDataAsset:
     m_AssetGUID: 04a387dcd8d45ab4face57ef0463ed55
-    m_StreamableAssetPath: APVStreamingAssets\8b1abffe65bbee344af599156f3fb1d2\04a387dcd8d45ab4face57ef0463ed55.bytes
+    m_StreamableAssetPath: APVStreamingAssets/8b1abffe65bbee344af599156f3fb1d2/04a387dcd8d45ab4face57ef0463ed55.bytes
     m_ElementSize: 262144
     m_StreamableCellDescs:
       m_Keys: 0000000009000000030000000c000000010000000a000000040000000d000000
@@ -354,12 +363,3 @@ MonoBehaviour:
   skyOcclusionShadingDirection: 0
   useRenderingLayers: 0
   renderingLayerMasks: []
-  m_SceneBakeData:
-    m_Keys:
-    - 47bf5cc52dbda7341a6cbb0bb358a3cb
-    m_Values:
-    - hasProbeVolume: 1
-      bakeScene: 1
-      bounds:
-        m_Center: {x: 0, y: 0, z: 0}
-        m_Extent: {x: 81, y: 81, z: 81}
