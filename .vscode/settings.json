@@ -1,4 +1,14 @@
 {
+    "dotnet.defaultSolution": "physicsgamee.slnx",
+    "dotnet.dotnetPath": "/usr/share/dotnet/dotnet",
+    "dotrush.roslyn.dotnetSdkDirectory": "/usr/share/dotnet/sdk/10.0.104",
+    "dotrush.msbuildProperties": {
+        "DefineConstants": "UNITY_EDITOR"
+    },
+    "dotrush.roslyn.projectOrSolutionFiles": [
+        "/mnt/newvolume/Projects/physicsgamee/physicsgamee.sln"
+    ],
+    "dotrush.roslyn.restoreProjectsBeforeLoading": false,
     "files.exclude": {
         "**/.DS_Store": true,
         "**/.git": true,
@@ -55,21 +65,5 @@
         "UserSettings/": true,
         "temp/": true,
         "Temp/": true
-    },
-    "files.associations": {
-        "*.asset": "yaml",
-        "*.meta": "yaml",
-        "*.prefab": "yaml",
-        "*.unity": "yaml",
-    },
-    "explorer.fileNesting.enabled": true,
-    "explorer.fileNesting.patterns": {
-        "*.sln": "*.csproj",
-        "*.slnx": "*.csproj"
-    },
-    "dotnet.defaultSolution": "physicsgamee.slnx",
-    "dotrush.roslyn.projectOrSolutionFiles": [
-        "/mnt/newvolume/Projects/physicsgamee/physicsgamee.sln",
-        "/mnt/newvolume/Projects/physicsgamee/physicsgamee.slnx"
-    ]
+    }
 }
