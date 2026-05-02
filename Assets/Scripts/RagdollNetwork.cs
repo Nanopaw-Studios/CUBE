@@ -7,7 +7,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
 {
     // ─── Setup ───────────────────────────────────────────────────
     [Header("Setup")]
-    public Transform       hip;
+    public Transform hip;
     public List<Transform> keyBones;
 
     PhotonView pv;
@@ -15,17 +15,17 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     // ─── Snapshot ────────────────────────────────────────────────
     struct Snapshot
     {
-        public Vector3      hipPos;
-        public Quaternion   hipRot;
-        public Vector3      hipVel;      // estimated hip velocity (world-space)
-        public Vector3[]    bonePos;     // local-space
+        public Vector3 hipPos;
+        public Quaternion hipRot;
+        public Vector3 hipVel;      // estimated hip velocity (world-space)
+        public Vector3[] bonePos;     // local-space
         public Quaternion[] boneRot;
-        public Vector3[]    boneVel;     // local-space velocity per bone
-        public double       time;
+        public Vector3[] boneVel;     // local-space velocity per bone
+        public double time;
     }
 
-    readonly List<Snapshot> buffer    = new List<Snapshot>();
-    const    int            MAX_BUFFER = 32;
+    readonly List<Snapshot> buffer = new List<Snapshot>();
+    const int MAX_BUFFER = 32;
 
     // ─── Smoothing ───────────────────────────────────────────────
     [Header("Smoothing")]
@@ -54,22 +54,20 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
 
     // ─── Runtime state ───────────────────────────────────────────
     // Adaptive back-time tracks observed packet spacing + jitter.
-    float   adaptedBackTime;
-    double  lastPacketTime;
-    float   observedJitter;   // one-sided EWMA of arrival jitter
+    float adaptedBackTime;
+    double lastPacketTime;
+    float observedJitter;   // one-sided EWMA of arrival jitter
 
     // Smoothed root position used to damp the final transform move.
     Vector3 smoothedHipTarget;
-    bool    smoothedHipTargetSet;
+    bool smoothedHipTargetSet;
 
     // True once the first snapshot has been applied on remote clients.
     bool remoteInitialized;
 
-    int _boneCount;
-    
-    Vector3[]    _recvBonePos;
+    Vector3[] _recvBonePos;
     Quaternion[] _recvBoneRot;
-    Vector3[]    _recvBoneVel;
+    Vector3[] _recvBoneVel;
 
     // ─────────────────────────────────────────────────────────────
     void Awake()
@@ -88,7 +86,6 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     {
         if (!pv.IsMine)
         {
-            _boneCount = keyBones.Count;
             SetKinematic(true);
             foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>())
                 smr.updateWhenOffscreen = true;
@@ -106,9 +103,9 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         while (buffer.Count >= 2 && buffer[1].time <= interpTime)
             buffer.RemoveAt(0);
 
-        Vector3    targetHipPos;
+        Vector3 targetHipPos;
         Quaternion targetHipRot;
-        Vector3[]  targetBonePos;
+        Vector3[] targetBonePos;
         Quaternion[] targetBoneRot;
 
         int boneCount = keyBones.Count;
@@ -118,7 +115,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             Snapshot a = buffer[0];
             Snapshot b = buffer[1];
             double range = b.time - a.time;
-            float  t     = range > 0.0001 ? Mathf.Clamp01((float)((interpTime - a.time) / range)) : 1f;
+            float t = range > 0.0001 ? Mathf.Clamp01((float)((interpTime - a.time) / range)) : 1f;
 
             targetHipPos = Vector3.Lerp(a.hipPos, b.hipPos, t);
             targetHipRot = Quaternion.Slerp(a.hipRot, b.hipRot, t);
@@ -135,8 +132,8 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         else
         {
             // Only one sample — extrapolate forward using the last estimated velocity.
-            Snapshot s    = buffer[0];
-            float    age  = Mathf.Clamp((float)(interpTime - s.time), 0f, 0.25f); // cap at 250 ms
+            Snapshot s = buffer[0];
+            float age = Mathf.Clamp((float)(interpTime - s.time), 0f, 0.25f); // cap at 250 ms
 
             targetHipPos = s.hipPos + s.hipVel * age;
             targetHipRot = s.hipRot; // angular extrapolation rarely helps ragdolls
@@ -162,7 +159,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             float blendT = teleportBlendSpeed > 0f
                          ? Mathf.Clamp01(teleportBlendSpeed * Time.deltaTime)
                          : 1f;
-            smoothedHipTarget    = Vector3.Lerp(hip.position, targetHipPos, blendT);
+            smoothedHipTarget = Vector3.Lerp(hip.position, targetHipPos, blendT);
             smoothedHipTargetSet = true;
         }
         else if (rootDamping > 0f)
@@ -174,20 +171,20 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         }
         else
         {
-            smoothedHipTarget    = targetHipPos;
+            smoothedHipTarget = targetHipPos;
             smoothedHipTargetSet = true;
         }
 
         // Shift root so hip lands at smoothedHipTarget
         transform.position += smoothedHipTarget - hip.position;
-        hip.rotation        = targetHipRot;
+        hip.rotation = targetHipRot;
 
         // ── Bones ────────────────────────────────────────────────
         int applyCount = Mathf.Min(boneCount, targetBonePos.Length);
         for (int i = 0; i < applyCount; i++)
         {
             if (keyBones[i] == null) continue;
-            
+
             if (boneDamping > 0f)
             {
                 float t = 1f - Mathf.Exp(-boneDamping * Time.deltaTime);
@@ -207,7 +204,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     {
         Vector3 delta = s.hipPos - hip.position;
         transform.position += delta;
-        hip.rotation        = s.hipRot;
+        hip.rotation = s.hipRot;
 
         int count = Mathf.Min(keyBones.Count, s.bonePos.Length);
         for (int i = 0; i < count; i++)
@@ -217,7 +214,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             keyBones[i].localRotation = s.boneRot[i];
         }
 
-        smoothedHipTarget    = s.hipPos;
+        smoothedHipTarget = s.hipPos;
         smoothedHipTargetSet = true;
     }
 
@@ -241,26 +238,33 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         {
             // ── Network → Remote ─────────────────────────────────
             Snapshot s = new Snapshot();
-            s.time   = info.SentServerTime;
+            s.time = info.SentServerTime;
             s.hipPos = (Vector3)stream.ReceiveNext();
             s.hipRot = (Quaternion)stream.ReceiveNext();
 
-            int count = _boneCount;
-            s.bonePos = _recvBonePos;
-            s.boneRot = _recvBoneRot;
-            s.boneVel = _recvBoneVel;
+            // Must read the count from stream — writer always sends it 
+            int count = (int)stream.ReceiveNext();
+            int safeCount = Mathf.Min(count, _recvBonePos.Length);
 
-            for (int i = 0; i < count; i++)
+            // Read into temp buffers — no allocation
+            for (int i = 0; i < safeCount; i++)
             {
-                s.bonePos[i] = (Vector3)stream.ReceiveNext();
-                s.boneRot[i] = (Quaternion)stream.ReceiveNext();
+                _recvBonePos[i] = (Vector3)stream.ReceiveNext();
+                _recvBoneRot[i] = (Quaternion)stream.ReceiveNext();
             }
+
+            // Copy into snapshot-owned arrays so buffer snapshots don't share references
+            s.bonePos = new Vector3[safeCount];
+            s.boneRot = new Quaternion[safeCount];
+            s.boneVel = new Vector3[safeCount];
+            System.Array.Copy(_recvBonePos, s.bonePos, safeCount);
+            System.Array.Copy(_recvBoneRot, s.boneRot, safeCount);
 
             // ── Estimate velocities from previous snapshot ───────
             if (buffer.Count > 0)
             {
                 Snapshot prev = buffer[buffer.Count - 1];
-                double   dt   = s.time - prev.time;
+                double dt = s.time - prev.time;
 
                 if (dt > 0.0001)
                 {
@@ -274,9 +278,9 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
                 // ── Adaptive back-time: track jitter ─────────────
                 // jitter = how much the arrival spacing deviates from the send rate
                 double arrivalGap = PhotonNetwork.Time - lastPacketTime;
-                double sendGap    = dt; // should match Photon's serialization rate
-                float  jitter     = Mathf.Abs((float)(arrivalGap - sendGap));
-                observedJitter    = Mathf.Lerp(observedJitter, jitter,
+                double sendGap = dt; // should match Photon's serialization rate
+                float jitter = Mathf.Abs((float)(arrivalGap - sendGap));
+                observedJitter = Mathf.Lerp(observedJitter, jitter,
                                                1f - Mathf.Exp(-jitterAdaptSpeed * (float)dt));
 
                 // Back-time = base + a safety margin over observed jitter
@@ -312,9 +316,9 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         Vector3 delta = worldPosition - hip.position;
         foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
         {
-            rb.position        += delta;
-            rb.linearVelocity   = Vector3.zero;
-            rb.angularVelocity  = Vector3.zero;
+            rb.position += delta;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
 
         pv.RPC(nameof(RPC_OnTeleport), RpcTarget.Others);
@@ -325,10 +329,10 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     void RPC_OnTeleport()
     {
         buffer.Clear();
-        remoteInitialized    = false;
+        remoteInitialized = false;
         smoothedHipTargetSet = false;
-        observedJitter       = 0f;
-        adaptedBackTime      = interpolationBackTime;
+        observedJitter = 0f;
+        adaptedBackTime = interpolationBackTime;
     }
 
     public void NotifyRemotesOfTeleport()
@@ -343,7 +347,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     {
         foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
         {
-            rb.isKinematic   = state;
+            rb.isKinematic = state;
             rb.interpolation = state
                 ? RigidbodyInterpolation.None
                 : RigidbodyInterpolation.Interpolate;

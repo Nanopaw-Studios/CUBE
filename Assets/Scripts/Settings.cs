@@ -43,31 +43,29 @@ public class Settings : MonoBehaviour
 
     // ---------------- AUDIO ----------------
 
-    private float LinearToDB(float value)
-    {
-        return Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f;
-    }
-
     public void SetMasterVolume(float value)
     {
+        Debug.Log("Master changed to: " + value);
         if (mixer != null)
-            mixer.SetFloat("masterVolume", LinearToDB(value));
+            mixer.SetFloat("MasterVolume", value);
 
         PlayerPrefs.SetFloat(KEY_MASTER, value);
     }
 
-    public void SetSFXVolume(float value)
+    public void SetSFXVolume(float value) 
     {
+        Debug.Log("SFX changed to: " + value);
         if (mixer != null)
-            mixer.SetFloat("sfxVolume", LinearToDB(value));
+            mixer.SetFloat("SFXVolume", value);
 
         PlayerPrefs.SetFloat(KEY_SFX, value);
     }
 
     public void SetMusicVolume(float value)
     {
-        if (mixer != null)
-            mixer.SetFloat("musicVolume", LinearToDB(value));
+        Debug.Log("Music changed to: " + value);
+        if (mixer != null)         
+            mixer.SetFloat("MusicVolume", value);
 
         PlayerPrefs.SetFloat(KEY_MUSIC, value);
     }
