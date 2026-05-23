@@ -271,6 +271,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Noclip"",
+                    ""type"": ""Button"",
+                    ""id"": ""67d1349d-af11-47c3-a360-4ebf1a79188c"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -900,6 +909,50 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""action"": ""Specate"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""Two Modifiers"",
+                    ""id"": ""177b403c-e4ff-478d-9146-89a668e23ca4"",
+                    ""path"": ""TwoModifiers"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Noclip"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""modifier1"",
+                    ""id"": ""5b0a04d7-626e-43a6-a421-e14fe3d79f73"",
+                    ""path"": ""<Keyboard>/ctrl"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Noclip"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""modifier2"",
+                    ""id"": ""3d6598c7-20a2-47d3-b32a-6b3dfdfb9bb6"",
+                    ""path"": ""<Keyboard>/shift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Noclip"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""binding"",
+                    ""id"": ""eac4c67d-7989-416a-8fe5-8958416cb1b0"",
+                    ""path"": ""<Keyboard>/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Noclip"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 }
             ]
         },
@@ -1505,6 +1558,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_EmoteWheel = m_Player.FindAction("EmoteWheel", throwIfNotFound: true);
         m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
         m_Player_Specate = m_Player.FindAction("Specate", throwIfNotFound: true);
+        m_Player_Noclip = m_Player.FindAction("Noclip", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1618,6 +1672,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_EmoteWheel;
     private readonly InputAction m_Player_Pause;
     private readonly InputAction m_Player_Specate;
+    private readonly InputAction m_Player_Noclip;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1710,6 +1765,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Specate => m_Wrapper.m_Player_Specate;
         /// <summary>
+        /// Provides access to the underlying input action "Player/Noclip".
+        /// </summary>
+        public InputAction @Noclip => m_Wrapper.m_Player_Noclip;
+        /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
         public InputActionMap Get() { return m_Wrapper.m_Player; }
@@ -1795,6 +1854,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Specate.started += instance.OnSpecate;
             @Specate.performed += instance.OnSpecate;
             @Specate.canceled += instance.OnSpecate;
+            @Noclip.started += instance.OnNoclip;
+            @Noclip.performed += instance.OnNoclip;
+            @Noclip.canceled += instance.OnNoclip;
         }
 
         /// <summary>
@@ -1866,6 +1928,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Specate.started -= instance.OnSpecate;
             @Specate.performed -= instance.OnSpecate;
             @Specate.canceled -= instance.OnSpecate;
+            @Noclip.started -= instance.OnNoclip;
+            @Noclip.performed -= instance.OnNoclip;
+            @Noclip.canceled -= instance.OnNoclip;
         }
 
         /// <summary>
@@ -2306,6 +2371,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSpecate(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Noclip" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnNoclip(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

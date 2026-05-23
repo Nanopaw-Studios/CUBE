@@ -1,16 +1,20 @@
-using Photon.Pun;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine;
 
 public class RoundManager : MonoBehaviourPunCallbacks
 {
     public int currentTime;
     public int roundTime = 180; // 3 minutes
-    [HideInInspector] public bool roundActive = false;
-    [HideInInspector] public bool intermissionActive = false;
+
+    [HideInInspector]
+    public bool roundActive = false;
+
+    [HideInInspector]
+    public bool intermissionActive = false;
 
     private int intermissionTime = 50;
     public Transform intermissionSpawnPoint;
@@ -38,10 +42,12 @@ public class RoundManager : MonoBehaviourPunCallbacks
     private void BootstrapIfNeeded()
     {
         // Only the master should start the initial cycle.
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient)
+            return;
 
         // If already running, don't restart.
-        if (roundActive || intermissionActive) return;
+        if (roundActive || intermissionActive)
+            return;
 
         double endTime = PhotonNetwork.Time + intermissionTime;
 
@@ -60,13 +66,20 @@ public class RoundManager : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsMasterClient)
         {
             double endTime = PhotonNetwork.Time + intermissionTime;
-            photonView.RPC("StartIntermission", RpcTarget.AllBuffered, SyncedIntermissionSpawnPos, SyncedIntermissionSpawnRot, endTime);
+            photonView.RPC(
+                "StartIntermission",
+                RpcTarget.AllBuffered,
+                SyncedIntermissionSpawnPos,
+                SyncedIntermissionSpawnRot,
+                endTime
+            );
         }
     }
 
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
     {
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient)
+            return;
 
         // Send the current round state so late joiners keep timers, roles, and teleports in sync
         var actorNumbers = new System.Collections.Generic.List<int>();
@@ -76,7 +89,8 @@ public class RoundManager : MonoBehaviourPunCallbacks
         foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
         {
             PhotonView pv = go.GetComponent<PhotonView>();
-            if (pv == null) continue;
+            if (pv == null)
+                continue;
 
             actorNumbers.Add(pv.OwnerActorNr);
 
@@ -121,12 +135,18 @@ public class RoundManager : MonoBehaviourPunCallbacks
         timerCoroutine = StartCoroutine(Timer());
 
         OnRoundStart?.Invoke();
-        Debug.Log($"RoundManager.StartRound invoked. Subscribers: {(OnRoundStart == null ? 0 : OnRoundStart.GetInvocationList().Length)}");
+        Debug.Log(
+            $"RoundManager.StartRound invoked. Subscribers: {(OnRoundStart == null ? 0 : OnRoundStart.GetInvocationList().Length)}"
+        );
         Debug.Log("Round Started");
     }
 
     [PunRPC]
-    public void StartIntermission(Vector3 spawnPosition, Quaternion spawnRotation, double intermissionEndTime)
+    public void StartIntermission(
+        Vector3 spawnPosition,
+        Quaternion spawnRotation,
+        double intermissionEndTime
+    )
     {
         roundActive = false;
         intermissionActive = true;
@@ -145,7 +165,16 @@ public class RoundManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    private void SyncState(bool roundActiveState, bool intermissionActiveState, double syncedEndTimestamp, Vector3 spawnPosition, Quaternion spawnRotation, int[] actorNumbers, int[] roleValues, string[] colorHexes)
+    private void SyncState(
+        bool roundActiveState,
+        bool intermissionActiveState,
+        double syncedEndTimestamp,
+        Vector3 spawnPosition,
+        Quaternion spawnRotation,
+        int[] actorNumbers,
+        int[] roleValues,
+        string[] colorHexes
+    )
     {
         roundActive = roundActiveState;
         intermissionActive = intermissionActiveState;
@@ -201,10 +230,12 @@ public class RoundManager : MonoBehaviourPunCallbacks
             foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
             {
                 PhotonView pv = go.GetComponent<PhotonView>();
-                if (pv == null || !pv.IsMine) continue;
+                if (pv == null || !pv.IsMine)
+                    continue;
 
                 teleporter = go.GetComponent<PlayerTeleportHandler>();
-                if (teleporter != null) break;
+                if (teleporter != null)
+                    break;
             }
 
             if (teleporter != null)
@@ -262,7 +293,6 @@ public class RoundManager : MonoBehaviourPunCallbacks
         }
     }
 
-
     [PunRPC]
     public void EndRound()
     {
@@ -295,7 +325,13 @@ public class RoundManager : MonoBehaviourPunCallbacks
             // Flush stale buffered RPCs on this view so late joiners don't receive
             // an old StartRound when the round has ended.
             PhotonNetwork.RemoveRPCs(photonView);
-            photonView.RPC("StartIntermission", RpcTarget.AllBuffered, SyncedIntermissionSpawnPos, SyncedIntermissionSpawnRot, endTime);
+            photonView.RPC(
+                "StartIntermission",
+                RpcTarget.AllBuffered,
+                SyncedIntermissionSpawnPos,
+                SyncedIntermissionSpawnRot,
+                endTime
+            );
         }
     }
 
@@ -303,21 +339,25 @@ public class RoundManager : MonoBehaviourPunCallbacks
     {
         return currentTime;
     }
-    
+
     public bool HasEnoughPlayers()
     {
         int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
 
         // Check if room is private (you can change this depending on how you flag private rooms)
-        bool isPrivate = PhotonNetwork.CurrentRoom.IsVisible == false || PhotonNetwork.CurrentRoom.IsOpen == false;
+        bool isPrivate =
+            PhotonNetwork.CurrentRoom.IsVisible == false
+            || PhotonNetwork.CurrentRoom.IsOpen == false;
 
         if (isPrivate)
         {
-            return playerCount >= 2;
+            //return playerCount >= 2;
+            return true;
         }
         else
         {
-            return playerCount >= 3;
+            //return playerCount >= 3;
+            return true;
         }
     }
 
@@ -344,7 +384,8 @@ public class RoundManager : MonoBehaviourPunCallbacks
 
     private void ApplyRolesAndColors(int[] actorNumbers, int[] roleValues, string[] colorHexes)
     {
-        if (actorNumbers == null || roleValues == null || colorHexes == null) return;
+        if (actorNumbers == null || roleValues == null || colorHexes == null)
+            return;
 
         for (int i = 0; i < actorNumbers.Length; i++)
         {
@@ -355,7 +396,8 @@ public class RoundManager : MonoBehaviourPunCallbacks
             foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
             {
                 PhotonView pv = go.GetComponent<PhotonView>();
-                if (pv == null || pv.OwnerActorNr != actor) continue;
+                if (pv == null || pv.OwnerActorNr != actor)
+                    continue;
 
                 // 1. Update the Role
                 BasePlayer basePlayer = go.GetComponent<BasePlayer>();
