@@ -3,6 +3,7 @@ using Photon.Pun;
 using UnityEngine;
 
 [RequireComponent(typeof(PhotonView))]
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerTeleportHandler : MonoBehaviourPun
 {
     [Header("Setup")]
@@ -17,9 +18,6 @@ public class PlayerTeleportHandler : MonoBehaviourPun
 
     [SerializeField]
     private float groundOffset = 1.2f;
-
-    [SerializeField]
-    private float maxGroundSnapDistance = 6f;
 
     private PhotonView pv;
     private Rigidbody rootRb;
@@ -158,8 +156,7 @@ public class PlayerTeleportHandler : MonoBehaviourPun
             rootRb.isKinematic = false;
 
         // ── Notify remotes to clear stale snapshots and re-snap ──
-        RagdollNetwork ragdollNet = GetComponent<RagdollNetwork>();
-        if (ragdollNet != null)
+        if (TryGetComponent<RagdollNetwork>(out var ragdollNet))
             ragdollNet.NotifyRemotesOfTeleport();
 
         isTeleporting = false;
