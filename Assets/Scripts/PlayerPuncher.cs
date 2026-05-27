@@ -1,5 +1,5 @@
-using Photon.Pun;
 using System.Collections.Generic;
+using Photon.Pun;
 using UnityEngine;
 
 public class PlayerPuncher : MonoBehaviourPunCallbacks
@@ -9,7 +9,8 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
     private RoundManager roundManager;
 
     [Header("Punch Settings")]
-    [SerializeField] private float hitCooldownSeconds = 0.35f;
+    [SerializeField]
+    private float hitCooldownSeconds = 0.35f;
     private float lastHitTime = -999f;
 
     public PoseHandler armHandler;
@@ -37,14 +38,17 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
 
     private void Punch()
     {
-        if (!photonView.IsMine || killerType == null) return;
-        if (Time.time - lastHitTime < hitCooldownSeconds) return;
+        if (!photonView.IsMine || killerType == null)
+            return;
+        if (Time.time - lastHitTime < hitCooldownSeconds)
+            return;
 
         lastHitTime = Time.time;
         hitThisSwing.Clear(); // reset per punch
 
         Transform cam = player.transform.Find("CameraHead")?.Find("Cam")?.Find("C");
-        if (cam == null) return;
+        if (cam == null)
+            return;
 
         Vector3 size = killerType.punchHitboxSize;
 
@@ -61,18 +65,23 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
         foreach (var hit in hits)
         {
             PlayerHitboxManager target = hit.GetComponentInParent<PlayerHitboxManager>();
-            if (target == null) continue;
+            if (target == null)
+                continue;
 
             PhotonView targetPV = target.photonView;
-            if (targetPV == null || targetPV.IsMine) continue;
+            if (targetPV == null || targetPV.IsMine)
+                continue;
 
             // prevent multi-hit from multiple colliders
-            if (hitThisSwing.Contains(targetPV)) continue;
+            if (hitThisSwing.Contains(targetPV))
+                continue;
             hitThisSwing.Add(targetPV);
 
             // only hit survivors
-            if (target.basePlayer != null &&
-                target.basePlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+            if (
+                target.basePlayer != null
+                && target.basePlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor
+            )
                 continue;
 
             int damage = killerType.PunchDamage;
@@ -86,10 +95,12 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
     // OPTIONAL: visualize hitbox
     private void OnDrawGizmosSelected()
     {
-        if (player == null) return;
+        if (player == null)
+            return;
 
         Transform cam = player.transform.Find("CameraHead")?.Find("Cam")?.Find("C");
-        if (cam == null) return;
+        if (cam == null)
+            return;
 
         Vector3 size = killerType != null ? killerType.punchHitboxSize : Vector3.one;
 
