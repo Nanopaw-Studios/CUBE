@@ -128,7 +128,7 @@ public class ServerManager : MonoBehaviourPunCallbacks
             PlayerType type =
                 (player == highestMalicePlayer) ? PlayerType.Killer : PlayerType.Survivor;
 
-            // 1) Tell everyone what role this player is
+            PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "SetPlayerType");
             pv.RPC("SetPlayerType", RpcTarget.AllBuffered, type);
 
             // 2) Read the character ID from the player's Photon custom properties.
@@ -203,8 +203,6 @@ public class ServerManager : MonoBehaviourPunCallbacks
             PhotonView customizerPV = customizer.photonView;
             customizerPV.RPC("ApplyRoleAndCharacter", RpcTarget.AllBuffered, type, characterId);
 
-            // 4) Apply stats from the ScriptableObject to BasePlayerStats on this player's
-            //    owning client via RPC, so health/speed/stamina reflect the character's data.
             // 4) Apply stats from the ScriptableObject to BasePlayerStats on this player's
             //    owning client via RPC, so health/speed/stamina reflect the character's data.
             CubePlayerBase characterData =
