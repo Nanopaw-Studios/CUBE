@@ -1,14 +1,16 @@
-using System.Collections;
-using UnityEngine;
-using Photon.Pun;
 using System;
+using System.Collections;
+using Photon.Pun;
+using UnityEngine;
 
 [RequireComponent(typeof(PhotonView))]
 public class PlayerSizer : MonoBehaviourPun
 {
     public GameObject rigObj;
 
-    [Tooltip("Optional: assign in inspector. If left empty the script will try to find the RoundManager at runtime.")]
+    [Tooltip(
+        "Optional: assign in inspector. If left empty the script will try to find the RoundManager at runtime."
+    )]
     public RoundManager roundManager;
     private BasePlayer player;
 
@@ -17,7 +19,8 @@ public class PlayerSizer : MonoBehaviourPun
     private void OnEnable()
     {
         var go = GameObject.Find("Multiplayer");
-        roundManager = go != null ? go.GetComponent<RoundManager>() : FindFirstObjectByType<RoundManager>();
+        roundManager =
+            go != null ? go.GetComponent<RoundManager>() : FindFirstObjectByType<RoundManager>();
 
         if (roundManager != null && !subscribed)
         {
@@ -28,7 +31,6 @@ public class PlayerSizer : MonoBehaviourPun
 
         var camRefs = Camera.main?.GetComponent<PlayerCameraReferences>();
         player = camRefs.GetPlayer().GetComponent<BasePlayer>();
-        
     }
 
     private void OnIntermissionStart()
@@ -38,7 +40,11 @@ public class PlayerSizer : MonoBehaviourPun
 
     private void OnRoundStart()
     {
-        rigObj.transform.localScale = new Vector3(player.equippedKiller.Size, player.equippedKiller.Size, player.equippedKiller.Size);
+        rigObj.transform.localScale = new Vector3(
+            player.equippedKiller.Size,
+            player.equippedKiller.Size,
+            player.equippedKiller.Size
+        );
     }
 
     private void OnDisable()

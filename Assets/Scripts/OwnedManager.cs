@@ -46,7 +46,10 @@ public class OwnedManager : MonoBehaviour
             else if (character is SurvivorType survivor)
             {
                 // it's a survivor
-                GameObject survivorObj = Instantiate(characterPrefab, ownedSurvivorContent.transform);
+                GameObject survivorObj = Instantiate(
+                    characterPrefab,
+                    ownedSurvivorContent.transform
+                );
                 survivorObj.GetComponent<CharacterTemplate>().AssociatedCharacter = character;
             }
         }

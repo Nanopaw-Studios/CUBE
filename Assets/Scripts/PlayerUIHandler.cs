@@ -38,8 +38,14 @@ public class PlayerUIHandler : MonoBehaviour
 
     private void Start()
     {
-        playerStats = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer().GetComponent<BasePlayerStats>();
-        localBasePlayer = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer().GetComponent<BasePlayer>();
+        playerStats = Camera
+            .main.GetComponent<PlayerCameraReferences>()
+            .GetPlayer()
+            .GetComponent<BasePlayerStats>();
+        localBasePlayer = Camera
+            .main.GetComponent<PlayerCameraReferences>()
+            .GetPlayer()
+            .GetComponent<BasePlayer>();
         if (playerStats == null)
         {
             Debug.LogError("BasePlayerStats component not found on the player!");
@@ -82,12 +88,17 @@ public class PlayerUIHandler : MonoBehaviour
             {
                 Slider healthSlider = healthBar.GetComponent<Slider>();
                 healthSlider.maxValue = playerStats.maxHealth;
-                smoothHealth = Mathf.Lerp(smoothHealth, playerStats.health, Time.deltaTime * lerpSpeed);
+                smoothHealth = Mathf.Lerp(
+                    smoothHealth,
+                    playerStats.health,
+                    Time.deltaTime * lerpSpeed
+                );
                 healthSlider.value = smoothHealth;
                 if (healthText != null)
-                    healthText.GetComponent<TMP_Text>().text = $"{playerStats.health}/{playerStats.maxHealth}";
-                
-                if(smoothHealth <= 50)
+                    healthText.GetComponent<TMP_Text>().text =
+                        $"{playerStats.health}/{playerStats.maxHealth}";
+
+                if (smoothHealth <= 50)
                 {
                     damageVingette.gameObject.SetActive(true);
                 }
@@ -100,10 +111,15 @@ public class PlayerUIHandler : MonoBehaviour
             {
                 Slider staminaSlider = staminaBar.GetComponent<Slider>();
                 staminaSlider.maxValue = playerStats.maxStamina;
-                smoothStamina = Mathf.Lerp(smoothStamina, playerStats.stamina, Time.deltaTime * lerpSpeed);
+                smoothStamina = Mathf.Lerp(
+                    smoothStamina,
+                    playerStats.stamina,
+                    Time.deltaTime * lerpSpeed
+                );
                 staminaSlider.value = smoothStamina;
                 if (staminaText != null)
-                    staminaText.GetComponent<TMP_Text>().text = $"{playerStats.stamina}/{playerStats.maxStamina}";
+                    staminaText.GetComponent<TMP_Text>().text =
+                        $"{playerStats.stamina}/{playerStats.maxStamina}";
             }
         }
 
@@ -114,7 +130,7 @@ public class PlayerUIHandler : MonoBehaviour
 
         if (timerText != null && roundManager != null)
         {
-            if(roundManager.HasEnoughPlayers())
+            if (roundManager.HasEnoughPlayers())
             {
                 int timeRemaining = roundManager.GetCurrentTime();
                 int minutes = timeRemaining / 60;
@@ -131,21 +147,21 @@ public class PlayerUIHandler : MonoBehaviour
         {
             // Only show in-round UI when the round is active AND this player has been
             // assigned a role (not a mid-round joiner sitting in intermission).
-            bool hasRole = localBasePlayer != null &&
-                localBasePlayer.GetPlayerType() != BasePlayer.PlayerType.None;
             bool showUI =
-                roundManager != null &&
-                roundManager.roundActive &&
-                !roundManager.intermissionActive &&
-                localBasePlayer != null &&
-                localBasePlayer.GetPlayerType() != BasePlayer.PlayerType.None;
+                roundManager != null
+                && roundManager.roundActive
+                && !roundManager.intermissionActive
+                && localBasePlayer != null
+                && localBasePlayer.GetPlayerType() != BasePlayer.PlayerType.None;
 
             survivorUI.SetActive(showUI);
 
             if (showUI)
             {
-                if (pingText != null) pingText.text = $"Ping: {PhotonNetwork.GetPing()}ms";
-                if (versionText != null) versionText.text = $"v{Application.version}";
+                if (pingText != null)
+                    pingText.text = $"Ping: {PhotonNetwork.GetPing()}ms";
+                if (versionText != null)
+                    versionText.text = $"v{Application.version}";
 
                 if (fpsText != null)
                 {

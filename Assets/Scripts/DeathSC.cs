@@ -79,12 +79,14 @@ public class DeathSC : MonoBehaviour
 
         if (intermissionActive)
         {
-            Vector3 spawnPos = rm != null
-                ? rm.SyncedIntermissionSpawnPos
-                : photonLauncher.intermissionSpawn.position;
-            Quaternion spawnRot = rm != null
-                ? rm.SyncedIntermissionSpawnRot
-                : photonLauncher.intermissionSpawn.rotation;
+            Vector3 spawnPos =
+                rm != null
+                    ? rm.SyncedIntermissionSpawnPos
+                    : photonLauncher.intermissionSpawn.position;
+            Quaternion spawnRot =
+                rm != null
+                    ? rm.SyncedIntermissionSpawnRot
+                    : photonLauncher.intermissionSpawn.rotation;
 
             photonLauncher.TeleportPlayer(spawnPos, spawnRot);
 
@@ -95,5 +97,4 @@ public class DeathSC : MonoBehaviour
         // allow death to happen again
         died = false;
     }
-
 }

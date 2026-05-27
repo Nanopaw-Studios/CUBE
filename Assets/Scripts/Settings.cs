@@ -33,12 +33,17 @@ public class Settings : MonoBehaviour
         LoadSettings();
 
         // Hook up slider listeners (important)
-        if (master != null) master.onValueChanged.AddListener(SetMasterVolume);
-        if (sfx != null) sfx.onValueChanged.AddListener(SetSFXVolume);
-        if (music != null) music.onValueChanged.AddListener(SetMusicVolume);
+        if (master != null)
+            master.onValueChanged.AddListener(SetMasterVolume);
+        if (sfx != null)
+            sfx.onValueChanged.AddListener(SetSFXVolume);
+        if (music != null)
+            music.onValueChanged.AddListener(SetMusicVolume);
 
-        if (mouseSensitivity != null) mouseSensitivity.onValueChanged.AddListener(SetMouseSensitivity);
-        if (gamepadSensitivity != null) gamepadSensitivity.onValueChanged.AddListener(SetGamepadSensitivity);
+        if (mouseSensitivity != null)
+            mouseSensitivity.onValueChanged.AddListener(SetMouseSensitivity);
+        if (gamepadSensitivity != null)
+            gamepadSensitivity.onValueChanged.AddListener(SetGamepadSensitivity);
     }
 
     // ---------------- AUDIO ----------------
@@ -52,7 +57,7 @@ public class Settings : MonoBehaviour
         PlayerPrefs.SetFloat(KEY_MASTER, value);
     }
 
-    public void SetSFXVolume(float value) 
+    public void SetSFXVolume(float value)
     {
         Debug.Log("SFX changed to: " + value);
         if (mixer != null)
@@ -64,7 +69,7 @@ public class Settings : MonoBehaviour
     public void SetMusicVolume(float value)
     {
         Debug.Log("Music changed to: " + value);
-        if (mixer != null)         
+        if (mixer != null)
             mixer.SetFloat("MusicVolume", value);
 
         PlayerPrefs.SetFloat(KEY_MUSIC, value);
@@ -111,9 +116,12 @@ public class Settings : MonoBehaviour
         float sfxVal = PlayerPrefs.GetFloat(KEY_SFX, 1f);
         float musicVal = PlayerPrefs.GetFloat(KEY_MUSIC, 1f);
 
-        if (master != null) master.SetValueWithoutNotify(masterVal);
-        if (sfx != null) sfx.SetValueWithoutNotify(sfxVal);
-        if (music != null) music.SetValueWithoutNotify(musicVal);
+        if (master != null)
+            master.SetValueWithoutNotify(masterVal);
+        if (sfx != null)
+            sfx.SetValueWithoutNotify(sfxVal);
+        if (music != null)
+            music.SetValueWithoutNotify(musicVal);
 
         SetMasterVolume(masterVal);
         SetSFXVolume(sfxVal);
@@ -123,8 +131,10 @@ public class Settings : MonoBehaviour
         float mouseVal = PlayerPrefs.GetFloat(KEY_MOUSE_SENSITIVITY, 20f);
         float gamepadVal = PlayerPrefs.GetFloat(KEY_GAMEPAD_SENSITIVITY, 100f);
 
-        if (mouseSensitivity != null) mouseSensitivity.SetValueWithoutNotify(mouseVal);
-        if (gamepadSensitivity != null) gamepadSensitivity.SetValueWithoutNotify(gamepadVal);
+        if (mouseSensitivity != null)
+            mouseSensitivity.SetValueWithoutNotify(mouseVal);
+        if (gamepadSensitivity != null)
+            gamepadSensitivity.SetValueWithoutNotify(gamepadVal);
 
         // Graphics
         int quality = PlayerPrefs.GetInt(KEY_QUALITY, QualitySettings.GetQualityLevel());

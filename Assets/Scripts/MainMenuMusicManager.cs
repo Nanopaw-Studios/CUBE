@@ -1,7 +1,7 @@
 using Unity.Mathematics;
 using UnityEngine;
 
-public class MainMenuMusicManager : MonoBehaviour 
+public class MainMenuMusicManager : MonoBehaviour
 {
     public AudioSource source;
     public AnimationClip splash;
@@ -15,13 +15,13 @@ public class MainMenuMusicManager : MonoBehaviour
     public void Start()
     {
         lowPass = source.GetComponent<AudioLowPassFilter>();
-        
+
         source.clip = intro;
-        source.time = Mathf.Max(0, intro.length - splash.length); 
-        
+        source.time = Mathf.Max(0, intro.length - splash.length);
+
         lowPass.enabled = true;
         lowPass.cutoffFrequency = 1000;
-        
+
         source.loop = false;
         source.Play();
         isTransitioning = true;
@@ -35,7 +35,11 @@ public class MainMenuMusicManager : MonoBehaviour
 
             if (remainingTime <= 1.0f)
             {
-                lowPass.cutoffFrequency = Mathf.MoveTowards(lowPass.cutoffFrequency, 22000f, 21000f * Time.deltaTime);
+                lowPass.cutoffFrequency = Mathf.MoveTowards(
+                    lowPass.cutoffFrequency,
+                    22000f,
+                    21000f * Time.deltaTime
+                );
             }
         }
 

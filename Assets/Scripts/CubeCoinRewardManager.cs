@@ -1,5 +1,5 @@
-using Photon.Pun;
 using System.Collections;
+using Photon.Pun;
 using UnityEngine;
 
 /// <summary>
@@ -70,7 +70,11 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
     private void Start()
     {
         // Only the local player runs reward logic.
-        if (!photonView.IsMine) { enabled = false; return; }
+        if (!photonView.IsMine)
+        {
+            enabled = false;
+            return;
+        }
 
         roundManager = FindFirstObjectByType<RoundManager>();
         if (roundManager != null)
@@ -100,7 +104,8 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
         abilityRewardsGrantedThisRound = 0;
         lastPosition = transform.position;
 
-        if (distanceCoroutine != null) StopCoroutine(distanceCoroutine);
+        if (distanceCoroutine != null)
+            StopCoroutine(distanceCoroutine);
         distanceCoroutine = StartCoroutine(DistanceTracker());
     }
 
@@ -111,7 +116,11 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             GrantEndRoundRewards();
 
         roundActive = false;
-        if (distanceCoroutine != null) { StopCoroutine(distanceCoroutine); distanceCoroutine = null; }
+        if (distanceCoroutine != null)
+        {
+            StopCoroutine(distanceCoroutine);
+            distanceCoroutine = null;
+        }
     }
 
     // ── Distance tracking ─────────────────────────────────────────────
@@ -125,8 +134,10 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             lastPosition = transform.position;
             distanceAccumulator += delta;
 
-            while (distanceAccumulator >= DistanceSegmentMeters &&
-                   distanceRewardsGrantedThisRound < MaxDistanceRewardsPerRound)
+            while (
+                distanceAccumulator >= DistanceSegmentMeters
+                && distanceRewardsGrantedThisRound < MaxDistanceRewardsPerRound
+            )
             {
                 distanceAccumulator -= DistanceSegmentMeters;
                 distanceRewardsGrantedThisRound++;
@@ -144,8 +155,10 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
     /// </summary>
     public void OnAbilitySuccessfullyUsed()
     {
-        if (!roundActive) return;
-        if (abilityRewardsGrantedThisRound >= MaxAbilityRewardsPerRound) return;
+        if (!roundActive)
+            return;
+        if (abilityRewardsGrantedThisRound >= MaxAbilityRewardsPerRound)
+            return;
 
         abilityRewardsGrantedThisRound++;
         GrantCC(AbilityUsedCC, "ability_used");
@@ -159,8 +172,10 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
     /// </summary>
     public void OnKilledSurvivor()
     {
-        if (!roundActive) return;
-        if (basePlayer.GetPlayerType() != BasePlayer.PlayerType.Killer) return;
+        if (!roundActive)
+            return;
+        if (basePlayer.GetPlayerType() != BasePlayer.PlayerType.Killer)
+            return;
 
         GrantCC(KillerKillCC, "killer_kill");
     }
@@ -169,20 +184,27 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
 
     public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
     {
-        if (!roundActive) return;
-        if (basePlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor) return;
+        if (!roundActive)
+            return;
+        if (basePlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+            return;
 
         // Reward this survivor only if they are actively being chased when the killer leaves.
-        if (chaseHandler == null || !chaseHandler.inChase) return;
+        if (chaseHandler == null || !chaseHandler.inChase)
+            return;
 
         // Check whether the player who left was the killer.
         foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
         {
             PhotonView pv = go.GetComponent<PhotonView>();
-            if (pv == null || pv.Owner != otherPlayer) continue;
+            if (pv == null || pv.Owner != otherPlayer)
+                continue;
 
             BasePlayer leavingPlayer = go.GetComponent<BasePlayer>();
-            if (leavingPlayer != null && leavingPlayer.GetPlayerType() == BasePlayer.PlayerType.Killer)
+            if (
+                leavingPlayer != null
+                && leavingPlayer.GetPlayerType() == BasePlayer.PlayerType.Killer
+            )
             {
                 GrantCC(RagequitEscapeCC, "ragequit_escape");
                 break;
@@ -240,9 +262,11 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
         BasePlayer[] all = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
         foreach (BasePlayer p in all)
         {
-            if (p.GetPlayerType() != BasePlayer.PlayerType.Survivor) continue;
+            if (p.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+                continue;
             BasePlayerStats s = p.GetComponent<BasePlayerStats>();
-            if (s != null && s.health > 0) return false;
+            if (s != null && s.health > 0)
+                return false;
         }
         return true;
     }
@@ -251,11 +275,15 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
     {
         if (PlayfabManager.Instance == null)
         {
-            Debug.LogWarning($"[CubeCoinRewardManager] PlayfabManager not found — could not grant {amount} CC ({reason}).");
+            Debug.LogWarning(
+                $"[CubeCoinRewardManager] PlayfabManager not found — could not grant {amount} CC ({reason})."
+            );
             return;
         }
         PlayfabManager.Instance.AddCubeCoins(amount, reason);
-        CUBEStatusText.CreateText($"<color=yellow>+{amount} CC</color> ({reason.Replace('_', ' ')})");
+        CUBEStatusText.CreateText(
+            $"<color=yellow>+{amount} CC</color> ({reason.Replace('_', ' ')})"
+        );
         Debug.Log($"[CubeCoinReward] +{amount} CC | reason={reason}");
     }
 }

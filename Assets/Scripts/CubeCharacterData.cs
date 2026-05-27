@@ -26,6 +26,7 @@ public class Voiceline
 {
     public NanoVoiceLine voiceline;
     public VoicelineType type;
+
     public enum VoicelineType
     {
         Idle,

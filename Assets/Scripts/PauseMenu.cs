@@ -26,13 +26,15 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     public override void OnEnable()
     {
         base.OnEnable();
-        if (pauseAction != null) pauseAction.action.Enable();
+        if (pauseAction != null)
+            pauseAction.action.Enable();
     }
 
     public override void OnDisable()
     {
         base.OnDisable();
-        if (pauseAction != null) pauseAction.action.Disable();
+        if (pauseAction != null)
+            pauseAction.action.Disable();
     }
 
     void Start()
@@ -88,7 +90,10 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         pauseMenu.SetActive(false);
     }
 
-    public void Resume() { PauseStateChange(); }
+    public void Resume()
+    {
+        PauseStateChange();
+    }
 
     /// <summary>
     /// Leaves the current Photon room and returns to the main menu.
@@ -97,9 +102,10 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     /// </summary>
     public void Quit()
     {
-        if (isLeavingRoom) return;
+        if (isLeavingRoom)
+            return;
         isLeavingRoom = true;
-        
+
         GameIsPaused = false;
 
         if (PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Joined)

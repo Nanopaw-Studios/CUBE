@@ -46,33 +46,37 @@ public class ColorSliderImage : MonoBehaviour
     }
 
     private void ColorChanged(Color newColor) => RegenerateTexture();
+
     private void HSVChanged(float h, float s, float v) => RegenerateTexture();
 
     private void RegenerateTexture()
     {
-        if (image == null) image = GetComponent<Image>();
+        if (image == null)
+            image = GetComponent<Image>();
 
         Color32 baseColor = picker != null ? picker.CurrentColor : Color.black;
         float h = picker != null ? picker.H : 0;
         float s = picker != null ? picker.S : 0;
         float v = picker != null ? picker.V : 0;
 
-        bool vertical = direction == Slider.Direction.BottomToTop || direction == Slider.Direction.TopToBottom;
-        bool inverted = direction == Slider.Direction.TopToBottom || direction == Slider.Direction.RightToLeft;
+        bool vertical =
+            direction == Slider.Direction.BottomToTop || direction == Slider.Direction.TopToBottom;
+        bool inverted =
+            direction == Slider.Direction.TopToBottom || direction == Slider.Direction.RightToLeft;
 
         int size = type switch
         {
             ColorValues.R or ColorValues.G or ColorValues.B or ColorValues.A => 256,
             ColorValues.Hue => 360,
             ColorValues.Saturation or ColorValues.Value => 100,
-            _ => 100
+            _ => 100,
         };
 
-        // Instead of 1px wide, we make it 2px wide to ensure the UI Image stretches it correctly 
+        // Instead of 1px wide, we make it 2px wide to ensure the UI Image stretches it correctly
         // without "slicing" or sampling errors. This replaces the need for uvRect.
         Texture2D texture = vertical ? new Texture2D(2, size) : new Texture2D(size, 2);
         texture.hideFlags = HideFlags.DontSave;
-        texture.filterMode = FilterMode.Bilinear; 
+        texture.filterMode = FilterMode.Bilinear;
         texture.wrapMode = TextureWrapMode.Clamp;
 
         for (int i = 0; i < size; i++)
@@ -89,7 +93,7 @@ public class ColorSliderImage : MonoBehaviour
                 ColorValues.Hue => HSVUtil.ConvertHsvToRgb(i, 1, 1, 1),
                 ColorValues.Saturation => HSVUtil.ConvertHsvToRgb(h * 360, percent, v, 1),
                 ColorValues.Value => HSVUtil.ConvertHsvToRgb(h * 360, s, percent, 1),
-                _ => Color.white
+                _ => Color.white,
             };
 
             // Fill both pixels in the 2px thickness to prevent the "slice" look
@@ -111,7 +115,13 @@ public class ColorSliderImage : MonoBehaviour
             DestroyImmediate(image.sprite.texture);
 
         // Using a fixed PPU of 100 removes the ArgumentException risk.
-        image.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), 
-                                     new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect);
+        image.sprite = Sprite.Create(
+            texture,
+            new Rect(0, 0, texture.width, texture.height),
+            new Vector2(0.5f, 0.5f),
+            100,
+            0,
+            SpriteMeshType.FullRect
+        );
     }
 }

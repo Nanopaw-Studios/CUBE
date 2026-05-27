@@ -1,5 +1,5 @@
-using Photon.Pun;
 using System.Collections;
+using Photon.Pun;
 using UnityEngine;
 
 public class ChaseHandler : MonoBehaviourPunCallbacks
@@ -15,7 +15,7 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
 
     [Header("Chase Settings")]
     public float chaseStartDistance = 15f; // distance at which chase starts
-    public float chaseStopDistance = 20f;  // distance at which chase ends
+    public float chaseStopDistance = 20f; // distance at which chase ends
 
     private void Start()
     {
@@ -88,14 +88,17 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
 
     private void Update()
     {
-        if (player == null || killer == null || hip == null) return;
+        if (player == null || killer == null || hip == null)
+            return;
 
         // Only killers check for chase states
-        if (player.GetPlayerType() != BasePlayer.PlayerType.Killer) return;
+        if (player.GetPlayerType() != BasePlayer.PlayerType.Killer)
+            return;
 
         foreach (BasePlayer otherPlayer in FindFirstObjectByType<ServerManager>().allBasePlayers)
         {
-            if (otherPlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor) continue;
+            if (otherPlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+                continue;
 
             float distance = Vector3.Distance(hip.position, otherPlayer.transform.position);
 
@@ -114,9 +117,12 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
             if (inChase)
             {
                 int layer = 1;
-                if (distance < 12f) layer = 2;
-                if (distance < 8f) layer = 3;
-                if (distance < 4f) layer = 4;
+                if (distance < 12f)
+                    layer = 2;
+                if (distance < 8f)
+                    layer = 3;
+                if (distance < 4f)
+                    layer = 4;
 
                 photonView.RPC("StartMusic", RpcTarget.All, layer);
             }

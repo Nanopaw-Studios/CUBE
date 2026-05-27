@@ -22,12 +22,14 @@ public class SprintingSC : MonoBehaviour
     [Header("Stamina (points/sec) - tune these")]
     // How many stamina points are removed per second while sprinting
     public float staminaPerSecondDrain = 50f;
+
     // How many stamina points are restored per second while regenerating
     public float staminaPerSecondRegen = 50f;
 
     [Header("Delays (seconds)")]
     // Delay before regen starts when stamina hits zero
     public float regenDelayAfterDeplete = 2f;
+
     // Delay before regen starts when you stop sprinting but didn't deplete
     public float regenDelayOnStop = 0.5f;
 
@@ -46,22 +48,31 @@ public class SprintingSC : MonoBehaviour
     private void Start()
     {
         movement = GetComponent<MovementSC>();
-        if (movement == null) Debug.LogError("MovementSC component not found on the GameObject.");
+        if (movement == null)
+            Debug.LogError("MovementSC component not found on the GameObject.");
 
         data = GetComponent<Rig>();
-        if (data == null) Debug.LogError("Rig component not found on the GameObject.");
+        if (data == null)
+            Debug.LogError("Rig component not found on the GameObject.");
 
         input = GetComponent<CharacterInput>();
-        if (input == null) Debug.LogError("CharacterInput component not found on the GameObject.");
+        if (input == null)
+            Debug.LogError("CharacterInput component not found on the GameObject.");
 
         playerStats = GetComponentInParent<BasePlayerStats>();
-        if (playerStats == null) Debug.LogError("BasePlayerStats component not found in parent hierarchy.");
+        if (playerStats == null)
+            Debug.LogError("BasePlayerStats component not found in parent hierarchy.");
     }
 
     private void Update()
     {
         // If a regen was scheduled (either from deplete or stop) and the time has come, start regen
-        if (regenStartTime > 0f && Time.time >= regenStartTime && staminaRegenCoroutine == null && !isSprinting)
+        if (
+            regenStartTime > 0f
+            && Time.time >= regenStartTime
+            && staminaRegenCoroutine == null
+            && !isSprinting
+        )
         {
             regenStartTime = -1f;
             staminaRegenCoroutine = StartCoroutine(RegenerateStamina());
@@ -100,7 +111,8 @@ public class SprintingSC : MonoBehaviour
                         playerStats.stamina = 0;
 
                         isSprinting = false;
-                        if (movement != null) movement.Force = preSprintForce;
+                        if (movement != null)
+                            movement.Force = preSprintForce;
                         data.Currentstate = StateType.Walk;
 
                         staminaDrainCoroutine = null;
@@ -152,12 +164,16 @@ public class SprintingSC : MonoBehaviour
             int healInt = Mathf.FloorToInt(regenAccumulator);
             if (healInt > 0)
             {
-                playerStats.stamina = Mathf.Min(playerStats.maxStamina, playerStats.stamina + healInt);
+                playerStats.stamina = Mathf.Min(
+                    playerStats.maxStamina,
+                    playerStats.stamina + healInt
+                );
                 regenAccumulator -= healInt;
             }
 
             // stop regen if player starts sprinting mid-regen
-            if (isSprinting) yield break;
+            if (isSprinting)
+                yield break;
 
             yield return null;
         }
@@ -173,6 +189,7 @@ public class SprintingSC : MonoBehaviour
             sprintAction.action.canceled += OnSprintCanceled;
         }
     }
+
     private void OnDisable()
     {
         if (sprintAction != null)
@@ -184,7 +201,8 @@ public class SprintingSC : MonoBehaviour
 
     private void OnSprintStarted(InputAction.CallbackContext context)
     {
-        if (isSprinting) return;
+        if (isSprinting)
+            return;
 
         // If stamina is 0, prevent sprinting
         if (playerStats != null && playerStats.stamina <= 0)
@@ -212,7 +230,8 @@ public class SprintingSC : MonoBehaviour
     private void OnSprintCanceled(InputAction.CallbackContext context)
     {
         isSprinting = false;
-        if (movement != null) movement.Force = preSprintForce;
+        if (movement != null)
+            movement.Force = preSprintForce;
 
         data.Currentstate = StateType.Walk;
 

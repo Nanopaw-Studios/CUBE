@@ -1,11 +1,13 @@
+using System.Threading.Tasks;
+using Unity.Services.Authentication; // Needed for sign-in
+using Unity.Services.Core;
 using Unity.Services.RemoteConfig;
 using UnityEngine;
-using Unity.Services.Core;
-using Unity.Services.Authentication; // Needed for sign-in
-using System.Threading.Tasks;
 
-public class CUBEEventSystem : MonoBehaviour {
+public class CUBEEventSystem : MonoBehaviour
+{
     public struct userAttributes { }
+
     public struct appAttributes { }
 
     [Header("Event Flags")]
@@ -18,7 +20,7 @@ public class CUBEEventSystem : MonoBehaviour {
     public GameObject cubesmasStuff;
     public GameObject loreStuff;
 
-    async void Awake() 
+    async void Awake()
     {
         // 1. Initialize Unity Services
         await UnityServices.InitializeAsync();
@@ -37,20 +39,23 @@ public class CUBEEventSystem : MonoBehaviour {
         RemoteConfigService.Instance.FetchConfigs(new userAttributes(), new appAttributes());
     }
 
-    void SetEvent(ConfigResponse response) 
+    void SetEvent(ConfigResponse response)
     {
         Debug.Log($"Remote Config Response: {response.status} from {response.requestOrigin}");
 
         if (response.status == ConfigRequestStatus.Success)
         {
             isHalloween = RemoteConfigService.Instance.appConfig.GetBool("isHalloweenEvent", false);
-            if(halloweenStuff != null) halloweenStuff.SetActive(isHalloween);
+            if (halloweenStuff != null)
+                halloweenStuff.SetActive(isHalloween);
 
             isCubesmas = RemoteConfigService.Instance.appConfig.GetBool("isCubesmasEvent", false);
-            if(cubesmasStuff != null) cubesmasStuff.SetActive(isCubesmas);
+            if (cubesmasStuff != null)
+                cubesmasStuff.SetActive(isCubesmas);
 
             isLoreEvent = RemoteConfigService.Instance.appConfig.GetBool("isLoreEvent", false);
-            if(loreStuff != null) loreStuff.SetActive(isLoreEvent);
+            if (loreStuff != null)
+                loreStuff.SetActive(isLoreEvent);
         }
     }
 

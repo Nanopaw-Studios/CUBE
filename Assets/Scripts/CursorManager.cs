@@ -10,7 +10,7 @@ public class CursorManager : MonoBehaviour
     public enum CursorState
     {
         Gameplay,
-        UI
+        UI,
     }
 
     public static void SetState(CursorState state)
@@ -32,7 +32,7 @@ public class CursorManager : MonoBehaviour
     {
         Camera.main.transform.parent.parent.GetComponent<CameraInput>().enabled = true;
         Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false ;
+        Cursor.visible = false;
     }
 
     public static void SetVisible()

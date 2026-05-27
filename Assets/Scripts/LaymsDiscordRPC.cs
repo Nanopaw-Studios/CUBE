@@ -14,7 +14,11 @@ public class LaymsDiscordRPC : MonoBehaviour
 
     private void Awake()
     {
-        if (current != null && current != this) { Destroy(gameObject); return; }
+        if (current != null && current != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         current = this;
         DontDestroyOnLoad(gameObject);
         Connect();
@@ -26,7 +30,12 @@ public class LaymsDiscordRPC : MonoBehaviour
         {
             try
             {
-                pipe = new NamedPipeClientStream(".", $"discord-ipc-{i}", PipeDirection.InOut, PipeOptions.None);
+                pipe = new NamedPipeClientStream(
+                    ".",
+                    $"discord-ipc-{i}",
+                    PipeDirection.InOut,
+                    PipeOptions.None
+                );
                 pipe.Connect(1000);
                 Handshake();
                 Connected = true;
@@ -48,13 +57,21 @@ public class LaymsDiscordRPC : MonoBehaviour
         Read(); // consume Discord's READY response
     }
 
-    public void SetPresence(string state, string details,
-                            string largeImageKey = "", string largeImageText = "",
-                            string smallImageKey = "", string smallImageText = "",
-                            int partySize = 0, int partyMax = 0, string partyId = "",
-                            string joinSecret = "")
+    public void SetPresence(
+        string state,
+        string details,
+        string largeImageKey = "",
+        string largeImageText = "",
+        string smallImageKey = "",
+        string smallImageText = "",
+        int partySize = 0,
+        int partyMax = 0,
+        string partyId = "",
+        string joinSecret = ""
+    )
     {
-        if (!Connected) return;
+        if (!Connected)
+            return;
 
         // Build assets block
         string assets = "";
@@ -63,10 +80,12 @@ public class LaymsDiscordRPC : MonoBehaviour
             string smallFields = "";
             if (!string.IsNullOrEmpty(smallImageKey))
             {
-                smallFields = $@",""small_image"":""{smallImageKey}"",""small_text"":""{smallImageText}""";
+                smallFields =
+                    $@",""small_image"":""{smallImageKey}"",""small_text"":""{smallImageText}""";
             }
 
-            assets = $@"""assets"":{{
+            assets =
+                $@"""assets"":{{
                 ""large_image"":""{largeImageKey}"",
                 ""large_text"":""{largeImageText}""
                 {smallFields}
@@ -77,7 +96,8 @@ public class LaymsDiscordRPC : MonoBehaviour
         string party = "";
         if (partyMax > 0 && !string.IsNullOrEmpty(partyId))
         {
-            party = $@"""party"":{{
+            party =
+                $@"""party"":{{
                 ""id"":""{partyId}"",
                 ""size"":[{partySize},{partyMax}]
             }},";
@@ -93,7 +113,8 @@ public class LaymsDiscordRPC : MonoBehaviour
         string nonce = Guid.NewGuid().ToString();
         int pid = System.Diagnostics.Process.GetCurrentProcess().Id;
 
-        string payload = $@"{{
+        string payload =
+            $@"{{
             ""cmd"":""SET_ACTIVITY"",
             ""args"":{{
                 ""pid"":{pid},
@@ -123,14 +144,23 @@ public class LaymsDiscordRPC : MonoBehaviour
 
     public void ClearPresence()
     {
-        if (!Connected) return;
+        if (!Connected)
+            return;
 
         string nonce = Guid.NewGuid().ToString();
         int pid = System.Diagnostics.Process.GetCurrentProcess().Id;
-        string payload = $@"{{""cmd"":""SET_ACTIVITY"",""args"":{{""pid"":{pid},""activity"":null}},""nonce"":""{nonce}""}}";
+        string payload =
+            $@"{{""cmd"":""SET_ACTIVITY"",""args"":{{""pid"":{pid},""activity"":null}},""nonce"":""{nonce}""}}";
 
-        try { Write(1, payload); Read(); }
-        catch { Connected = false; }
+        try
+        {
+            Write(1, payload);
+            Read();
+        }
+        catch
+        {
+            Connected = false;
+        }
     }
 
     private void Write(int opcode, string json)
@@ -149,17 +179,18 @@ public class LaymsDiscordRPC : MonoBehaviour
         byte[] header = new byte[8];
         pipe.Read(header, 0, 8);
         int length = BitConverter.ToInt32(header, 4);
-        if (length <= 0) return "";
+        if (length <= 0)
+            return "";
         byte[] body = new byte[length];
         pipe.Read(body, 0, length);
         string response = Encoding.UTF8.GetString(body);
-        Debug.Log($"[RPC] Discord response: {response}"); // add this
         return response;
     }
 
     private string EscapeJson(string s)
     {
-        if (string.IsNullOrEmpty(s)) return "";
+        if (string.IsNullOrEmpty(s))
+            return "";
         return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
     }
 

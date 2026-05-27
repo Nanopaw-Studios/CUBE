@@ -1,7 +1,7 @@
-﻿using Photon.Pun;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -12,9 +12,9 @@ public class CUBEDiscordManager : MonoBehaviour
 
     [Header("Role Image Keys (match keys in Discord Dev Portal)")]
     public string GlitchImgKey = "glitch";
-    public string TitanImgKey  = "titan";
-    public string CoderImgKey  = "coder";
-    public string DJImgKey     = "dj";
+    public string TitanImgKey = "titan";
+    public string CoderImgKey = "coder";
+    public string DJImgKey = "dj";
     public string HealerImgKey = "healer";
 
     [Header("Update")]
@@ -29,9 +29,14 @@ public class CUBEDiscordManager : MonoBehaviour
 
     private struct PresenceData
     {
-        public string state, details, largeText, smallImageKey;
-        public int partySize, partyMax;
-        public string partyId, joinSecret;
+        public string state,
+            details,
+            largeText,
+            smallImageKey;
+        public int partySize,
+            partyMax;
+        public string partyId,
+            joinSecret;
     }
 
     private void Awake()
@@ -98,7 +103,8 @@ public class CUBEDiscordManager : MonoBehaviour
 
     private void UnhookRoundManager()
     {
-        if (roundManager == null) return;
+        if (roundManager == null)
+            return;
         roundManager.OnRoundStart -= OnRoundStart;
         roundManager.OnIntermissionStart -= OnIntermissionStart;
         roundManager = null;
@@ -106,7 +112,8 @@ public class CUBEDiscordManager : MonoBehaviour
 
     private void Update()
     {
-        if (roundManager == null) return;
+        if (roundManager == null)
+            return;
         if (Time.time >= nextUpdateTime)
         {
             SendPresence(BuildGameplayPresence());
@@ -114,27 +121,29 @@ public class CUBEDiscordManager : MonoBehaviour
         }
     }
 
-    private void OnRoundStart()        => SendPresence(BuildGameplayPresence());
+    private void OnRoundStart() => SendPresence(BuildGameplayPresence());
+
     private void OnIntermissionStart() => SendPresence(BuildGameplayPresence());
 
     // -------- Presence builders --------
 
     private PresenceData BuildMainMenuPresence()
     {
-        string state = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom != null
-            ? $"{PhotonNetwork.CurrentRoom.PlayerCount}/{PhotonNetwork.CurrentRoom.MaxPlayers} players"
-            : "Browsing Menus";
+        string state =
+            PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom != null
+                ? $"{PhotonNetwork.CurrentRoom.PlayerCount}/{PhotonNetwork.CurrentRoom.MaxPlayers} players"
+                : "Browsing Menus";
 
         return new PresenceData
         {
-            state         = state,
-            details       = "In Main Menu",
-            largeText     = "Main Menu",
+            state = state,
+            details = "In Main Menu",
+            largeText = "Main Menu",
             smallImageKey = "",
-            partySize     = 0,
-            partyMax      = 0,
-            partyId       = "",
-            joinSecret    = ""
+            partySize = 0,
+            partyMax = 0,
+            partyId = "",
+            joinSecret = "",
         };
     }
 
@@ -155,9 +164,8 @@ public class CUBEDiscordManager : MonoBehaviour
                 {
                     var killer = player.GetEquippedKiller();
 
-                    string killerName = killer != null && killer.character != null
-                        ? killer._Name
-                        : "Unknown";
+                    string killerName =
+                        killer != null && killer.character != null ? killer._Name : "Unknown";
 
                     details = $"Playing Killer: {killerName}";
                     smallImageKey = GetRoleImageKey(killerName);
@@ -166,9 +174,8 @@ public class CUBEDiscordManager : MonoBehaviour
                 {
                     var survivor = player.GetEquippedSurvivor();
 
-                    string survivorName = survivor != null && survivor.character != null
-                        ? survivor._Name
-                        : "Unknown";
+                    string survivorName =
+                        survivor != null && survivor.character != null ? survivor._Name : "Unknown";
 
                     details = $"Playing Survivor: {survivorName}";
                     smallImageKey = GetRoleImageKey(survivorName);
@@ -180,15 +187,18 @@ public class CUBEDiscordManager : MonoBehaviour
             }
         }
 
-        int partySize = 0, partyMax = 0;
-        string partyId = "", joinSecret = "", largeText = "";
+        int partySize = 0,
+            partyMax = 0;
+        string partyId = "",
+            joinSecret = "",
+            largeText = "";
 
         if (PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom != null)
         {
-            partySize  = PhotonNetwork.CurrentRoom.PlayerCount;
-            partyMax   = PhotonNetwork.CurrentRoom.MaxPlayers;
-            partyId    = PhotonNetwork.CurrentRoom.Name;
-            largeText  = $"{partySize}/{partyMax} players";
+            partySize = PhotonNetwork.CurrentRoom.PlayerCount;
+            partyMax = PhotonNetwork.CurrentRoom.MaxPlayers;
+            partyId = PhotonNetwork.CurrentRoom.Name;
+            largeText = $"{partySize}/{partyMax} players";
 
             if (!activeJoinSecrets.TryGetValue(partyId, out joinSecret))
             {
@@ -199,14 +209,14 @@ public class CUBEDiscordManager : MonoBehaviour
 
         return new PresenceData
         {
-            state         = state,
-            details       = details,
-            largeText     = largeText,
+            state = state,
+            details = details,
+            largeText = largeText,
             smallImageKey = smallImageKey,
-            partySize     = partySize,
-            partyMax      = partyMax,
-            partyId       = partyId,
-            joinSecret    = joinSecret
+            partySize = partySize,
+            partyMax = partyMax,
+            partyId = partyId,
+            joinSecret = joinSecret,
         };
     }
 
@@ -214,7 +224,8 @@ public class CUBEDiscordManager : MonoBehaviour
 
     private BasePlayer GetBasePlayer()
     {
-        if (basePlayer != null) return basePlayer;
+        if (basePlayer != null)
+            return basePlayer;
         var camRefs = Camera.main?.GetComponent<PlayerCameraReferences>();
         basePlayer = camRefs?.GetPlayer()?.GetComponent<BasePlayer>();
         return basePlayer;
@@ -229,11 +240,16 @@ public class CUBEDiscordManager : MonoBehaviour
 
         Debug.Log($"[Discord] RoleName RAW: '{roleName}' | CLEAN: '{clean}'");
 
-        if (clean.Contains("glitch")) return GlitchImgKey;
-        if (clean.Contains("titan"))  return TitanImgKey;
-        if (clean.Contains("coder"))  return CoderImgKey;
-        if (clean == "dj" || clean.Contains("dj")) return DJImgKey;
-        if (clean.Contains("healer")) return HealerImgKey;
+        if (clean.Contains("glitch"))
+            return GlitchImgKey;
+        if (clean.Contains("titan"))
+            return TitanImgKey;
+        if (clean.Contains("coder"))
+            return CoderImgKey;
+        if (clean == "dj" || clean.Contains("dj"))
+            return DJImgKey;
+        if (clean.Contains("healer"))
+            return HealerImgKey;
 
         Debug.LogWarning($"[Discord] No image match for role: {clean}");
         return "";
@@ -243,21 +259,22 @@ public class CUBEDiscordManager : MonoBehaviour
 
     private void SendPresence(PresenceData p)
     {
-        if (LaymsDiscordRPC.current == null || !LaymsDiscordRPC.current.Connected) return;
+        if (LaymsDiscordRPC.current == null || !LaymsDiscordRPC.current.Connected)
+            return;
 
         Debug.Log($"[Discord] Sending presence: {p.state} | {p.details}");
 
         LaymsDiscordRPC.current.SetPresence(
-            state:          p.state,
-            details:        p.details,
-            largeImageKey:  largeImageKey,
+            state: p.state,
+            details: p.details,
+            largeImageKey: largeImageKey,
             largeImageText: p.largeText,
-            smallImageKey:  p.smallImageKey,
+            smallImageKey: p.smallImageKey,
             smallImageText: p.details,
-            partySize:      p.partySize,
-            partyMax:       p.partyMax,
-            partyId:        p.partyId,
-            joinSecret:     p.joinSecret
+            partySize: p.partySize,
+            partyMax: p.partyMax,
+            partyId: p.partyId,
+            joinSecret: p.joinSecret
         );
     }
 

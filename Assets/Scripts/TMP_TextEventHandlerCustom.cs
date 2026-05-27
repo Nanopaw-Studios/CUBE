@@ -27,10 +27,16 @@ public class TMP_TextEventHandler : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (textComponent == null) return;
+        if (textComponent == null)
+            return;
 
-        int linkIndex = TMP_TextUtilities.FindIntersectingLink(textComponent, eventData.position, uiCamera);
-        if (linkIndex == -1) return;
+        int linkIndex = TMP_TextUtilities.FindIntersectingLink(
+            textComponent,
+            eventData.position,
+            uiCamera
+        );
+        if (linkIndex == -1)
+            return;
 
         TMP_LinkInfo linkInfo = textComponent.textInfo.linkInfo[linkIndex];
         string linkId = linkInfo.GetLinkID();

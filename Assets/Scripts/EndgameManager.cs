@@ -48,18 +48,22 @@ public class EndgameManager : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
 
         var volObj = GameObject.Find(globalVolumeName);
-        if (volObj) volume = volObj.GetComponent<Volume>();
+        if (volObj)
+            volume = volObj.GetComponent<Volume>();
 
-        // Cache overrides + initial values once (don’t keep overwriting them at 30s)
+        // Cache overrides + initial values once (donï¿½t keep overwriting them at 30s)
         if (volume && volume.profile)
         {
             volume.profile.TryGet(out chromatic);
             volume.profile.TryGet(out lens);
             volume.profile.TryGet(out colorAdj);
 
-            if (chromatic != null) chromaticInitial = chromatic.intensity.value;
-            if (lens != null) lensInitial = lens.intensity.value;
-            if (colorAdj != null) saturationInitial = colorAdj.saturation.value;
+            if (chromatic != null)
+                chromaticInitial = chromatic.intensity.value;
+            if (lens != null)
+                lensInitial = lens.intensity.value;
+            if (colorAdj != null)
+                saturationInitial = colorAdj.saturation.value;
         }
 
         // Subscribe
@@ -99,7 +103,8 @@ public class EndgameManager : MonoBehaviour
 
         // Stop music
         var music = GetComponent<MusicManager>();
-        if (music != null) music.roundSource.Stop();
+        if (music != null)
+            music.roundSource.Stop();
     }
 
     private void CheckTime()
@@ -124,10 +129,19 @@ public class EndgameManager : MonoBehaviour
             audioSource.Play();
 
             // start smooth ramp
-            if (rampCoroutine != null) StopCoroutine(rampCoroutine);
-            rampCoroutine = StartCoroutine(RampEffects(chromaticInitial, lensInitial, saturationInitial,
-                                                       targetChromatic, targetLensDistortion, targetSaturation,
-                                                       effectRampDuration));
+            if (rampCoroutine != null)
+                StopCoroutine(rampCoroutine);
+            rampCoroutine = StartCoroutine(
+                RampEffects(
+                    chromaticInitial,
+                    lensInitial,
+                    saturationInitial,
+                    targetChromatic,
+                    targetLensDistortion,
+                    targetSaturation,
+                    effectRampDuration
+                )
+            );
         }
         else if (roundManager.currentTime <= 10 && roundManager.currentTime > 0)
         {
@@ -139,9 +153,15 @@ public class EndgameManager : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator RampEffects(float chromStart, float lensStart, float satStart,
-                                                      float chromEnd, float lensEnd, float satEnd,
-                                                      float duration)
+    private System.Collections.IEnumerator RampEffects(
+        float chromStart,
+        float lensStart,
+        float satStart,
+        float chromEnd,
+        float lensEnd,
+        float satEnd,
+        float duration
+    )
     {
         if (duration <= 0f)
         {
@@ -168,15 +188,21 @@ public class EndgameManager : MonoBehaviour
 
     private void ApplyEffects(float chromValue, float lensValue, float saturationValue)
     {
-        if (chromatic != null) chromatic.intensity.value = chromValue;
-        if (lens != null) lens.intensity.value = lensValue;
-        if (colorAdj != null) colorAdj.saturation.value = saturationValue;
+        if (chromatic != null)
+            chromatic.intensity.value = chromValue;
+        if (lens != null)
+            lens.intensity.value = lensValue;
+        if (colorAdj != null)
+            colorAdj.saturation.value = saturationValue;
     }
 
     private void ResetVisuals()
     {
-        if (chromatic != null) chromatic.intensity.value = chromaticInitial;
-        if (lens != null) lens.intensity.value = lensInitial;
-        if (colorAdj != null) colorAdj.saturation.value = saturationInitial;
+        if (chromatic != null)
+            chromatic.intensity.value = chromaticInitial;
+        if (lens != null)
+            lens.intensity.value = lensInitial;
+        if (colorAdj != null)
+            colorAdj.saturation.value = saturationInitial;
     }
 }

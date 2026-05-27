@@ -44,7 +44,8 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
             SetNametagVisible(false);
         }
 
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine)
+            return;
 
         string playerName = PlayfabManager.GetPlayerName();
 
@@ -56,36 +57,43 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
 
         void TryApply()
         {
-            if (!titleLoaded || !verificationLoaded) return;
+            if (!titleLoaded || !verificationLoaded)
+                return;
 
             var props = new Hashtable
             {
                 { PROP_NAME, playerName },
                 { PROP_TITLE, titleId },
-                { PROP_VERIFICATION, verification }
+                { PROP_VERIFICATION, verification },
             };
 
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
         }
 
-        PlayfabManager.Instance.GetUserDataValue("PlayerTitle", titleId1 =>
-        {
-            titleId = string.IsNullOrEmpty(titleId1) ? "" : titleId1;
-            titleLoaded = true;
+        PlayfabManager.Instance.GetUserDataValue(
+            "PlayerTitle",
+            titleId1 =>
+            {
+                titleId = string.IsNullOrEmpty(titleId1) ? "" : titleId1;
+                titleLoaded = true;
 
-            // Apply locally immediately (optional but nice)
-            TitleStyleRegistry.Apply(titleText, titleId);
+                // Apply locally immediately (optional but nice)
+                TitleStyleRegistry.Apply(titleText, titleId);
 
-            TryApply();
-        });
+                TryApply();
+            }
+        );
 
-        PlayfabManager.Instance.GetUserDataValue("VerificationStatus", verification1 =>
-        {
-            verification = string.IsNullOrEmpty(verification1) ? "" : verification1;
-            verificationLoaded = true;
+        PlayfabManager.Instance.GetUserDataValue(
+            "VerificationStatus",
+            verification1 =>
+            {
+                verification = string.IsNullOrEmpty(verification1) ? "" : verification1;
+                verificationLoaded = true;
 
-            TryApply();
-        });
+                TryApply();
+            }
+        );
     }
 
     private void OnDestroy()
@@ -116,10 +124,14 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
             nametagRoot.SetActive(visible);
     }
 
-    public override void OnPlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, Hashtable changedProps)
+    public override void OnPlayerPropertiesUpdate(
+        Photon.Realtime.Player targetPlayer,
+        Hashtable changedProps
+    )
     {
         // Only update if this PhotonView belongs to that player
-        if (photonView.Owner != targetPlayer) return;
+        if (photonView.Owner != targetPlayer)
+            return;
 
         ApplyFromPlayer(targetPlayer);
     }
@@ -143,7 +155,10 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
             TitleStyleRegistry.Apply(titleText, titleId);
         }
 
-        if (verificationBadge != null && p.CustomProperties.TryGetValue(PROP_VERIFICATION, out var vObj))
+        if (
+            verificationBadge != null
+            && p.CustomProperties.TryGetValue(PROP_VERIFICATION, out var vObj)
+        )
         {
             string verification = vObj as string ?? "";
             switch (verification)
@@ -208,4 +223,3 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
         }
     }
 }
-

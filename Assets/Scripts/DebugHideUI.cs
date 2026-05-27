@@ -13,6 +13,7 @@ public class DebugHideUI : MonoBehaviour
     }
 
     void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
+
     void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -25,7 +26,7 @@ public class DebugHideUI : MonoBehaviour
             if (obj.name == "Canvas")
             {
                 canvas = obj;
-                break; 
+                break;
             }
         }
     }

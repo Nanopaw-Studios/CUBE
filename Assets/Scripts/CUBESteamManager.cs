@@ -9,7 +9,8 @@ using Steamworks;
 #endif
 
 [DisallowMultipleComponent]
-public class CUBESteamManager : MonoBehaviour {
+public class CUBESteamManager : MonoBehaviour
+{
 #if !DISABLESTEAMWORKS
 	protected static bool s_EverInitialized = false;
 
@@ -137,10 +138,9 @@ public class CUBESteamManager : MonoBehaviour {
 		SteamAPI.RunCallbacks();
 	}
 #else
-	public static bool Initialized {
-		get {
-			return false;
-		}
-	}
+    public static bool Initialized
+    {
+        get { return false; }
+    }
 #endif // !DISABLESTEAMWORKS
 }

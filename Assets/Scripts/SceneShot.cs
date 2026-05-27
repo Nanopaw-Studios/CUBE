@@ -1,12 +1,10 @@
-using UnityEngine;
-using EasyButtons;
 using System.IO;
-
+using EasyButtons;
+using UnityEngine;
+using UnityEngine.Rendering.Universal;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-
-using UnityEngine.Rendering.Universal;
 
 [RequireComponent(typeof(Camera))]
 public class SceneShot : MonoBehaviour
@@ -24,7 +22,7 @@ public class SceneShot : MonoBehaviour
         AlignCamToSceneViewAndEnable();
 
         var cameraData = thisCamera.GetUniversalAdditionalCameraData();
-        if (cameraData != null) 
+        if (cameraData != null)
         {
             cameraData.renderPostProcessing = true;
             cameraData.volumeLayerMask = -1;
@@ -34,7 +32,13 @@ public class SceneShot : MonoBehaviour
         int resHeight = baseHeight * scaleFactor;
 
         // 1. Capture in HDR/Linear for the Bloom math to work
-        RenderTexture rt = RenderTexture.GetTemporary(resWidth, resHeight, 24, RenderTextureFormat.DefaultHDR, RenderTextureReadWrite.Linear);
+        RenderTexture rt = RenderTexture.GetTemporary(
+            resWidth,
+            resHeight,
+            24,
+            RenderTextureFormat.DefaultHDR,
+            RenderTextureReadWrite.Linear
+        );
         thisCamera.targetTexture = rt;
         thisCamera.Render();
 
@@ -61,10 +65,11 @@ public class SceneShot : MonoBehaviour
 
         // 4. Save to Disk
         byte[] bytes = finalTex.EncodeToPNG();
-        if (!Directory.Exists("screenshots")) Directory.CreateDirectory("screenshots");
+        if (!Directory.Exists("screenshots"))
+            Directory.CreateDirectory("screenshots");
         string fullPath = Path.Combine("screenshots", fileName + i + ".png");
         File.WriteAllBytes(fullPath, bytes);
-        
+
         Debug.Log($"<color=green>Screenshot Saved (Fixed Colors):</color> {fullPath}");
 
         // Cleanup

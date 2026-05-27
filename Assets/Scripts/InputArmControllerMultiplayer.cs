@@ -32,12 +32,20 @@ public class InputArmControllerMP : MonoBehaviour
 
     public void InitializeInputActions()
     {
-        leftClickAction = new InputAction("LeftClick", InputActionType.Button, "<Mouse>/leftButton");
+        leftClickAction = new InputAction(
+            "LeftClick",
+            InputActionType.Button,
+            "<Mouse>/leftButton"
+        );
         leftClickAction.started += OnLeftClickStarted;
         leftClickAction.canceled += OnLeftClickCanceled;
         leftClickAction.Enable();
 
-        rightClickAction = new InputAction("RightClick", InputActionType.Button, "<Mouse>/rightButton");
+        rightClickAction = new InputAction(
+            "RightClick",
+            InputActionType.Button,
+            "<Mouse>/rightButton"
+        );
         rightClickAction.started += OnRightClickStarted;
         rightClickAction.canceled += OnRightClickCanceled;
         rightClickAction.Enable();
@@ -45,26 +53,50 @@ public class InputArmControllerMP : MonoBehaviour
 
     public void OnLeftClickStarted(InputAction.CallbackContext context)
     {
-        if (!rootPhotonView.IsMine) return;
-        rootPhotonView.RPC(nameof(PlayerRPCHandler.RPC_ArmHandle), RpcTarget.All, (int)Hands.Left, false);
+        if (!rootPhotonView.IsMine)
+            return;
+        rootPhotonView.RPC(
+            nameof(PlayerRPCHandler.RPC_ArmHandle),
+            RpcTarget.All,
+            (int)Hands.Left,
+            false
+        );
     }
 
     public void OnLeftClickCanceled(InputAction.CallbackContext context)
     {
-        if (!rootPhotonView.IsMine) return;
-        rootPhotonView.RPC(nameof(PlayerRPCHandler.RPC_ArmHandle), RpcTarget.All, (int)Hands.Left, true);
+        if (!rootPhotonView.IsMine)
+            return;
+        rootPhotonView.RPC(
+            nameof(PlayerRPCHandler.RPC_ArmHandle),
+            RpcTarget.All,
+            (int)Hands.Left,
+            true
+        );
     }
 
     public void OnRightClickStarted(InputAction.CallbackContext context)
     {
-        if (!rootPhotonView.IsMine) return;
-        rootPhotonView.RPC(nameof(PlayerRPCHandler.RPC_ArmHandle), RpcTarget.All, (int)Hands.Right, false);
+        if (!rootPhotonView.IsMine)
+            return;
+        rootPhotonView.RPC(
+            nameof(PlayerRPCHandler.RPC_ArmHandle),
+            RpcTarget.All,
+            (int)Hands.Right,
+            false
+        );
     }
 
     public void OnRightClickCanceled(InputAction.CallbackContext context)
     {
-        if (!rootPhotonView.IsMine) return;
-        rootPhotonView.RPC(nameof(PlayerRPCHandler.RPC_ArmHandle), RpcTarget.All, (int)Hands.Right, true);
+        if (!rootPhotonView.IsMine)
+            return;
+        rootPhotonView.RPC(
+            nameof(PlayerRPCHandler.RPC_ArmHandle),
+            RpcTarget.All,
+            (int)Hands.Right,
+            true
+        );
     }
 
     public void OnEnable()

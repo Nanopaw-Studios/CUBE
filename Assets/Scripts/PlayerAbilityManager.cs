@@ -1,6 +1,6 @@
-using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
+using Photon.Pun;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,11 +10,14 @@ public class PlayerAbilityManager : MonoBehaviour
 {
     public GameObject AbilityUITemplate;
     public Transform abilitiesParent; // Canvas/SurvivorStats/Abilites
-    [Tooltip("Optional: assign in inspector. If left empty the script will try to find the RoundManager at runtime.")]
+
+    [Tooltip(
+        "Optional: assign in inspector. If left empty the script will try to find the RoundManager at runtime."
+    )]
     public RoundManager roundManager;
+
     [Header("Input")]
     public InputActionAsset inputActions;
-
 
     private BasePlayer player;
 
@@ -48,7 +51,8 @@ public class PlayerAbilityManager : MonoBehaviour
     private void OnEnable()
     {
         var go = GameObject.Find("Multiplayer");
-        roundManager = go != null ? go.GetComponent<RoundManager>() : FindFirstObjectByType<RoundManager>();
+        roundManager =
+            go != null ? go.GetComponent<RoundManager>() : FindFirstObjectByType<RoundManager>();
 
         if (roundManager != null && !subscribed)
         {
@@ -75,7 +79,8 @@ public class PlayerAbilityManager : MonoBehaviour
 
     private void OnDisable()
     {
-        if (passiveLoop != null) StopCoroutine(passiveLoop);
+        if (passiveLoop != null)
+            StopCoroutine(passiveLoop);
         passiveLoop = null;
 
         UnsubscribeAllAbilityCallbacks();
@@ -105,7 +110,8 @@ public class PlayerAbilityManager : MonoBehaviour
         abilitiesEnabled = false;
         SetAllCooldownTexts("Disabled");
 
-        if (passiveLoop != null) StopCoroutine(passiveLoop);
+        if (passiveLoop != null)
+            StopCoroutine(passiveLoop);
         passiveLoop = null;
     }
 
@@ -119,7 +125,8 @@ public class PlayerAbilityManager : MonoBehaviour
             return;
         }
 
-        if (passiveLoop != null) StopCoroutine(passiveLoop);
+        if (passiveLoop != null)
+            StopCoroutine(passiveLoop);
         passiveLoop = StartCoroutine(PassiveTickLoop());
 
         StartCoroutine(BuildAbilitiesWithDelay());
@@ -136,8 +143,9 @@ public class PlayerAbilityManager : MonoBehaviour
             if (TryResolveLocalPlayer())
             {
                 var type = player.GetPlayerType();
-                bool hasCharacter = (type == BasePlayer.PlayerType.Survivor && player.GetEquippedSurvivor() != null)
-                                 || (type == BasePlayer.PlayerType.Killer  && player.GetEquippedKiller()   != null);
+                bool hasCharacter =
+                    (type == BasePlayer.PlayerType.Survivor && player.GetEquippedSurvivor() != null)
+                    || (type == BasePlayer.PlayerType.Killer && player.GetEquippedKiller() != null);
                 if (hasCharacter)
                     break;
             }
@@ -212,8 +220,10 @@ public class PlayerAbilityManager : MonoBehaviour
         for (int i = 0; i < currentMoveset.Length; i++)
         {
             var ability = currentMoveset[i];
-            if (ability == null) continue;
-            if (ability.isPassive) continue;
+            if (ability == null)
+                continue;
+            if (ability.isPassive)
+                continue;
             activeMoveset.Add(ability);
         }
 
@@ -227,7 +237,8 @@ public class PlayerAbilityManager : MonoBehaviour
             var normalIcon = abilityGO.transform.Find("Icon")?.GetComponent<Image>();
             var grayIcon = abilityGO.transform.Find("IconGrayscale")?.GetComponent<Image>();
 
-            AbiltySlider slider = normalIcon != null ? normalIcon.GetComponent<AbiltySlider>() : null;
+            AbiltySlider slider =
+                normalIcon != null ? normalIcon.GetComponent<AbiltySlider>() : null;
             if (slider != null)
             {
                 slider.ability = ability;
@@ -239,7 +250,8 @@ public class PlayerAbilityManager : MonoBehaviour
                 abilitySliders.Add(null);
             }
 
-            if (normalIcon != null) normalIcon.sprite = ability.AbilityIcon;
+            if (normalIcon != null)
+                normalIcon.sprite = ability.AbilityIcon;
             if (grayIcon != null)
             {
                 grayIcon.sprite = ability.AbilityIconGrayscale;
@@ -247,10 +259,12 @@ public class PlayerAbilityManager : MonoBehaviour
             }
 
             var nameText = abilityGO.transform.Find("Name")?.GetComponent<TMP_Text>();
-            if (nameText != null) nameText.text = ability.AbilityName;
+            if (nameText != null)
+                nameText.text = ability.AbilityName;
 
             TMP_Text cooldownText = abilityGO.transform.Find("Cooldown")?.GetComponent<TMP_Text>();
-            if (cooldownText != null) cooldownText.text = abilitiesEnabled ? "Ready" : "Disabled";
+            if (cooldownText != null)
+                cooldownText.text = abilitiesEnabled ? "Ready" : "Disabled";
             cooldownTexts.Add(cooldownText);
 
             InputAction act = null;
@@ -320,11 +334,13 @@ public class PlayerAbilityManager : MonoBehaviour
         for (int i = 0; i < abilityInputs.Count; i++)
         {
             var act = abilityInputs[i];
-            if (act == null) continue;
+            if (act == null)
+                continue;
 
             // Enable the action map + action
             act.actionMap?.Enable();
-            if (!act.enabled) act.Enable();
+            if (!act.enabled)
+                act.Enable();
         }
     }
 
@@ -349,18 +365,24 @@ public class PlayerAbilityManager : MonoBehaviour
 
             System.Action<InputAction.CallbackContext> handler = ctx =>
             {
-                if (!abilitiesEnabled) return;
-                if (player == null) return;
+                if (!abilitiesEnabled)
+                    return;
+                if (player == null)
+                    return;
 
                 var pv = player.GetComponent<PhotonView>();
-                if (pv == null || !pv.IsMine) return;
+                if (pv == null || !pv.IsMine)
+                    return;
 
-                if (index < 0 || index >= activeMoveset.Count) return;
+                if (index < 0 || index >= activeMoveset.Count)
+                    return;
 
                 var ability = activeMoveset[index];
-                if (ability == null) return;
+                if (ability == null)
+                    return;
 
-                if (cooldownTimers[index] < ability.AbilityCooldown) return;
+                if (cooldownTimers[index] < ability.AbilityCooldown)
+                    return;
 
                 ability.ActivateAbility(player);
                 cooldownTimers[index] = 0f;
@@ -378,8 +400,10 @@ public class PlayerAbilityManager : MonoBehaviour
         for (int i = 0; i < abilityInputs.Count; i++)
         {
             var a = abilityInputs[i];
-            Debug.Log($"[AbilityInput] slot={i} ability={(i < activeMoveset.Count ? activeMoveset[i]?.AbilityName : "OUT_OF_RANGE")} " +
-                      $"action={(a != null ? a.name : "NULL")} enabled={(a != null && a.enabled)} map={(a?.actionMap != null ? a.actionMap.name : "NULL")} mapEnabled={(a?.actionMap != null && a.actionMap.enabled)}");
+            Debug.Log(
+                $"[AbilityInput] slot={i} ability={(i < activeMoveset.Count ? activeMoveset[i]?.AbilityName : "OUT_OF_RANGE")} "
+                    + $"action={(a != null ? a.name : "NULL")} enabled={(a != null && a.enabled)} map={(a?.actionMap != null ? a.actionMap.name : "NULL")} mapEnabled={(a?.actionMap != null && a.actionMap.enabled)}"
+            );
         }
     }
 
@@ -404,12 +428,18 @@ public class PlayerAbilityManager : MonoBehaviour
         if (activeMoveset.Count == 0)
             return;
 
-        int safeCount = Mathf.Min(activeMoveset.Count, cooldownTimers.Count, cooldownTexts.Count, abilitySliders.Count);
+        int safeCount = Mathf.Min(
+            activeMoveset.Count,
+            cooldownTimers.Count,
+            cooldownTexts.Count,
+            abilitySliders.Count
+        );
 
         for (int i = 0; i < safeCount; i++)
         {
             var ability = activeMoveset[i];
-            if (ability == null) continue;
+            if (ability == null)
+                continue;
 
             if (cooldownTimers[i] < ability.AbilityCooldown)
             {
@@ -422,8 +452,10 @@ public class PlayerAbilityManager : MonoBehaviour
 
             if (!abilitiesEnabled)
             {
-                if (cooldownTexts[i] != null) cooldownTexts[i].text = "Disabled";
-                if (abilitySliders[i] != null) abilitySliders[i].SetSliderValue(0f);
+                if (cooldownTexts[i] != null)
+                    cooldownTexts[i].text = "Disabled";
+                if (abilitySliders[i] != null)
+                    abilitySliders[i].SetSliderValue(0f);
                 continue;
             }
 
@@ -450,12 +482,14 @@ public class PlayerAbilityManager : MonoBehaviour
 
     private void ActivatePassives()
     {
-        if (currentMoveset == null) return;
+        if (currentMoveset == null)
+            return;
 
         for (int i = 0; i < currentMoveset.Length; i++)
         {
             Ability ability = currentMoveset[i];
-            if (ability == null) continue;
+            if (ability == null)
+                continue;
 
             if (ability.isPassive)
             {
@@ -465,7 +499,9 @@ public class PlayerAbilityManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"Ability {ability.AbilityName} is marked as passive but is not of type PassiveAbility.");
+                    Debug.LogWarning(
+                        $"Ability {ability.AbilityName} is marked as passive but is not of type PassiveAbility."
+                    );
                 }
             }
         }
@@ -500,21 +536,23 @@ public class PlayerAbilityManager : MonoBehaviour
         }
     }
 
-
     private bool TryResolveLocalPlayer()
     {
         if (player != null)
         {
             var pv0 = player.GetComponent<PhotonView>();
-            if (pv0 != null && pv0.IsMine) return true;
+            if (pv0 != null && pv0.IsMine)
+                return true;
         }
 
         var camRefs = Camera.main?.GetComponent<PlayerCameraReferences>();
         var pObj = camRefs != null ? camRefs.GetPlayer() : null;
-        if (pObj == null) return false;
+        if (pObj == null)
+            return false;
 
         var pv = pObj.GetPhotonView();
-        if (pv == null || !pv.IsMine) return false;
+        if (pv == null || !pv.IsMine)
+            return false;
 
         player = pObj.GetComponent<BasePlayer>();
         return player != null;

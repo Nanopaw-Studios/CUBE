@@ -10,6 +10,7 @@ public class CubePlayerBase : ScriptableObject
     public string Description;
     public string ScriptName;
     public int Cost;
+
     // out of 5
     [Range(0f, 5f)]
     public int Difficulty;

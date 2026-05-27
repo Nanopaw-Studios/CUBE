@@ -21,10 +21,16 @@ public class MusicManager : MonoBehaviour
     private void PlayAmbienceMusic()
     {
         if (roundSource.isPlaying || interSource.isPlaying)
-        { interSource.Stop(); roundSource.Stop(); }
+        {
+            interSource.Stop();
+            roundSource.Stop();
+        }
 
-        if (ambienceTracks.Length == 0) return;
-        AudioClip selectedTrack = ambienceTracks[UnityEngine.Random.Range(0, ambienceTracks.Length)];
+        if (ambienceTracks.Length == 0)
+            return;
+        AudioClip selectedTrack = ambienceTracks[
+            UnityEngine.Random.Range(0, ambienceTracks.Length)
+        ];
         roundSource.clip = selectedTrack;
         roundSource.Play();
     }
@@ -32,7 +38,9 @@ public class MusicManager : MonoBehaviour
     private void PlayIntermissionMusic()
     {
         if (interSource.isPlaying)
-        { interSource.Stop(); }
+        {
+            interSource.Stop();
+        }
 
         interSource.clip = intermissionTrack;
         interSource.Play();

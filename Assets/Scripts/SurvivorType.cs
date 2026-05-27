@@ -1,7 +1,4 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Survivor", menuName = "ScriptableObjects/Survivor Type")]
-public class SurvivorType : CubePlayerBase
-{
-
-}
+public class SurvivorType : CubePlayerBase { }

@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class Noclipper : MonoBehaviour
 {
-    Camera camera;
+    private new Camera camera;
     public InputActionReference noclipAction;
 
     GameObject noclipCameraPrefab;
@@ -51,8 +51,10 @@ public class Noclipper : MonoBehaviour
                 noclipCameraObj = Instantiate(noclipCameraPrefab);
             }
 
-            noclipCameraObj.transform.position = camera.transform.position;
-            noclipCameraObj.transform.rotation = camera.transform.rotation;
+            noclipCameraObj.transform.SetPositionAndRotation(
+                camera.transform.position,
+                camera.transform.rotation
+            );
             noclipCameraObj.SetActive(true);
         }
         else

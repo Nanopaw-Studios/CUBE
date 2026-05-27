@@ -1,7 +1,7 @@
+using System;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
-using System;
 using UnityEngine;
 
 public class BasePlayer : MonoBehaviourPunCallbacks
@@ -19,7 +19,7 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     {
         None,
         Killer,
-        Survivor
+        Survivor,
     }
 
     public PlayerType playerType = PlayerType.None;
@@ -91,7 +91,8 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     /// </summary>
     public void EquipKiller(KillerType killer)
     {
-        if (killer == null) return;
+        if (killer == null)
+            return;
         equippedKiller = killer;
         PlayerPrefs.SetString(KillerPrefKey, killer._Name);
         PlayerPrefs.Save();
@@ -105,7 +106,8 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     /// </summary>
     public void EquipSurvivor(SurvivorType survivor)
     {
-        if (survivor == null) return;
+        if (survivor == null)
+            return;
         equippedSurvivor = survivor;
         PlayerPrefs.SetString(SurvivorPrefKey, survivor._Name);
         PlayerPrefs.Save();
@@ -120,12 +122,16 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     /// </summary>
     private void SyncEquippedCharacterProps()
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine)
+            return;
 
         var props = new Hashtable
         {
-            { PropEquippedKiller,   equippedKiller  != null ? equippedKiller._Name  : string.Empty },
-            { PropEquippedSurvivor, equippedSurvivor != null ? equippedSurvivor._Name : string.Empty }
+            { PropEquippedKiller, equippedKiller != null ? equippedKiller._Name : string.Empty },
+            {
+                PropEquippedSurvivor,
+                equippedSurvivor != null ? equippedSurvivor._Name : string.Empty
+            },
         };
 
         PhotonNetwork.LocalPlayer.SetCustomProperties(props);
@@ -149,7 +155,9 @@ public class BasePlayer : MonoBehaviourPunCallbacks
             }
             else
             {
-                Debug.LogWarning($"[BasePlayer] Saved killer '{name}' could not be loaded — keeping prefab default.");
+                Debug.LogWarning(
+                    $"[BasePlayer] Saved killer '{name}' could not be loaded — keeping prefab default."
+                );
             }
         }
 
@@ -164,7 +172,9 @@ public class BasePlayer : MonoBehaviourPunCallbacks
             }
             else
             {
-                Debug.LogWarning($"[BasePlayer] Saved survivor '{name}' could not be loaded — keeping prefab default.");
+                Debug.LogWarning(
+                    $"[BasePlayer] Saved survivor '{name}' could not be loaded — keeping prefab default."
+                );
             }
         }
 

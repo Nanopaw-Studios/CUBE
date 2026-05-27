@@ -37,7 +37,8 @@ public class FootstepSC : MonoBehaviour
 
     void PlayRandomFootstep(CollisionHandler foot)
     {
-        if (steps.Length == 0) return;
+        if (steps.Length == 0)
+            return;
 
         int randomIndex = Random.Range(0, steps.Length);
         AudioClip step = steps[randomIndex];

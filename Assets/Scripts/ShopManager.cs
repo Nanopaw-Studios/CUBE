@@ -1,8 +1,8 @@
-using PlayFab;
-using PlayFab.ClientModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PlayFab;
+using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,7 +18,7 @@ public class ShopManager : MonoBehaviour
         ShopEmotes,
         OwnedKillers,
         OwnedSurvivors,
-        OwnedEmotes
+        OwnedEmotes,
     }
 
     [Header("References")]
@@ -71,7 +71,6 @@ public class ShopManager : MonoBehaviour
 
     public event Action<CubePlayerBase> OnCharacterPurchased;
     public event Action<EmoteAsset> OnEmotePurchased;
-    
 
     private void OnEnable()
     {
@@ -106,8 +105,10 @@ public class ShopManager : MonoBehaviour
 
     private void Start()
     {
-        if (shop != null) shop.SetActive(false);
-        if (CharDetails != null) CharDetails.SetActive(false);
+        if (shop != null)
+            shop.SetActive(false);
+        if (CharDetails != null)
+            CharDetails.SetActive(false);
         RefreshShopFromInventory();
 
         // Force-close the shop when a round begins so it can never remain open mid-round.
@@ -141,7 +142,8 @@ public class ShopManager : MonoBehaviour
 
     private void ShopTriggered(InputAction.CallbackContext context)
     {
-        if (shop == null) return;
+        if (shop == null)
+            return;
 
         // Shop is only accessible during intermission, not during active rounds.
         if (roundManager != null && roundManager.roundActive)
@@ -156,12 +158,15 @@ public class ShopManager : MonoBehaviour
             EventSystem.current.SetSelectedGameObject(uiSelectionActive);
         }
 
-        CursorManager.SetState(newState ? CursorManager.CursorState.UI : CursorManager.CursorState.Gameplay);
+        CursorManager.SetState(
+            newState ? CursorManager.CursorState.UI : CursorManager.CursorState.Gameplay
+        );
     }
 
     private void RefreshShopFromInventory()
     {
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(),
+        PlayFabClientAPI.GetUserInventory(
+            new GetUserInventoryRequest(),
             inv =>
             {
                 ownedItemIds = new HashSet<string>(inv.Inventory.Select(i => i.ItemId));
@@ -172,18 +177,21 @@ public class ShopManager : MonoBehaviour
                 Debug.LogError("[Shop] Failed to get inventory: " + error.GenerateErrorReport());
                 ownedItemIds.Clear();
                 BuildShopUI();
-            });
+            }
+        );
     }
 
     private void BuildShopUI()
     {
         // --- DEBUG SUMMARY ---
-        Debug.Log($"[Shop] BuildShopUI()" +
-                  $" | killers={(killers == null ? -1 : killers.Length)}" +
-                  $" | survivors={(survivors == null ? -1 : survivors.Length)}" +
-                  $" | emotes={(emotes == null ? -1 : emotes.Length)}" +
-                  $" | shopSurvivorContent={(shopSurvivorContent ? shopSurvivorContent.name : "NULL")}" +
-                  $" | ownedSurvivorContent={(ownedSurvivorContent ? ownedSurvivorContent.name : "NULL")}");
+        Debug.Log(
+            $"[Shop] BuildShopUI()"
+                + $" | killers={(killers == null ? -1 : killers.Length)}"
+                + $" | survivors={(survivors == null ? -1 : survivors.Length)}"
+                + $" | emotes={(emotes == null ? -1 : emotes.Length)}"
+                + $" | shopSurvivorContent={(shopSurvivorContent ? shopSurvivorContent.name : "NULL")}"
+                + $" | ownedSurvivorContent={(ownedSurvivorContent ? ownedSurvivorContent.name : "NULL")}"
+        );
 
         ClearChildren(shopKillerContent?.transform);
         ClearChildren(ownedKillerContent?.transform);
@@ -194,7 +202,8 @@ public class ShopManager : MonoBehaviour
 
         selectedCharacter = null;
         selectedEmote = null;
-        if (CharDetails != null) CharDetails.SetActive(false);
+        if (CharDetails != null)
+            CharDetails.SetActive(false);
 
         int spawnedKillers = 0;
         int spawnedSurvivors = 0;
@@ -205,13 +214,18 @@ public class ShopManager : MonoBehaviour
         {
             foreach (var killer in killers)
             {
-                if (killer == null) continue;
+                if (killer == null)
+                    continue;
 
-                bool isOwned = !string.IsNullOrEmpty(killer._PlayFabItemID) && ownedItemIds.Contains(killer._PlayFabItemID);
+                bool isOwned =
+                    !string.IsNullOrEmpty(killer._PlayFabItemID)
+                    && ownedItemIds.Contains(killer._PlayFabItemID);
                 Transform parent = (isOwned ? ownedKillerContent : shopKillerContent)?.transform;
                 if (parent == null)
                 {
-                    Debug.LogWarning("[Shop] Killer parent is null (check shopKillerContent/ownedKillerContent assignments)");
+                    Debug.LogWarning(
+                        "[Shop] Killer parent is null (check shopKillerContent/ownedKillerContent assignments)"
+                    );
                     continue;
                 }
 
@@ -228,14 +242,21 @@ public class ShopManager : MonoBehaviour
         {
             foreach (var survivor in survivors)
             {
-                if (survivor == null) continue;
+                if (survivor == null)
+                    continue;
 
-                bool isOwned = !string.IsNullOrEmpty(survivor._PlayFabItemID) && ownedItemIds.Contains(survivor._PlayFabItemID);
-                Transform parent = (isOwned ? ownedSurvivorContent : shopSurvivorContent)?.transform;
+                bool isOwned =
+                    !string.IsNullOrEmpty(survivor._PlayFabItemID)
+                    && ownedItemIds.Contains(survivor._PlayFabItemID);
+                Transform parent = (
+                    isOwned ? ownedSurvivorContent : shopSurvivorContent
+                )?.transform;
 
                 if (parent == null)
                 {
-                    Debug.LogWarning("[Shop] Survivor parent is null. You likely didn't assign shopSurvivorContent and/or ownedSurvivorContent in the inspector.");
+                    Debug.LogWarning(
+                        "[Shop] Survivor parent is null. You likely didn't assign shopSurvivorContent and/or ownedSurvivorContent in the inspector."
+                    );
                     continue;
                 }
 
@@ -252,13 +273,18 @@ public class ShopManager : MonoBehaviour
         {
             foreach (var asset in emotes)
             {
-                if (asset == null) continue;
+                if (asset == null)
+                    continue;
 
-                bool isOwned = !string.IsNullOrEmpty(asset.PlayFabItemId) && ownedItemIds.Contains(asset.PlayFabItemId);
+                bool isOwned =
+                    !string.IsNullOrEmpty(asset.PlayFabItemId)
+                    && ownedItemIds.Contains(asset.PlayFabItemId);
                 Transform parent = (isOwned ? ownedEmoteContent : shopEmoteContent)?.transform;
                 if (parent == null)
                 {
-                    Debug.LogWarning("[Shop] Emote parent is null (check shopEmoteContent/ownedEmoteContent assignments)");
+                    Debug.LogWarning(
+                        "[Shop] Emote parent is null (check shopEmoteContent/ownedEmoteContent assignments)"
+                    );
                     continue;
                 }
 
@@ -271,7 +297,9 @@ public class ShopManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"[Shop] Spawned entries -> Killers:{spawnedKillers} Survivors:{spawnedSurvivors} Emotes:{spawnedEmotes}");
+        Debug.Log(
+            $"[Shop] Spawned entries -> Killers:{spawnedKillers} Survivors:{spawnedSurvivors} Emotes:{spawnedEmotes}"
+        );
 
         // Default active tab
         ApplyDefaultTab();
@@ -283,18 +311,31 @@ public class ShopManager : MonoBehaviour
     {
         switch (defaultTab)
         {
-            case DefaultTab.ShopKillers: SetActiveContent(shopKillerContent); break;
-            case DefaultTab.OwnedKillers: SetActiveContent(ownedKillerContent); break;
-            case DefaultTab.ShopSurvivors: SetActiveContent(shopSurvivorContent); break;
-            case DefaultTab.OwnedSurvivors: SetActiveContent(ownedSurvivorContent); break;
-            case DefaultTab.ShopEmotes: SetActiveContent(shopEmoteContent); break;
-            case DefaultTab.OwnedEmotes: SetActiveContent(ownedEmoteContent); break;
+            case DefaultTab.ShopKillers:
+                SetActiveContent(shopKillerContent);
+                break;
+            case DefaultTab.OwnedKillers:
+                SetActiveContent(ownedKillerContent);
+                break;
+            case DefaultTab.ShopSurvivors:
+                SetActiveContent(shopSurvivorContent);
+                break;
+            case DefaultTab.OwnedSurvivors:
+                SetActiveContent(ownedSurvivorContent);
+                break;
+            case DefaultTab.ShopEmotes:
+                SetActiveContent(shopEmoteContent);
+                break;
+            case DefaultTab.OwnedEmotes:
+                SetActiveContent(ownedEmoteContent);
+                break;
         }
     }
 
     private bool TryWireCharacterEntry(GameObject entry, CubePlayerBase data)
     {
-        if (entry == null || data == null) return false;
+        if (entry == null || data == null)
+            return false;
 
         var button = entry.GetComponent<Button>();
         if (button == null)
@@ -317,7 +358,8 @@ public class ShopManager : MonoBehaviour
 
     private bool TryWireEmoteEntry(GameObject entry, EmoteAsset data)
     {
-        if (entry == null || data == null) return false;
+        if (entry == null || data == null)
+            return false;
 
         var button = entry.GetComponent<Button>();
         if (button == null)
@@ -340,7 +382,8 @@ public class ShopManager : MonoBehaviour
 
     private void ClearChildren(Transform t)
     {
-        if (t == null) return;
+        if (t == null)
+            return;
         for (int i = t.childCount - 1; i >= 0; i--)
             Destroy(t.GetChild(i).gameObject);
     }
@@ -356,14 +399,16 @@ public class ShopManager : MonoBehaviour
             shopSurvivorContent,
             ownedSurvivorContent,
             shopEmoteContent,
-            ownedEmoteContent
+            ownedEmoteContent,
         };
 
         // Disable all
         foreach (var go in all)
-            if (go != null) go.SetActive(false);
+            if (go != null)
+                go.SetActive(false);
 
-        if (target == null) return;
+        if (target == null)
+            return;
 
         // Ensure all parents are active (common issue: parent panel/scrollview disabled)
         EnsureParentsActive(target.transform);
@@ -386,10 +431,15 @@ public class ShopManager : MonoBehaviour
     }
 
     public void ShowShopKillers() => SetActiveContent(shopKillerContent);
+
     public void ShowOwnedKillers() => SetActiveContent(ownedKillerContent);
+
     public void ShowShopSurvivors() => SetActiveContent(shopSurvivorContent);
+
     public void ShowOwnedSurvivors() => SetActiveContent(ownedSurvivorContent);
+
     public void ShowShopEmotes() => SetActiveContent(shopEmoteContent);
+
     public void ShowOwnedEmotes() => SetActiveContent(ownedEmoteContent);
 
     // --- SELECTION ---
@@ -401,7 +451,8 @@ public class ShopManager : MonoBehaviour
     /// </summary>
     private void EquipCharacter(CubePlayerBase character)
     {
-        if (character == null) return;
+        if (character == null)
+            return;
 
         // Find the local player's BasePlayer — use PhotonLauncher's cached reference.
         GameObject localPlayerGO = PhotonLauncher.LocalPlayerInstance;
@@ -413,35 +464,47 @@ public class ShopManager : MonoBehaviour
             {
                 PlayerPrefs.SetString("EquippedKillerName", killer._Name);
                 PlayerPrefs.Save();
-                Debug.Log($"[Shop] Saved killer selection (no player in scene yet): {killer._Name}");
+                Debug.Log(
+                    $"[Shop] Saved killer selection (no player in scene yet): {killer._Name}"
+                );
             }
             else if (character is SurvivorType survivor)
             {
                 PlayerPrefs.SetString("EquippedSurvivorName", survivor._Name);
                 PlayerPrefs.Save();
-                Debug.Log($"[Shop] Saved survivor selection (no player in scene yet): {survivor._Name}");
+                Debug.Log(
+                    $"[Shop] Saved survivor selection (no player in scene yet): {survivor._Name}"
+                );
             }
             return;
         }
 
         BasePlayer basePlayer = localPlayerGO.GetComponent<BasePlayer>();
-        if (basePlayer == null) return;
+        if (basePlayer == null)
+            return;
 
         if (character is KillerType k)
         {
             basePlayer.EquipKiller(k);
-            CUBEStatusText.FadeOutAndDestroy(CUBEStatusText.CreateText($"Equipped <color=red>{k._Name}</color> as Killer"), 2f);
+            CUBEStatusText.FadeOutAndDestroy(
+                CUBEStatusText.CreateText($"Equipped <color=red>{k._Name}</color> as Killer"),
+                2f
+            );
         }
         else if (character is SurvivorType s)
         {
             basePlayer.EquipSurvivor(s);
-            CUBEStatusText.FadeOutAndDestroy(CUBEStatusText.CreateText($"Equipped <color=green>{s._Name}</color> as Survivor"), 2f);
+            CUBEStatusText.FadeOutAndDestroy(
+                CUBEStatusText.CreateText($"Equipped <color=green>{s._Name}</color> as Survivor"),
+                2f
+            );
         }
     }
 
     private void OnCharacterClicked(CharacterTemplate template)
     {
-        if (template == null || template.AssociatedCharacter == null) return;
+        if (template == null || template.AssociatedCharacter == null)
+            return;
 
         selectedCharacter = template.AssociatedCharacter as CubePlayerBase;
         selectedEmote = null;
@@ -452,22 +515,32 @@ public class ShopManager : MonoBehaviour
             return;
         }
 
-        if (CharDetails != null) CharDetails.SetActive(true);
+        if (CharDetails != null)
+            CharDetails.SetActive(true);
 
-        if (Name != null) Name.text = selectedCharacter._Name;
-        if (Description != null) Description.text = selectedCharacter.Description;
-        if (image != null) image.sprite = selectedCharacter.image;
+        if (Name != null)
+            Name.text = selectedCharacter._Name;
+        if (Description != null)
+            Description.text = selectedCharacter.Description;
+        if (image != null)
+            image.sprite = selectedCharacter.image;
 
-        if (Difficulty != null) Difficulty.text = selectedCharacter.Difficulty + "/5 Difficulty";
-        if (Cost != null) Cost.text = selectedCharacter.Cost + " Cubes";
-        if (Health != null) Health.text = selectedCharacter.Health + " HP";
-        if (Speed != null) Speed.text = selectedCharacter.Speed + " Speed";
-        if (Stamina != null) Stamina.text = selectedCharacter.Stamina + " Stamina";
+        if (Difficulty != null)
+            Difficulty.text = selectedCharacter.Difficulty + "/5 Difficulty";
+        if (Cost != null)
+            Cost.text = selectedCharacter.Cost + " Cubes";
+        if (Health != null)
+            Health.text = selectedCharacter.Health + " HP";
+        if (Speed != null)
+            Speed.text = selectedCharacter.Speed + " Speed";
+        if (Stamina != null)
+            Stamina.text = selectedCharacter.Stamina + " Stamina";
 
         // If the player owns this character, equip it immediately on click so the
         // selection persists into the next round without needing a separate Equip button.
-        bool isOwned = !string.IsNullOrEmpty(selectedCharacter._PlayFabItemID) &&
-                       ownedItemIds.Contains(selectedCharacter._PlayFabItemID);
+        bool isOwned =
+            !string.IsNullOrEmpty(selectedCharacter._PlayFabItemID)
+            && ownedItemIds.Contains(selectedCharacter._PlayFabItemID);
         if (isOwned)
         {
             EquipCharacter(selectedCharacter);
@@ -478,29 +551,40 @@ public class ShopManager : MonoBehaviour
 
     private void OnEmoteClicked(EmoteTemplate template)
     {
-        if (template == null || template.AssociatedEmote == null) return;
+        if (template == null || template.AssociatedEmote == null)
+            return;
 
         selectedEmote = template.AssociatedEmote;
         selectedCharacter = null;
 
-        if (CharDetails != null) CharDetails.SetActive(true);
+        if (CharDetails != null)
+            CharDetails.SetActive(true);
 
-        if (Name != null) Name.text = selectedEmote.emoteName;
-        if (Description != null) Description.text = selectedEmote.Description;
-        if (image != null) image.sprite = selectedEmote.image;
-        if (Cost != null) Cost.text = selectedEmote.cost + " Cubes";
+        if (Name != null)
+            Name.text = selectedEmote.emoteName;
+        if (Description != null)
+            Description.text = selectedEmote.Description;
+        if (image != null)
+            image.sprite = selectedEmote.image;
+        if (Cost != null)
+            Cost.text = selectedEmote.cost + " Cubes";
 
-        if (Difficulty != null) Difficulty.text = string.Empty;
-        if (Health != null) Health.text = string.Empty;
-        if (Speed != null) Speed.text = string.Empty;
-        if (Stamina != null) Stamina.text = string.Empty;
+        if (Difficulty != null)
+            Difficulty.text = string.Empty;
+        if (Health != null)
+            Health.text = string.Empty;
+        if (Speed != null)
+            Speed.text = string.Empty;
+        if (Stamina != null)
+            Stamina.text = string.Empty;
 
         UpdatePurchaseButtonState();
     }
 
     private void UpdatePurchaseButtonState()
     {
-        if (purchaseButton == null) return;
+        if (purchaseButton == null)
+            return;
 
         if (selectedCharacter == null && selectedEmote == null)
         {
@@ -584,19 +668,22 @@ public class ShopManager : MonoBehaviour
 
         purchaseInFlight = true;
 
-        if (purchaseButton != null) purchaseButton.interactable = false;
+        if (purchaseButton != null)
+            purchaseButton.interactable = false;
 
         var request = new PurchaseItemRequest
         {
             CatalogVersion = catalogVersion,
             ItemId = itemId,
             Price = cost,
-            VirtualCurrency = virtualCurrencyCode
+            VirtualCurrency = virtualCurrencyCode,
         };
 
-        PlayFabClientAPI.PurchaseItem(request,
+        PlayFabClientAPI.PurchaseItem(
+            request,
             result => OnPurchaseSuccess(result, itemId),
-            error => OnPurchaseError(error, itemId));
+            error => OnPurchaseError(error, itemId)
+        );
     }
 
     private void OnPurchaseSuccess(PurchaseItemResult result, string itemId)
@@ -604,15 +691,20 @@ public class ShopManager : MonoBehaviour
         purchaseInFlight = false;
         {
             Debug.Log("[Shop] Purchase successful: " + itemId);
-            CUBEStatusText.FadeOutAndDestroy(CUBEStatusText.CreateText("Successfully purchased!"), 1f);
+            CUBEStatusText.FadeOutAndDestroy(
+                CUBEStatusText.CreateText("Successfully purchased!"),
+                1f
+            );
 
             ownedItemIds.Add(itemId);
 
             if (PlayfabManager.Instance != null)
                 PlayfabManager.Instance.RefreshCubeCoins();
 
-            if (selectedCharacter != null) OnCharacterPurchased?.Invoke(selectedCharacter);
-            else if (selectedEmote != null) OnEmotePurchased?.Invoke(selectedEmote);
+            if (selectedCharacter != null)
+                OnCharacterPurchased?.Invoke(selectedCharacter);
+            else if (selectedEmote != null)
+                OnEmotePurchased?.Invoke(selectedEmote);
 
             RefreshShopFromInventory();
         }
@@ -622,10 +714,15 @@ public class ShopManager : MonoBehaviour
     {
         purchaseInFlight = false;
         {
-            Debug.LogError("[Shop] Purchase failed (" + itemId + "): " + error.GenerateErrorReport());
+            Debug.LogError(
+                "[Shop] Purchase failed (" + itemId + "): " + error.GenerateErrorReport()
+            );
             Debug.Log("[Shop] PlayFab error code: " + error.Error);
 
-            CUBEStatusText.FadeOutAndDestroy(CUBEStatusText.CreateText("Purchase failed: " + error.ErrorMessage), 1f);
+            CUBEStatusText.FadeOutAndDestroy(
+                CUBEStatusText.CreateText("Purchase failed: " + error.ErrorMessage),
+                1f
+            );
             UpdatePurchaseButtonState();
         }
     }

@@ -1,7 +1,7 @@
+using System.Collections;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using UnityEngine;
-using System.Collections;
 
 public class PlayerCustomizer : MonoBehaviourPunCallbacks
 {
@@ -17,7 +17,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     private BasePlayer.PlayerType pendingPlayerType;
     private string pendingCharacterId;
     private bool hasPendingRole = false;
-    private readonly System.Collections.Generic.List<GameObject> spawnedAccessories = new System.Collections.Generic.List<GameObject>();
+    private readonly System.Collections.Generic.List<GameObject> spawnedAccessories =
+        new System.Collections.Generic.List<GameObject>();
 
     private void Start()
     {
@@ -100,7 +101,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         }
         else
         {
-            Debug.LogWarning("[PlayerCustomizer] WaitForRoleRPC timed out -- role RPC never arrived.");
+            Debug.LogWarning(
+                "[PlayerCustomizer] WaitForRoleRPC timed out -- role RPC never arrived."
+            );
         }
 
         // Safe to destroy old instance now.
@@ -162,7 +165,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     [PunRPC]
     public void ApplyRoleAndCharacter(BasePlayer.PlayerType playerType, string characterId)
     {
-        Debug.Log($"[PlayerCustomizer] ApplyRoleAndCharacter — playerType={playerType}, characterId={characterId}, isInIntermission={isInIntermission}");
+        Debug.Log(
+            $"[PlayerCustomizer] ApplyRoleAndCharacter — playerType={playerType}, characterId={characterId}, isInIntermission={isInIntermission}"
+        );
 
         if (isInIntermission)
         {
@@ -170,7 +175,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             pendingCharacterId = characterId;
             hasPendingRole = true;
 
-            Debug.Log($"[PlayerCustomizer] Intermission active — caching role, not applying material.");
+            Debug.Log(
+                $"[PlayerCustomizer] Intermission active — caching role, not applying material."
+            );
 
             RefreshIntermissionAppearance();
             return;
@@ -181,7 +188,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
     private void ApplyRole(BasePlayer.PlayerType playerType, string characterId)
     {
-        Debug.Log($"[PlayerCustomizer] ApplyRole — playerType={playerType}, characterId={characterId}");
+        Debug.Log(
+            $"[PlayerCustomizer] ApplyRole — playerType={playerType}, characterId={characterId}"
+        );
 
         // Capture the old intermission instance before nulling so we can destroy it
         // AFTER the new role materials are applied, preventing a frame where bones
@@ -216,7 +225,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         const string AccessoryTag = "SpawnedAccessory";
         foreach (Accessory accessory in survivorType.character.accessories)
         {
-            if (accessory == null || accessory.prefab == null) continue;
+            if (accessory == null || accessory.prefab == null)
+                continue;
 
             Transform accTransform = FindDeepChild(transform, accessory.boneName);
             if (accTransform != null)
@@ -234,7 +244,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             }
             else
             {
-                Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}.");
+                Debug.LogWarning(
+                    $"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}."
+                );
             }
         }
     }
@@ -251,7 +263,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         for (int i = spawnedAccessories.Count - 1; i >= 0; i--)
         {
             GameObject accessory = spawnedAccessories[i];
-            if (accessory != null) Destroy(accessory);
+            if (accessory != null)
+                Destroy(accessory);
         }
         spawnedAccessories.Clear();
     }
@@ -271,7 +284,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         const string AccessoryTag = "SpawnedAccessory";
         foreach (Accessory accessory in killerType.character.accessories)
         {
-            if (accessory == null || accessory.prefab == null) continue;
+            if (accessory == null || accessory.prefab == null)
+                continue;
 
             Transform accTransform = FindDeepChild(transform, accessory.boneName);
             if (accTransform != null)
@@ -285,7 +299,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             }
             else
             {
-                Debug.LogWarning($"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}.");
+                Debug.LogWarning(
+                    $"[PlayerCustomizer] Accessory bone '{accessory.boneName}' not found on {gameObject.name}."
+                );
             }
         }
 
@@ -293,7 +309,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         if (itemPoses != null)
         {
             InputArmController armController = itemPoses.GetComponent<InputArmController>();
-            if (armController != null) armController.enabled = true;
+            if (armController != null)
+                armController.enabled = true;
         }
     }
 
@@ -301,13 +318,16 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         if (targetMat == null)
         {
-            Debug.LogWarning("[PlayerCustomizer] SetMaterialsOnBones: targetMat is null — skipping to avoid invisible bones.");
+            Debug.LogWarning(
+                "[PlayerCustomizer] SetMaterialsOnBones: targetMat is null — skipping to avoid invisible bones."
+            );
             return;
         }
 
         foreach (Renderer bone in customizedBones)
         {
-            if (bone == null) continue;
+            if (bone == null)
+                continue;
 
             // Use material array copy (not sharedMaterials) so we don't mutate the shared asset.
             Material[] mats = new Material[bone.sharedMaterials.Length];
@@ -320,16 +340,19 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
     private Transform FindDeepChild(Transform parent, string childName)
     {
-        if (parent == null || string.IsNullOrEmpty(childName)) return null;
+        if (parent == null || string.IsNullOrEmpty(childName))
+            return null;
 
         // Fast path for direct children
         Transform direct = parent.Find(childName);
-        if (direct != null) return direct;
+        if (direct != null)
+            return direct;
 
         foreach (Transform child in parent)
         {
             Transform found = FindDeepChild(child, childName);
-            if (found != null) return found;
+            if (found != null)
+                return found;
         }
 
         return null;
@@ -341,7 +364,8 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
     public void ChangeColorCalled(string hex)
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine)
+            return;
         if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
             hex = hex.Substring(1);
 
@@ -366,7 +390,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
 
         if (!isInIntermission)
         {
-            Debug.LogWarning($"[PlayerCustomizer] ChangeColor called during a round — ignoring. hex={hex}");
+            Debug.LogWarning(
+                $"[PlayerCustomizer] ChangeColor called during a round — ignoring. hex={hex}"
+            );
             return;
         }
 

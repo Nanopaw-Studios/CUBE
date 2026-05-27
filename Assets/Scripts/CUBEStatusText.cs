@@ -7,8 +7,10 @@ public class CUBEStatusText : MonoBehaviour
 {
     private static CUBEStatusText instance;
 
-    [Tooltip("Explicitly assign the HUD screen-space canvas here to avoid accidentally " +
-             "parenting status text to a world-space nametag canvas.")]
+    [Tooltip(
+        "Explicitly assign the HUD screen-space canvas here to avoid accidentally "
+            + "parenting status text to a world-space nametag canvas."
+    )]
     public Canvas targetCanvas;
 
     private void Awake()
@@ -52,7 +54,9 @@ public class CUBEStatusText : MonoBehaviour
     {
         if (string.IsNullOrEmpty(text))
         {
-            Debug.LogWarning("CUBEStatusText: Cannot create text entry with null or empty content.");
+            Debug.LogWarning(
+                "CUBEStatusText: Cannot create text entry with null or empty content."
+            );
             return null;
         }
 
@@ -63,7 +67,10 @@ public class CUBEStatusText : MonoBehaviour
             return null;
         }
 
-        GameObject textObj = GameObject.Instantiate(Resources.Load<GameObject>("CUBEStatusTextPrefab"), targetCanvas.transform);
+        GameObject textObj = GameObject.Instantiate(
+            Resources.Load<GameObject>("CUBEStatusTextPrefab"),
+            targetCanvas.transform
+        );
         TMP_Text tmpTextComponent = textObj.GetComponent<TMP_Text>();
         if (tmpTextComponent == null)
         {
@@ -82,11 +89,13 @@ public class CUBEStatusText : MonoBehaviour
     public static GameObject FadeInAndCreate(string text, float duration)
     {
         GameObject textObj = CreateText(text);
-        if (textObj == null) return null;
-        TMP_Text tmpTextComponent = textObj.GetComponent<TMP_Text>();
-        if (tmpTextComponent == null)
+        if (textObj == null)
+            return null;
+        if (!textObj.TryGetComponent<TMP_Text>(out var tmpTextComponent))
         {
-            Debug.LogWarning("CUBEStatusText: The created GameObject does not contain a TMP_Text component.");
+            Debug.LogWarning(
+                "CUBEStatusText: The created GameObject does not contain a TMP_Text component."
+            );
             return null;
         }
         CanvasGroup cg = textObj.GetComponent<CanvasGroup>();
@@ -113,11 +122,13 @@ public class CUBEStatusText : MonoBehaviour
 
     public static void FadeOutAndDestroy(GameObject textObj, float duration)
     {
-        if (textObj == null) return;
+        if (textObj == null)
+            return;
 
         // Get existing CanvasGroup or add one
         var cg = textObj.GetComponent<CanvasGroup>();
-        if (cg == null) cg = textObj.AddComponent<CanvasGroup>();
+        if (cg == null)
+            cg = textObj.AddComponent<CanvasGroup>();
 
         // Make sure it can actually block the UI alpha
         cg.alpha = 1f;
@@ -127,7 +138,8 @@ public class CUBEStatusText : MonoBehaviour
 
     private static IEnumerator FadeOutCoroutine(CanvasGroup cg, float duration, GameObject textObj)
     {
-        if (cg == null || textObj == null) yield break;
+        if (cg == null || textObj == null)
+            yield break;
 
         float startAlpha = cg.alpha;
         float t = 0f;

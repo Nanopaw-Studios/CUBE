@@ -18,15 +18,15 @@ public class MenuManager : MonoBehaviour
     {
         //if (string.IsNullOrEmpty(PlayerPrefs.GetString("Username")))
         //{
-           // Debug.Log("Username is empty");
-           // usernameSetter.SetActive(true);
-           // return;
+        // Debug.Log("Username is empty");
+        // usernameSetter.SetActive(true);
+        // return;
         //}
         //else
-       // {
-           // usernameSetter.SetActive(false);
-            levelLoader.LoadLevel("SampleScene");
-       // }
+        // {
+        // usernameSetter.SetActive(false);
+        levelLoader.LoadLevel("SampleScene");
+        // }
     }
 
     public void OpenURL(string url)

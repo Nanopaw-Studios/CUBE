@@ -96,9 +96,10 @@ public class SpectatorController : MonoBehaviour
         mainCamera = Camera.main;
         if (mainCamera != null)
         {
-            cameraInput = mainCamera.transform.parent != null
-                ? mainCamera.transform.parent.GetComponent<CameraInput>()
-                : mainCamera.GetComponent<CameraInput>();
+            cameraInput =
+                mainCamera.transform.parent != null
+                    ? mainCamera.transform.parent.GetComponent<CameraInput>()
+                    : mainCamera.GetComponent<CameraInput>();
         }
 
         characterInput = GetComponent<CharacterInput>();
@@ -117,7 +118,8 @@ public class SpectatorController : MonoBehaviour
         if (switchCooldownTimer > 0f)
             switchCooldownTimer -= Time.deltaTime;
 
-        if (!isSpectating) return;
+        if (!isSpectating)
+            return;
 
         RefreshTargetList();
         HandleOrbitInput();
@@ -136,12 +138,14 @@ public class SpectatorController : MonoBehaviour
         }
 
         specateAction = inputActions.FindAction("Player/Specate", false);
-        lookAction    = inputActions.FindAction("Player/Look",    false);
-        moveAction    = inputActions.FindAction("Player/Move",    false);
+        lookAction = inputActions.FindAction("Player/Look", false);
+        moveAction = inputActions.FindAction("Player/Move", false);
 
         if (specateAction == null)
         {
-            Debug.LogError("[SpectatorController] 'Specate' action not found in InputSystem_Actions.");
+            Debug.LogError(
+                "[SpectatorController] 'Specate' action not found in InputSystem_Actions."
+            );
             return;
         }
 
@@ -158,7 +162,8 @@ public class SpectatorController : MonoBehaviour
 
     private void OnSpecatePerformed(InputAction.CallbackContext ctx)
     {
-        if (!CanSpectate()) return;
+        if (!CanSpectate())
+            return;
 
         if (!isSpectating)
             BeginSpectating();
@@ -172,9 +177,12 @@ public class SpectatorController : MonoBehaviour
     /// </summary>
     private bool CanSpectate()
     {
-        if (roundManager == null) return false;
-        if (!roundManager.roundActive) return false;
-        if (playerStats == null) return false;
+        if (roundManager == null)
+            return false;
+        if (!roundManager.roundActive)
+            return false;
+        if (playerStats == null)
+            return false;
         return playerStats.health <= 0;
     }
 
@@ -194,7 +202,7 @@ public class SpectatorController : MonoBehaviour
         if (mainCamera != null)
         {
             Vector3 euler = mainCamera.transform.eulerAngles;
-            orbitYaw   = euler.y;
+            orbitYaw = euler.y;
             orbitPitch = euler.x > 180f ? euler.x - 360f : euler.x;
         }
 
@@ -219,23 +227,27 @@ public class SpectatorController : MonoBehaviour
 
     private void HandleOrbitInput()
     {
-        if (lookAction == null) return;
+        if (lookAction == null)
+            return;
 
         Vector2 raw = lookAction.ReadValue<Vector2>();
 
-        bool isGamepad = lookAction.activeControl != null &&
-                         lookAction.activeControl.device is Gamepad;
+        bool isGamepad =
+            lookAction.activeControl != null && lookAction.activeControl.device is Gamepad;
 
-        float sensitivity = isGamepad ? gamepadSensitivity * Time.deltaTime : mouseSensitivity * 0.1f;
+        float sensitivity = isGamepad
+            ? gamepadSensitivity * Time.deltaTime
+            : mouseSensitivity * 0.1f;
 
-        orbitYaw   += raw.x * sensitivity;
+        orbitYaw += raw.x * sensitivity;
         orbitPitch -= raw.y * sensitivity;
-        orbitPitch  = Mathf.Clamp(orbitPitch, minPitch, maxPitch);
+        orbitPitch = Mathf.Clamp(orbitPitch, minPitch, maxPitch);
     }
 
     private void MoveCamera()
     {
-        if (mainCamera == null) return;
+        if (mainCamera == null)
+            return;
 
         // Get the current target (may be null if all players left)
         GameObject target = GetCurrentTarget();
@@ -247,8 +259,8 @@ public class SpectatorController : MonoBehaviour
 
         // Orbit position calculation
         Quaternion rotation = Quaternion.Euler(orbitPitch, orbitYaw, 0f);
-        Vector3 pivotPos    = target.transform.position + Vector3.up * orbitHeightOffset;
-        Vector3 desiredPos  = pivotPos - rotation * Vector3.forward * orbitDistance;
+        Vector3 pivotPos = target.transform.position + Vector3.up * orbitHeightOffset;
+        Vector3 desiredPos = pivotPos - rotation * Vector3.forward * orbitDistance;
 
         // Smooth interpolation
         mainCamera.transform.position = Vector3.Lerp(
@@ -263,7 +275,8 @@ public class SpectatorController : MonoBehaviour
 
     private void HandleSwitchInput()
     {
-        if (moveAction == null || switchCooldownTimer > 0f) return;
+        if (moveAction == null || switchCooldownTimer > 0f)
+            return;
 
         Vector2 input = moveAction.ReadValue<Vector2>();
 
@@ -282,7 +295,8 @@ public class SpectatorController : MonoBehaviour
     private void CycleTarget(int direction)
     {
         RefreshTargetList();
-        if (spectateTargets.Count == 0) return;
+        if (spectateTargets.Count == 0)
+            return;
 
         spectateIndex = (spectateIndex + direction + spectateTargets.Count) % spectateTargets.Count;
         UpdateSpectateUI();
@@ -301,7 +315,8 @@ public class SpectatorController : MonoBehaviour
         foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
         {
             PhotonView pv = go.GetComponent<PhotonView>();
-            if (pv == null || pv.IsMine) continue;
+            if (pv == null || pv.IsMine)
+                continue;
 
             // Optionally skip dead players (health <= 0) if you want to spectate only alive ones.
             // For now we allow spectating everyone to match the request.
@@ -315,14 +330,16 @@ public class SpectatorController : MonoBehaviour
 
     private GameObject GetCurrentTarget()
     {
-        if (spectateTargets.Count == 0) return null;
+        if (spectateTargets.Count == 0)
+            return null;
         spectateIndex = Mathf.Clamp(spectateIndex, 0, spectateTargets.Count - 1);
         return spectateTargets[spectateIndex];
     }
 
     private void UpdateSpectateUI()
     {
-        if (spectatingText == null) return;
+        if (spectatingText == null)
+            return;
 
         GameObject target = GetCurrentTarget();
         if (target == null)

@@ -1,8 +1,8 @@
 using System.Collections;
-using UnityEngine;
+using System.Collections.Generic;
 using Photon.Pun;
 using Photon.Realtime;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class PhotonLauncher : MonoBehaviourPunCallbacks
 {
@@ -41,7 +41,8 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         killerSpawns.Clear();
         survivorSpawns.Clear();
 
-        if (currentMap == null) return;
+        if (currentMap == null)
+            return;
 
         Transform[] allTransforms = currentMap.GetComponentsInChildren<Transform>();
         foreach (Transform t in allTransforms)
@@ -83,10 +84,16 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         }
 
         // Try to use the PlayerTeleportHandler if it exists
-        PlayerTeleportHandler teleportHandler = LocalPlayerInstance.GetComponent<PlayerTeleportHandler>();
+        PlayerTeleportHandler teleportHandler =
+            LocalPlayerInstance.GetComponent<PlayerTeleportHandler>();
         if (teleportHandler != null)
         {
-            teleportHandler.Teleport(targetPosition, targetRotation, snapToGround: true, useOffset: false);
+            teleportHandler.Teleport(
+                targetPosition,
+                targetRotation,
+                snapToGround: true,
+                useOffset: false
+            );
         }
         else
         {
@@ -105,7 +112,8 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
 
     private void EnsureSpawned()
     {
-        if (LocalPlayerInstance != null) return;
+        if (LocalPlayerInstance != null)
+            return;
 
         // Pick a safe spawn even if roundManager/intermissionSpawn isn't ready yet
         Vector3 pos = transform.position;
@@ -152,7 +160,6 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         }
     }
 
-
     public override void OnConnectedToMaster()
     {
         Debug.Log("Connected to Master");
@@ -175,15 +182,16 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         while (elapsed < timeout)
         {
             // SyncedIntermissionSpawnPos is non-zero once SyncState RPC arrives
-            if (roundManager != null &&
-                (roundManager.roundActive || roundManager.intermissionActive))
+            if (
+                roundManager != null
+                && (roundManager.roundActive || roundManager.intermissionActive)
+            )
                 break;
             elapsed += Time.deltaTime;
             yield return null;
         }
         EnsureSpawned();
     }
-
 
     public override void OnLeftRoom()
     {
@@ -210,7 +218,11 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         }
 
         // Everyone instantiates the same map index
-        currentMap = Instantiate(maps[mapIndex].mapPrefab, new Vector3(0, 0, -200), Quaternion.identity);
+        currentMap = Instantiate(
+            maps[mapIndex].mapPrefab,
+            new Vector3(0, 0, -200),
+            Quaternion.identity
+        );
         Debug.Log("Map chosen and instantiated: " + maps[mapIndex].mapName);
 
         // Now populate spawns after the map is created
@@ -241,7 +253,9 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
 
         if (LocalPlayerInstance == null)
         {
-            Debug.LogWarning("[PhotonLauncher] TeleportToRoleSpawnWhenReady: LocalPlayerInstance is still null after timeout.");
+            Debug.LogWarning(
+                "[PhotonLauncher] TeleportToRoleSpawnWhenReady: LocalPlayerInstance is still null after timeout."
+            );
             yield break;
         }
 
@@ -258,7 +272,9 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
                 // If they don't have a role yet → they are a mid-joiner
                 if (bp != null && bp.GetPlayerType() == BasePlayer.PlayerType.None)
                 {
-                    Debug.Log("[PhotonLauncher] Mid-round join detected → staying in intermission.");
+                    Debug.Log(
+                        "[PhotonLauncher] Mid-round join detected → staying in intermission."
+                    );
                     yield break;
                 }
             }
@@ -266,7 +282,9 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         BasePlayer basePlayer = LocalPlayerInstance.GetComponent<BasePlayer>();
         if (basePlayer == null)
         {
-            Debug.LogWarning("[PhotonLauncher] TeleportToRoleSpawnWhenReady: No BasePlayer on LocalPlayerInstance.");
+            Debug.LogWarning(
+                "[PhotonLauncher] TeleportToRoleSpawnWhenReady: No BasePlayer on LocalPlayerInstance."
+            );
             yield break;
         }
 
@@ -290,11 +308,15 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
 
         if (chosenSpawn == null)
         {
-            Debug.LogWarning("[PhotonLauncher] TeleportToRoleSpawnWhenReady: No valid spawn point found.");
+            Debug.LogWarning(
+                "[PhotonLauncher] TeleportToRoleSpawnWhenReady: No valid spawn point found."
+            );
             yield break;
         }
 
-        Debug.Log($"[PhotonLauncher] Teleporting {basePlayer.GetPlayerType()} to: {chosenSpawn.position}");
+        Debug.Log(
+            $"[PhotonLauncher] Teleporting {basePlayer.GetPlayerType()} to: {chosenSpawn.position}"
+        );
         TeleportPlayer(chosenSpawn.position, chosenSpawn.rotation);
     }
 
@@ -303,7 +325,9 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         // Safety checks
         if (LocalPlayerInstance == null)
         {
-            Debug.LogWarning("HandleRoundStart: LocalPlayerInstance is null. Player hasn't spawned yet.");
+            Debug.LogWarning(
+                "HandleRoundStart: LocalPlayerInstance is null. Player hasn't spawned yet."
+            );
             return;
         }
 
@@ -333,13 +357,16 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
 
     private void HandleIntermissionStart()
     {
-        if (LocalPlayerInstance == null) return;
+        if (LocalPlayerInstance == null)
+            return;
 
         // If the player is already at the intermission spawn (mid-round death or
         // previous intermission), don't teleport them again — they are already there.
         if (isAlreadyAtIntermission)
         {
-            Debug.Log("Intermission started but player is already at intermission spawn — skipping teleport.");
+            Debug.Log(
+                "Intermission started but player is already at intermission spawn — skipping teleport."
+            );
             return;
         }
 

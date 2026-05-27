@@ -1,16 +1,25 @@
 using System.Collections;
-using UnityEngine;
 using Photon.Pun;
+using UnityEngine;
 
 [RequireComponent(typeof(PhotonView))]
 public class PlayerTeleportHandler : MonoBehaviourPun
 {
     [Header("Setup")]
-    [SerializeField] private Transform rigRoot;
-    [SerializeField] private Transform hipBone;
-    [SerializeField] private LayerMask groundMask = ~0;
-    [SerializeField] private float groundOffset = 1.2f;
-    [SerializeField] private float maxGroundSnapDistance = 6f;
+    [SerializeField]
+    private Transform rigRoot;
+
+    [SerializeField]
+    private Transform hipBone;
+
+    [SerializeField]
+    private LayerMask groundMask = ~0;
+
+    [SerializeField]
+    private float groundOffset = 1.2f;
+
+    [SerializeField]
+    private float maxGroundSnapDistance = 6f;
 
     private PhotonView pv;
     private Rigidbody rootRb;
@@ -24,21 +33,34 @@ public class PlayerTeleportHandler : MonoBehaviourPun
         if (rigRoot == null)
         {
             var found = transform.Find("RIG");
-            if (found != null) rigRoot = found;
+            if (found != null)
+                rigRoot = found;
         }
     }
 
     // 🚀 PUBLIC ENTRY (LOCAL ONLY)
-    public void Teleport(Vector3 targetPosition, Quaternion? targetRotation = null, bool snapToGround = true, bool useOffset = false)
+    public void Teleport(
+        Vector3 targetPosition,
+        Quaternion? targetRotation = null,
+        bool snapToGround = true,
+        bool useOffset = false
+    )
     {
-        if (!pv.IsMine) return;
+        if (!pv.IsMine)
+            return;
 
         StartCoroutine(PerformTeleport(targetPosition, targetRotation, snapToGround, useOffset));
     }
 
-    private IEnumerator PerformTeleport(Vector3 targetPosition, Quaternion? targetRotation, bool snapToGround, bool useOffset)
+    private IEnumerator PerformTeleport(
+        Vector3 targetPosition,
+        Quaternion? targetRotation,
+        bool snapToGround,
+        bool useOffset
+    )
     {
-        if (isTeleporting) yield break;
+        if (isTeleporting)
+            yield break;
         isTeleporting = true;
 
         if (rigRoot == null)
@@ -51,7 +73,8 @@ public class PlayerTeleportHandler : MonoBehaviourPun
         var rbs = rigRoot.GetComponentsInChildren<Rigidbody>(true);
 
         Rigidbody hipRb = hipBone != null ? hipBone.GetComponent<Rigidbody>() : null;
-        if (hipRb == null && rbs.Length > 0) hipRb = rbs[0];
+        if (hipRb == null && rbs.Length > 0)
+            hipRb = rbs[0];
 
         if (hipRb == null)
         {
@@ -67,7 +90,16 @@ public class PlayerTeleportHandler : MonoBehaviourPun
         {
             Vector3 rayStart = targetPosition + Vector3.up * 10f;
 
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 200f, groundMask, QueryTriggerInteraction.Ignore))
+            if (
+                Physics.Raycast(
+                    rayStart,
+                    Vector3.down,
+                    out RaycastHit hit,
+                    200f,
+                    groundMask,
+                    QueryTriggerInteraction.Ignore
+                )
+            )
             {
                 finalTargetPos.y = hit.point.y + groundOffset + 0.5f;
             }
@@ -141,7 +173,8 @@ public class PlayerTeleportHandler : MonoBehaviourPun
 
         foreach (var c in GetComponentsInChildren<Collider>(true))
         {
-            if (!c || !c.enabled || c.isTrigger) continue;
+            if (!c || !c.enabled || c.isTrigger)
+                continue;
 
             float minY = c.bounds.min.y;
             if (!found || minY < lowestY)
@@ -151,7 +184,8 @@ public class PlayerTeleportHandler : MonoBehaviourPun
             }
         }
 
-        if (!found) return 1f;
+        if (!found)
+            return 1f;
         return Mathf.Max(0.1f, hipY - lowestY);
     }
 }

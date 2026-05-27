@@ -1,6 +1,6 @@
-using Photon.Pun;
 using System.Collections;
 using System.Linq;
+using Photon.Pun;
 using UnityEngine;
 
 public class ProxSong : MonoBehaviour
@@ -13,18 +13,18 @@ public class ProxSong : MonoBehaviour
 
     private RoundManager roundManager;
 
-    public BasePlayer basePlayer;         // this instance's BasePlayer
+    public BasePlayer basePlayer; // this instance's BasePlayer
     private KillerType killer;
     private CubeCharacterData data;
 
-    private GameObject localPlayer;        // who we are locally
+    private GameObject localPlayer; // who we are locally
 
     private void Awake_DISABLED()
     {
         // Removed: localPlayer is now resolved lazily in OnRoundStart.
         localPlayer = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None)
-                      .FirstOrDefault(p => p.gameObject.GetPhotonView().IsMine) // use your own �is mine� check
-                      ?.gameObject;
+            .FirstOrDefault(p => p.gameObject.GetPhotonView().IsMine) // use your own �is mine� check
+            ?.gameObject;
     }
 
     private void Start()
@@ -64,8 +64,8 @@ public class ProxSong : MonoBehaviour
         if (localPlayer == null)
         {
             localPlayer = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None)
-                          .FirstOrDefault(p => p.gameObject.GetPhotonView()?.IsMine == true)
-                          ?.gameObject;
+                .FirstOrDefault(static p => p.gameObject.GetPhotonView()?.IsMine == true)
+                ?.gameObject;
         }
 
         // Wait for the SetPlayerType RPC before deciding whether to play music.
@@ -106,7 +106,8 @@ public class ProxSong : MonoBehaviour
 
     private void CleanupAudio()
     {
-        if (layers == null) return;
+        if (layers == null)
+            return;
         foreach (var layer in layers)
         {
             if (layer != null && layer.source != null)
@@ -132,7 +133,7 @@ public class ProxSong : MonoBehaviour
             data.layer1,
             data.layer2,
             data.layer3,
-            data.layer4
+            data.layer4,
         };
 
         layers = new SongLayer[killerLayers.Length];
@@ -147,7 +148,7 @@ public class ProxSong : MonoBehaviour
             {
                 layer = i + 1,
                 audio = killerLayers[i],
-                source = src
+                source = src,
             };
 
             src.clip = killerLayers[i];
@@ -164,13 +165,15 @@ public class ProxSong : MonoBehaviour
 
     private void Update()
     {
-        if (localPlayer == null || layers == null) return;
+        if (localPlayer == null || layers == null)
+            return;
 
         float distance = GetRelevantDistance();
 
         foreach (var layer in layers)
         {
-            if (layer == null || layer.source == null) continue;
+            if (layer == null || layer.source == null)
+                continue;
 
             float activationRadius = (maxLayer - layer.layer + 1) * distanceThreshold;
             float targetVolume = (distance < activationRadius) ? .4f : 0f;
@@ -178,7 +181,8 @@ public class ProxSong : MonoBehaviour
             layer.source.volume = Mathf.MoveTowards(
                 layer.source.volume,
                 targetVolume,
-                fadeSpeed * Time.deltaTime);
+                fadeSpeed * Time.deltaTime
+            );
         }
     }
 
@@ -190,13 +194,15 @@ public class ProxSong : MonoBehaviour
     /// </summary>
     private float GetRelevantDistance()
     {
-        bool localIsKiller = basePlayer != null && basePlayer.gameObject.GetPhotonView()?.IsMine == true;
+        bool localIsKiller =
+            basePlayer != null && basePlayer.gameObject.GetPhotonView()?.IsMine == true;
 
         if (!localIsKiller)
         {
             // Survivor path: distance from killer to this local survivor's hips.
             Transform hips = localPlayer.transform.Find("RIG")?.Find("Hip");
-            if (hips == null) return float.MaxValue;
+            if (hips == null)
+                return float.MaxValue;
             return Vector3.Distance(transform.position, hips.position);
         }
         else
@@ -206,13 +212,16 @@ public class ProxSong : MonoBehaviour
             float nearest = float.MaxValue;
             foreach (BasePlayer other in FindObjectsByType<BasePlayer>(FindObjectsSortMode.None))
             {
-                if (other.GetPlayerType() != BasePlayer.PlayerType.Survivor) continue;
+                if (other.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+                    continue;
 
                 Transform hips = other.transform.Find("RIG")?.Find("Hip");
-                if (hips == null) continue;
+                if (hips == null)
+                    continue;
 
                 float dist = Vector3.Distance(transform.position, hips.position);
-                if (dist < nearest) nearest = dist;
+                if (dist < nearest)
+                    nearest = dist;
             }
             return nearest;
         }

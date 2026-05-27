@@ -1,6 +1,6 @@
+using System.Collections;
 using NanodogsToolkit.NanoVoice;
 using Photon.Pun;
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -41,7 +41,9 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
 
         if (player.GetPlayerType() == BasePlayer.PlayerType.Killer)
         {
-            Debug.LogWarning("VoicelineHandler attached to a Killer. This should be on a Survivor.");
+            Debug.LogWarning(
+                "VoicelineHandler attached to a Killer. This should be on a Survivor."
+            );
             this.enabled = false;
             yield break;
         }
@@ -62,7 +64,9 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
         data = survivor.character;
         if (data == null || data.voicelines.Length == 0)
         {
-            Debug.LogWarning("VoicelineHandler attached to a Survivor that does not have voicelines.");
+            Debug.LogWarning(
+                "VoicelineHandler attached to a Survivor that does not have voicelines."
+            );
             this.enabled = false;
             yield break;
         }
@@ -70,7 +74,8 @@ public class VoicelineHandler : MonoBehaviourPunCallbacks
         if (!isRunning)
         {
             isRunning = true;
-            if (voicelineCoroutine != null) StopCoroutine(voicelineCoroutine);
+            if (voicelineCoroutine != null)
+                StopCoroutine(voicelineCoroutine);
             voicelineCoroutine = StartCoroutine(IdleVoicelineLoop());
         }
     }

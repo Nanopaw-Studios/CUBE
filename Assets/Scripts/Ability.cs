@@ -1,9 +1,9 @@
 ﻿using Photon.Pun;
+using UnityEngine;
+using UnityEngine.InputSystem;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class Ability : ScriptableObject
 {
@@ -30,6 +30,8 @@ public class Ability : ScriptableObject
     /// </summary>
     public virtual void ActivateAbility(BasePlayer player)
     {
-        Debug.Log($"{AbilityName} activated by " + player.gameObject.GetPhotonView().Owner.NickName);
+        Debug.Log(
+            $"{AbilityName} activated by " + player.gameObject.GetPhotonView().Owner.NickName
+        );
     }
 }

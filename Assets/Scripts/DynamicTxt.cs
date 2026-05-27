@@ -9,7 +9,7 @@ using UnityEngine.UI;
 public class DynamicTxt : MonoBehaviour
 {
     public string ignorePrefix = "//"; // Lines starting with this are ignored.
-    public string urlPrefix = "url=";  // Supports: url=https://site.com|Custom Label
+    public string urlPrefix = "url="; // Supports: url=https://site.com|Custom Label
 
     [Header("UI")]
     public TMP_Text MOTDText;
@@ -29,7 +29,8 @@ public class DynamicTxt : MonoBehaviour
     public TMP_Text UpdateLogContent;
 
     [Header("Remote")]
-    public string url = "https://raw.githubusercontent.com/NanoDogs-Studios/CUBE/refs/heads/main/motd.txt";
+    public string url =
+        "https://raw.githubusercontent.com/NanoDogs-Studios/CUBE/refs/heads/main/motd.txt";
 
     [Tooltip("How often to refresh (seconds).")]
     [Min(5)]
@@ -56,7 +57,8 @@ public class DynamicTxt : MonoBehaviour
 
             updateLogLinkHandler = UpdateLogContent.GetComponent<TMP_TextEventHandler>();
             if (updateLogLinkHandler == null)
-                updateLogLinkHandler = UpdateLogContent.gameObject.AddComponent<TMP_TextEventHandler>();
+                updateLogLinkHandler =
+                    UpdateLogContent.gameObject.AddComponent<TMP_TextEventHandler>();
 
             updateLogLinkHandler.onLinkSelection.RemoveListener(OnUpdateLogLinkClicked);
             updateLogLinkHandler.onLinkSelection.AddListener(OnUpdateLogLinkClicked);
@@ -100,7 +102,10 @@ public class DynamicTxt : MonoBehaviour
 
             if (req.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"{nameof(DynamicTxt)}: Error fetching text: {req.error}\nURL: {url}", this);
+                Debug.LogError(
+                    $"{nameof(DynamicTxt)}: Error fetching text: {req.error}\nURL: {url}",
+                    this
+                );
                 yield break;
             }
 
@@ -110,13 +115,16 @@ public class DynamicTxt : MonoBehaviour
 
     private void ParseAndApply(string raw)
     {
-        if (string.IsNullOrEmpty(raw)) return;
+        if (string.IsNullOrEmpty(raw))
+            return;
 
         // Reset so you don't keep appending each refresh.
-        if (UpdateLogContent != null) UpdateLogContent.text = string.Empty;
+        if (UpdateLogContent != null)
+            UpdateLogContent.text = string.Empty;
 
         // Normalize newlines.
-        string[] lines = raw.Replace("\r\n", "\n").Replace("\r", "\n")
+        string[] lines = raw.Replace("\r\n", "\n")
+            .Replace("\r", "\n")
             .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
         string motd = null;
@@ -135,7 +143,8 @@ public class DynamicTxt : MonoBehaviour
         foreach (string l in lines)
         {
             string line = l.Trim().TrimStart('\uFEFF');
-            if (line.Length == 0) continue;
+            if (line.Length == 0)
+                continue;
 
             // Title/desc conventions
             if (line.StartsWith("-- "))
@@ -179,31 +188,45 @@ public class DynamicTxt : MonoBehaviour
             if (line.StartsWith("MOTD_IMG=", StringComparison.OrdinalIgnoreCase))
             {
                 string link = line.Substring("MOTD_IMG=".Length).Trim();
-                StartCoroutine(FetchImageFromUrl(link, tex =>
-                {
-                    if (tex != null && MOTDImage != null)
-                        MOTDImage.texture = tex;
-                }));
+                StartCoroutine(
+                    FetchImageFromUrl(
+                        link,
+                        tex =>
+                        {
+                            if (tex != null && MOTDImage != null)
+                                MOTDImage.texture = tex;
+                        }
+                    )
+                );
                 continue;
             }
 
             if (line.StartsWith("UPD_IMG=", StringComparison.OrdinalIgnoreCase))
             {
                 string link = line.Substring("UPD_IMG=".Length).Trim();
-                StartCoroutine(FetchImageFromUrl(link, tex =>
-                {
-                    if (tex != null)
-                    {
-                        if (UpdateLogImage != null) UpdateLogImage.texture = tex;
-                        if (UPDImage != null) UPDImage.texture = tex;
-                    }
-                }));
+                StartCoroutine(
+                    FetchImageFromUrl(
+                        link,
+                        tex =>
+                        {
+                            if (tex != null)
+                            {
+                                if (UpdateLogImage != null)
+                                    UpdateLogImage.texture = tex;
+                                if (UPDImage != null)
+                                    UPDImage.texture = tex;
+                            }
+                        }
+                    )
+                );
                 continue;
             }
 
             // MOTD
-            if (!string.IsNullOrEmpty(motdPrefix) &&
-                line.StartsWith(motdPrefix, StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.IsNullOrEmpty(motdPrefix)
+                && line.StartsWith(motdPrefix, StringComparison.OrdinalIgnoreCase)
+            )
             {
                 motd = line.Substring(motdPrefix.Length).Trim();
                 continue;
@@ -239,7 +262,8 @@ public class DynamicTxt : MonoBehaviour
         if (UpdateTitle != null && !string.IsNullOrEmpty(title))
         {
             UpdateTitle.text = title;
-            if (UpdateLogTitle != null) UpdateLogTitle.text = title;
+            if (UpdateLogTitle != null)
+                UpdateLogTitle.text = title;
         }
 
         if (UpdateDesc != null && !string.IsNullOrEmpty(desc))
@@ -263,7 +287,9 @@ public class DynamicTxt : MonoBehaviour
             // Append clickable link LAST (like your example)
             if (!string.IsNullOrEmpty(updateLogLinkUrl))
             {
-                string label = string.IsNullOrEmpty(updateLogLinkLabel) ? "Link" : updateLogLinkLabel;
+                string label = string.IsNullOrEmpty(updateLogLinkLabel)
+                    ? "Link"
+                    : updateLogLinkLabel;
 
                 // Clickable TMP link: linkId is the URL
                 UpdateLogContent.text +=
@@ -274,10 +300,13 @@ public class DynamicTxt : MonoBehaviour
 
     private void OnUpdateLogLinkClicked(string linkId, string linkText, int linkIndex)
     {
-        if (string.IsNullOrWhiteSpace(linkId)) return;
+        if (string.IsNullOrWhiteSpace(linkId))
+            return;
 
-        if (!linkId.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-            !linkId.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (
+            !linkId.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !linkId.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        )
         {
             Debug.LogWarning($"Blocked non-http(s) link: {linkId}", this);
             return;
@@ -288,7 +317,8 @@ public class DynamicTxt : MonoBehaviour
 
     private static string EscapeForTmpLinkId(string s)
     {
-        if (string.IsNullOrEmpty(s)) return s;
+        if (string.IsNullOrEmpty(s))
+            return s;
         return s.Replace("\"", "&quot;").Replace("<", "&lt;").Replace(">", "&gt;");
     }
 
@@ -299,7 +329,10 @@ public class DynamicTxt : MonoBehaviour
             yield return req.SendWebRequest();
             if (req.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"{nameof(DynamicTxt)}: Error fetching image: {req.error}\nURL: {imgUrl}", this);
+                Debug.LogError(
+                    $"{nameof(DynamicTxt)}: Error fetching image: {req.error}\nURL: {imgUrl}",
+                    this
+                );
                 callback?.Invoke(null);
                 yield break;
             }

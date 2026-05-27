@@ -9,6 +9,7 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 {
     public static PhotonMenuConnector Instance;
     private const string ROOM_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
     // (no I, O, 0, 1 � avoids confusion)
     public static bool PlayFabPhotonAuthReady; // set true after AuthValues assigned
 
@@ -23,25 +24,33 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
         return sb.ToString();
     }
 
-
     public enum JoinIntent
     {
         None,
         Public,
         CreatePrivate,
-        JoinPrivate
+        JoinPrivate,
     }
 
     [Header("State")]
-    [SerializeField] private JoinIntent intent = JoinIntent.None;
-    [SerializeField] private string targetRoomName;
-    [SerializeField] private TMP_InputField joinCode;
+    [SerializeField]
+    private JoinIntent intent = JoinIntent.None;
+
+    [SerializeField]
+    private string targetRoomName;
+
+    [SerializeField]
+    private TMP_InputField joinCode;
 
     private bool joiningInProgress;
 
     private void Awake()
     {
-        if (Instance != null) { Destroy(gameObject); return; }
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
@@ -55,7 +64,8 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
     {
         if (scene.name == "Menu")
         {
-            joinCode = GameObject.Find("Canvas")
+            joinCode = GameObject
+                .Find("Canvas")
                 .transform.Find("Join/List/InputField (TMP)")
                 .GetComponent<TMP_InputField>();
 
@@ -63,23 +73,25 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
             intent = JoinIntent.None;
             targetRoomName = null;
 
-            
             // 🔥 Rebind buttons
-            Button publicBtn = GameObject.Find("Canvas")
-            .transform.Find("Play Menu/List/Public")
-            .GetComponent<Button>();
+            Button publicBtn = GameObject
+                .Find("Canvas")
+                .transform.Find("Play Menu/List/Public")
+                .GetComponent<Button>();
             publicBtn.onClick.RemoveAllListeners();
             publicBtn.onClick.AddListener(ClickPublic);
 
-            Button createBtn = GameObject.Find("Canvas")
-            .transform.Find("Play Menu/List/Host Private Game")
-            .GetComponent<Button>();
+            Button createBtn = GameObject
+                .Find("Canvas")
+                .transform.Find("Play Menu/List/Host Private Game")
+                .GetComponent<Button>();
             createBtn.onClick.RemoveAllListeners();
             createBtn.onClick.AddListener(ClickCreatePrivate);
 
-            Button joinBtn = GameObject.Find("Cavas")
-            .transform.Find("Play Menu/List/Join Private Game")
-            .GetComponent<Button>();
+            Button joinBtn = GameObject
+                .Find("Cavas")
+                .transform.Find("Play Menu/List/Join Private Game")
+                .GetComponent<Button>();
             joinBtn.onClick.RemoveAllListeners();
             joinBtn.onClick.AddListener(ClickJoinPrivate_InputField);
 
@@ -95,7 +107,8 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (PhotonNetwork.IsConnectedAndReady) return;
+        if (PhotonNetwork.IsConnectedAndReady)
+            return;
 
         if (!PhotonNetwork.IsConnected)
         {
@@ -139,7 +152,8 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 
     public void ClickJoinPrivate_InputField()
     {
-        if (joinCode == null) return;
+        if (joinCode == null)
+            return;
         ClickJoinPrivate(joinCode.text.ToUpper().Trim());
     }
 
@@ -159,9 +173,7 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 
         if (PhotonNetwork.IsMasterClient)
         {
-            GameObject.Find("LevelLoader")
-                .GetComponent<LevelLoader>()
-                .LoadLevel("SampleScene");
+            GameObject.Find("LevelLoader").GetComponent<LevelLoader>().LoadLevel("SampleScene");
         }
     }
 
@@ -197,9 +209,12 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 
     private void TryExecuteIntent()
     {
-        if (joiningInProgress) return;
-        if (!PhotonNetwork.IsConnectedAndReady) return;
-        if (intent == JoinIntent.None) return;
+        if (joiningInProgress)
+            return;
+        if (!PhotonNetwork.IsConnectedAndReady)
+            return;
+        if (intent == JoinIntent.None)
+            return;
 
         joiningInProgress = true;
 
@@ -210,16 +225,16 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
                 break;
 
             case JoinIntent.CreatePrivate:
+            {
+                var opts = new RoomOptions
                 {
-                    var opts = new RoomOptions
-                    {
-                        MaxPlayers = 8,
-                        IsVisible = false,   // hidden from lobby lists
-                        IsOpen = true
-                    };
-                    PhotonNetwork.CreateRoom(targetRoomName, opts, TypedLobby.Default);
-                    break;
-                }
+                    MaxPlayers = 8,
+                    IsVisible = false, // hidden from lobby lists
+                    IsOpen = true,
+                };
+                PhotonNetwork.CreateRoom(targetRoomName, opts, TypedLobby.Default);
+                break;
+            }
 
             case JoinIntent.JoinPrivate:
                 PhotonNetwork.JoinRoom(targetRoomName);

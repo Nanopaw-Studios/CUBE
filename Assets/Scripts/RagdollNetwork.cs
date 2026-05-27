@@ -1,6 +1,6 @@
-using UnityEngine;
-using Photon.Pun;
 using System.Collections.Generic;
+using Photon.Pun;
+using UnityEngine;
 
 [RequireComponent(typeof(PhotonView))]
 public class RagdollNetwork : MonoBehaviour, IPunObservable
@@ -17,14 +17,14 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     {
         public Vector3 hipPos;
         public Quaternion hipRot;
-        public Vector3 hipVel;      // estimated hip velocity (world-space)
-        public Vector3[] bonePos;     // local-space
+        public Vector3 hipVel; // estimated hip velocity (world-space)
+        public Vector3[] bonePos; // local-space
         public Quaternion[] boneRot;
-        public Vector3[] boneVel;     // local-space velocity per bone
+        public Vector3[] boneVel; // local-space velocity per bone
         public double time;
     }
 
-    readonly List<Snapshot> buffer = new List<Snapshot>();
+    readonly List<Snapshot> buffer = new();
     const int MAX_BUFFER = 32;
 
     // ─── Smoothing ───────────────────────────────────────────────
@@ -56,7 +56,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     // Adaptive back-time tracks observed packet spacing + jitter.
     float adaptedBackTime;
     double lastPacketTime;
-    float observedJitter;   // one-sided EWMA of arrival jitter
+    float observedJitter; // one-sided EWMA of arrival jitter
 
     // Smoothed root position used to damp the final transform move.
     Vector3 smoothedHipTarget;
@@ -73,7 +73,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     void Awake()
     {
         pv = GetComponent<PhotonView>();
-        if (keyBones == null) keyBones = new List<Transform>();
+        keyBones ??= new List<Transform>();
         adaptedBackTime = interpolationBackTime;
 
         int maxBones = 15;
@@ -95,7 +95,8 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     // ─────────────────────────────────────────────────────────────
     void Update()
     {
-        if (pv.IsMine || !remoteInitialized || buffer.Count == 0) return;
+        if (pv.IsMine || !remoteInitialized || buffer.Count == 0)
+            return;
 
         double interpTime = PhotonNetwork.Time - adaptedBackTime;
 
@@ -143,9 +144,13 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             targetBoneRot = new Quaternion[safeCount];
             for (int i = 0; i < safeCount; i++)
             {
-                targetBonePos[i] = s.bonePos[i] + (s.boneVel != null && i < s.boneVel.Length
-                                                    ? s.boneVel[i] * age
-                                                    : Vector3.zero);
+                targetBonePos[i] =
+                    s.bonePos[i]
+                    + (
+                        s.boneVel != null && i < s.boneVel.Length
+                            ? s.boneVel[i] * age
+                            : Vector3.zero
+                    );
                 targetBoneRot[i] = s.boneRot[i];
             }
         }
@@ -156,18 +161,24 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         if (hipError > teleportThreshold)
         {
             // Large gap — blend at high speed rather than hard-snapping.
-            float blendT = teleportBlendSpeed > 0f
-                         ? Mathf.Clamp01(teleportBlendSpeed * Time.deltaTime)
-                         : 1f;
+            float blendT =
+                teleportBlendSpeed > 0f ? Mathf.Clamp01(teleportBlendSpeed * Time.deltaTime) : 1f;
             smoothedHipTarget = Vector3.Lerp(hip.position, targetHipPos, blendT);
             smoothedHipTargetSet = true;
         }
         else if (rootDamping > 0f)
         {
             // Gentle exponential smoothing keeps things buttery without lag.
-            if (!smoothedHipTargetSet) { smoothedHipTarget = targetHipPos; smoothedHipTargetSet = true; }
-            smoothedHipTarget = Vector3.Lerp(smoothedHipTarget, targetHipPos,
-                                             1f - Mathf.Exp(-rootDamping * Time.deltaTime));
+            if (!smoothedHipTargetSet)
+            {
+                smoothedHipTarget = targetHipPos;
+                smoothedHipTargetSet = true;
+            }
+            smoothedHipTarget = Vector3.Lerp(
+                smoothedHipTarget,
+                targetHipPos,
+                1f - Mathf.Exp(-rootDamping * Time.deltaTime)
+            );
         }
         else
         {
@@ -183,18 +194,21 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         int applyCount = Mathf.Min(boneCount, targetBonePos.Length);
         for (int i = 0; i < applyCount; i++)
         {
-            if (keyBones[i] == null) continue;
+            if (keyBones[i] == null)
+                continue;
 
             if (boneDamping > 0f)
             {
                 float t = 1f - Mathf.Exp(-boneDamping * Time.deltaTime);
-                keyBones[i].localPosition = Vector3.Lerp(keyBones[i].localPosition, targetBonePos[i], t);
-                keyBones[i].localRotation = Quaternion.Slerp(keyBones[i].localRotation, targetBoneRot[i], t);
+                keyBones[i]
+                    .SetLocalPositionAndRotation(
+                        Vector3.Lerp(keyBones[i].localPosition, targetBonePos[i], t),
+                        Quaternion.Slerp(keyBones[i].localRotation, targetBoneRot[i], t)
+                    );
             }
             else
             {
-                keyBones[i].localPosition = targetBonePos[i];
-                keyBones[i].localRotation = targetBoneRot[i];
+                keyBones[i].SetLocalPositionAndRotation(targetBonePos[i], targetBoneRot[i]);
             }
         }
     }
@@ -209,9 +223,9 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         int count = Mathf.Min(keyBones.Count, s.bonePos.Length);
         for (int i = 0; i < count; i++)
         {
-            if (keyBones[i] == null) continue;
-            keyBones[i].localPosition = s.bonePos[i];
-            keyBones[i].localRotation = s.boneRot[i];
+            if (keyBones[i] == null)
+                continue;
+            keyBones[i].SetLocalPositionAndRotation(s.bonePos[i], s.boneRot[i]);
         }
 
         smoothedHipTarget = s.hipPos;
@@ -237,12 +251,14 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         else
         {
             // ── Network → Remote ─────────────────────────────────
-            Snapshot s = new Snapshot();
-            s.time = info.SentServerTime;
-            s.hipPos = (Vector3)stream.ReceiveNext();
-            s.hipRot = (Quaternion)stream.ReceiveNext();
+            Snapshot s = new()
+            {
+                time = info.SentServerTime,
+                hipPos = (Vector3)stream.ReceiveNext(),
+                hipRot = (Quaternion)stream.ReceiveNext(),
+            };
 
-            // Must read the count from stream — writer always sends it 
+            // Must read the count from stream — writer always sends it
             int count = (int)stream.ReceiveNext();
             int safeCount = Mathf.Min(count, _recvBonePos.Length);
 
@@ -263,7 +279,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             // ── Estimate velocities from previous snapshot ───────
             if (buffer.Count > 0)
             {
-                Snapshot prev = buffer[buffer.Count - 1];
+                Snapshot prev = buffer[^1];
                 double dt = s.time - prev.time;
 
                 if (dt > 0.0001)
@@ -280,8 +296,11 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
                 double arrivalGap = PhotonNetwork.Time - lastPacketTime;
                 double sendGap = dt; // should match Photon's serialization rate
                 float jitter = Mathf.Abs((float)(arrivalGap - sendGap));
-                observedJitter = Mathf.Lerp(observedJitter, jitter,
-                                               1f - Mathf.Exp(-jitterAdaptSpeed * (float)dt));
+                observedJitter = Mathf.Lerp(
+                    observedJitter,
+                    jitter,
+                    1f - Mathf.Exp(-jitterAdaptSpeed * (float)dt)
+                );
 
                 // Back-time = base + a safety margin over observed jitter
                 adaptedBackTime = Mathf.Clamp(
@@ -311,7 +330,8 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     // ─────────────────────────────────────────────────────────────
     public void TeleportTo(Vector3 worldPosition)
     {
-        if (!pv.IsMine) return;
+        if (!pv.IsMine)
+            return;
 
         Vector3 delta = worldPosition - hip.position;
         foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
@@ -337,7 +357,8 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
 
     public void NotifyRemotesOfTeleport()
     {
-        if (!pv.IsMine) return;
+        if (!pv.IsMine)
+            return;
         PhotonNetwork.SendAllOutgoingCommands();
         pv.RPC(nameof(RPC_OnTeleport), RpcTarget.Others);
     }

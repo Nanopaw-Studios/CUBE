@@ -6,16 +6,15 @@ using UnityEngine.UI;
 public class UsernameSetter : MonoBehaviour
 {
     public TMP_InputField userNameField;
-    
+
     public void SetNameUsingInputField()
     {
         SetName(userNameField.text);
     }
 
-
     void SetName(string name)
     {
-        if(string.IsNullOrEmpty(name))
+        if (string.IsNullOrEmpty(name))
         {
             Debug.Log("Username is empty");
             return;

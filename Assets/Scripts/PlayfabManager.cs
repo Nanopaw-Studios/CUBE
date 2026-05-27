@@ -1,10 +1,10 @@
+using System;
+using System.Globalization;
 using HSVPicker;
 using Photon.Pun;
 using Photon.Realtime;
 using PlayFab;
 using PlayFab.ClientModels;
-using System;
-using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -47,7 +47,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     private void InfoText(string text)
     {
-        if (infoText != null) infoText.text = text;
+        if (infoText != null)
+            infoText.text = text;
     }
 
     private void Start()
@@ -60,7 +61,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     private void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        if (Instance == this)
+            Instance = null;
         SceneManager.activeSceneChanged -= SceneChanged;
     }
 
@@ -72,8 +74,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             CreateAccount = true,
             InfoRequestParameters = new GetPlayerCombinedInfoRequestParams
             {
-                GetPlayerProfile = true
-            }
+                GetPlayerProfile = true,
+            },
         };
         PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnError);
     }
@@ -111,16 +113,20 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
         // Fallback: traverse the hierarchy by name.
         GameObject canvas = GameObject.Find("Canvas");
-        if (canvas == null) return;
+        if (canvas == null)
+            return;
 
         Transform stats = canvas.transform.Find("Stats");
-        if (stats == null) return;
+        if (stats == null)
+            return;
 
         Transform money = stats.transform.Find("Money");
-        if (money == null) return;
+        if (money == null)
+            return;
 
         Transform text = money.transform.Find("MaliceValue");
-        if (text == null) return;
+        if (text == null)
+            return;
 
         moneyText = text.GetComponent<TMP_Text>();
         if (moneyText != null)
@@ -151,7 +157,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         else
         {
             InfoText(Application.version + " | " + "Not Set!" + " | " + "Logged In");
-            if (nameWindow != null) nameWindow.SetActive(true);
+            if (nameWindow != null)
+                nameWindow.SetActive(true);
         }
 
         GetColorFromData();
@@ -166,7 +173,7 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
     {
         var request = new GetPhotonAuthenticationTokenRequest
         {
-            PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime
+            PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime,
         };
 
         PlayFabClientAPI.GetPhotonAuthenticationToken(
@@ -180,8 +187,10 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
     {
         Debug.Log("Got Photon Auth Token");
 
-        var auth = new AuthenticationValues(playFabId);
-        auth.AuthType = CustomAuthenticationType.Custom;
+        var auth = new AuthenticationValues(playFabId)
+        {
+            AuthType = CustomAuthenticationType.Custom
+        };
         auth.AddAuthParameter("username", playFabId);
         auth.AddAuthParameter("token", result.PhotonCustomAuthenticationToken);
 
@@ -203,10 +212,7 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     public void SubmitName()
     {
-        var request = new UpdateUserTitleDisplayNameRequest
-        {
-            DisplayName = nameField.text
-        };
+        var request = new UpdateUserTitleDisplayNameRequest { DisplayName = nameField.text };
         PlayFabClientAPI.UpdateUserTitleDisplayName(request, OnDisplayNameUpdate, OnError);
     }
 
@@ -227,16 +233,21 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
     public void RefreshCubeCoins()
     {
         // GetUserInventory returns VirtualCurrency dict.
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(),
+        PlayFabClientAPI.GetUserInventory(
+            new GetUserInventoryRequest(),
             result =>
             {
                 int cc = 0;
-                if (result.VirtualCurrency != null && result.VirtualCurrency.TryGetValue(cubeCoinsCode, out var v))
+                if (
+                    result.VirtualCurrency != null
+                    && result.VirtualCurrency.TryGetValue(cubeCoinsCode, out var v)
+                )
                     cc = v;
 
                 SetCachedCC(cc);
             },
-            OnError);
+            OnError
+        );
     }
 
     private void SetCachedCC(int cc)
@@ -263,20 +274,26 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         var request = new AddUserVirtualCurrencyRequest
         {
             VirtualCurrency = cubeCoinsCode,
-            Amount = amount
+            Amount = amount,
         };
 
-        PlayFabClientAPI.AddUserVirtualCurrency(request,
+        PlayFabClientAPI.AddUserVirtualCurrency(
+            request,
             result =>
             {
                 // result.Balance is the NEW balance after add.
                 SetCachedCC(result.Balance);
-                Debug.Log($"[PlayFab] +{amount} {cubeCoinsCode} (reason: {reason}) -> balance {result.Balance}");
+                Debug.Log(
+                    $"[PlayFab] +{amount} {cubeCoinsCode} (reason: {reason}) -> balance {result.Balance}"
+                );
             },
             error =>
             {
-                Debug.LogError($"[PlayFab] AddCubeCoins FAILED (reason: {reason}): {error.GenerateErrorReport()}");
-            });
+                Debug.LogError(
+                    $"[PlayFab] AddCubeCoins FAILED (reason: {reason}): {error.GenerateErrorReport()}"
+                );
+            }
+        );
     }
 
     /// <summary>
@@ -300,14 +317,17 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         var request = new SubtractUserVirtualCurrencyRequest
         {
             VirtualCurrency = cubeCoinsCode,
-            Amount = cost
+            Amount = cost,
         };
 
-        PlayFabClientAPI.SubtractUserVirtualCurrency(request,
+        PlayFabClientAPI.SubtractUserVirtualCurrency(
+            request,
             result =>
             {
                 SetCachedCC(result.Balance);
-                Debug.Log($"-{cost} {cubeCoinsCode} (reason: {reason}) -> balance {result.Balance}");
+                Debug.Log(
+                    $"-{cost} {cubeCoinsCode} (reason: {reason}) -> balance {result.Balance}"
+                );
                 onResult?.Invoke(true, result.Balance);
             },
             error =>
@@ -315,7 +335,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
                 // If PlayFab rejects (insufficient funds, etc.) we keep cache as-is and notify.
                 Debug.LogWarning("Spend failed: " + error.GenerateErrorReport());
                 onResult?.Invoke(false, CachedCC);
-            });
+            }
+        );
     }
 
     // =============================
@@ -324,10 +345,14 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     void GetColorFromData()
     {
-        PlayFabClientAPI.GetUserData(new GetUserDataRequest() { PlayFabId = this.PlayFabId }, onSuccessGetData, OnError);
+        PlayFabClientAPI.GetUserData(
+            new GetUserDataRequest() { PlayFabId = this.PlayFabId },
+            OnSuccessGetData,
+            OnError
+        );
     }
 
-    public void onSuccessGetData(GetUserDataResult result)
+    public void OnSuccessGetData(GetUserDataResult result)
     {
         foreach (var item in result.Data)
         {
@@ -342,7 +367,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     public static void IsItemOwned(string itemID, Action<bool> callback)
     {
-        PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(),
+        PlayFabClientAPI.GetUserInventory(
+            new GetUserInventoryRequest(),
             result =>
             {
                 bool owned = false;
@@ -361,7 +387,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
                 Debug.LogError("Got error!");
                 Debug.LogError(error.GenerateErrorReport());
                 callback?.Invoke(false);
-            });
+            }
+        );
     }
 
     public void SetColorToPicker()
@@ -369,14 +396,17 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         Color color = picker.CurrentColor;
         string hex = ColorUtility.ToHtmlStringRGBA(color);
 
-        PlayFabClientAPI.UpdateUserData(new UpdateUserDataRequest()
-        {
-            Data = new System.Collections.Generic.Dictionary<string, string>()
+        PlayFabClientAPI.UpdateUserData(
+            new UpdateUserDataRequest()
             {
-                {"PlayerColor", "#" + hex}
-            }
-        },
-        OnSetColorData, OnError);
+                Data = new System.Collections.Generic.Dictionary<string, string>()
+                {
+                    { "PlayerColor", "#" + hex },
+                },
+            },
+            OnSetColorData,
+            OnError
+        );
     }
 
     public void OnSetColorData(UpdateUserDataResult result)
@@ -396,12 +426,11 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             new GetUserDataRequest
             {
                 PlayFabId = PlayFabId,
-                Keys = new System.Collections.Generic.List<string> { key }
+                Keys = new System.Collections.Generic.List<string> { key },
             },
             result =>
             {
-                if (result.Data != null &&
-                    result.Data.TryGetValue(key, out var entry))
+                if (result.Data != null && result.Data.TryGetValue(key, out var entry))
                 {
                     onResult?.Invoke(entry.Value);
                 }
@@ -412,18 +441,20 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             },
             error =>
             {
-                Debug.LogWarning($"GetUserDataValue failed for key '{key}':\n{error.GenerateErrorReport()}");
+                Debug.LogWarning(
+                    $"GetUserDataValue failed for key '{key}':\n{error.GenerateErrorReport()}"
+                );
                 onResult?.Invoke(null);
             }
         );
     }
 
-
     public static Color FromHex(string hex)
     {
-        if (hex.Length < 6) throw new System.FormatException("Needs a string with a length of at least 6");
+        if (hex.Length < 6)
+            throw new System.FormatException("Needs a string with a length of at least 6");
 
-        var r = hex.Substring(0, 2);
+        var r = hex[..2];
         var g = hex.Substring(2, 2);
         var b = hex.Substring(4, 2);
         string alpha = (hex.Length >= 8) ? hex.Substring(6, 2) : "FF";
@@ -436,4 +467,3 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         );
     }
 }
-

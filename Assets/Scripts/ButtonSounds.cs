@@ -1,12 +1,17 @@
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.EventSystems;
-public class ButtonSounds : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+
+public class ButtonSounds
+    : MonoBehaviour,
+        IPointerClickHandler,
+        IPointerEnterHandler,
+        IPointerExitHandler
 {
     public AudioClip click;
     public AudioClip hoverenter;
     public AudioClip hoverexit;
-    
+
     public AudioMixerGroup mixer;
 
     public void OnPointerClick(PointerEventData pointerEventData)
@@ -20,13 +25,19 @@ public class ButtonSounds : MonoBehaviour, IPointerClickHandler, IPointerEnterHa
 
     public void OnPointerEnter(PointerEventData pointerEventData)
     {
-        if(hoverenter == null) { return; }
+        if (hoverenter == null)
+        {
+            return;
+        }
         PlaySoundOnMixer(hoverenter, this.transform.position, mixer);
     }
 
     public void OnPointerExit(PointerEventData pointerEventData)
     {
-        if(hoverexit == null) { return; }
+        if (hoverexit == null)
+        {
+            return;
+        }
         PlaySoundOnMixer(hoverexit, this.transform.position, mixer);
     }
 

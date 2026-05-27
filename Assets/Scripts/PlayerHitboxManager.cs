@@ -4,6 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(BasePlayer))]
 [RequireComponent(typeof(BasePlayerStats))]
+[RequireComponent(typeof(CubeCoinRewardManager))]
 public class PlayerHitboxManager : MonoBehaviourPunCallbacks
 {
     [Tooltip(
@@ -36,7 +37,7 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
         {
             if (callback == null)
                 continue;
-            callback.gameObject.layer = PlayerLayer;
+            callback.gameObject.layer = LayerMask.GetMask("Player");
         }
 
         // Only the local owner's hitboxes should fire outgoing hits.

@@ -16,6 +16,9 @@ public class PassiveAbility : Ability
     /// <param name="player">The player to whom the passive effect is applied. Cannot be null.</param>
     public virtual void PassiveEffect(BasePlayer player)
     {
-        Debug.Log($"{AbilityName} passive effect applied to " + player.gameObject.GetPhotonView().Owner.NickName);
+        Debug.Log(
+            $"{AbilityName} passive effect applied to "
+                + player.gameObject.GetPhotonView().Owner.NickName
+        );
     }
 }

@@ -37,7 +37,11 @@ public class MenuCubeSpawner : MonoBehaviour
         // create cube
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         cube.transform.position = new Vector3(Random.Range(-35, -10), 35, Random.Range(-25, 25));
-        cube.transform.rotation = Quaternion.Euler(Random.Range(0, 360), Random.Range(0, 360), Random.Range(0, 360));
+        cube.transform.rotation = Quaternion.Euler(
+            Random.Range(0, 360),
+            Random.Range(0, 360),
+            Random.Range(0, 360)
+        );
         cube.transform.localScale = Vector3.one * Random.Range(110f, 370f);
 
         // apply mesh
@@ -62,12 +66,12 @@ public class MenuCubeSpawner : MonoBehaviour
         // add to list
         spawnedCubes.Add(cube);
 
-    if (spawnedCubes.Count > 15)
-    {
-        GameObject oldestCube = spawnedCubes[0];
-        spawnedCubes.RemoveAt(0); // remove immediately
-        StartCoroutine(ScaleDownAndDestroy(oldestCube, .5f));
-    }
+        if (spawnedCubes.Count > 15)
+        {
+            GameObject oldestCube = spawnedCubes[0];
+            spawnedCubes.RemoveAt(0); // remove immediately
+            StartCoroutine(ScaleDownAndDestroy(oldestCube, .5f));
+        }
     }
 
     private IEnumerator ScaleDownAndDestroy(GameObject obj, float duration)
@@ -76,7 +80,11 @@ public class MenuCubeSpawner : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < duration)
         {
-            obj.transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, elapsed / duration);
+            obj.transform.localScale = Vector3.Lerp(
+                originalScale,
+                Vector3.zero,
+                elapsed / duration
+            );
             elapsed += Time.deltaTime;
             yield return null;
         }

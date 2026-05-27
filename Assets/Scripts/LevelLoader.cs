@@ -13,7 +13,9 @@ public class LevelLoader : MonoBehaviour
 
     System.Collections.IEnumerator LoadAsynchronously(string levelName)
     {
-        AsyncOperation operation = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(levelName);
+        AsyncOperation operation = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(
+            levelName
+        );
         loadingScreen.SetActive(true);
         while (!operation.isDone)
         {

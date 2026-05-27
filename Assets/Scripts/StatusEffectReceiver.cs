@@ -8,6 +8,7 @@ public enum ClientEffectId : byte
 {
     // glitch
     UnstablePresence = 1,
+
     // coder
     OverclockedMind = 2,
     // Add more: Fear, Hallucination, BleedVision, etc.
@@ -21,14 +22,18 @@ public class StatusEffectReceiver : MonoBehaviourPun
 
     public void ApplyEffect(ClientEffectId id, bool active, float amount = 1f)
     {
-        if (!photonView.IsMine) return; // only local client changes its own visuals
+        if (!photonView.IsMine)
+            return; // only local client changes its own visuals
 
-        if (!stacks.ContainsKey(id)) stacks[id] = 0;
+        if (!stacks.ContainsKey(id))
+            stacks[id] = 0;
         stacks[id] += active ? 1 : -1;
         stacks[id] = Mathf.Max(0, stacks[id]);
 
-        if (active) intensity[id] = Mathf.Max(intensity.ContainsKey(id) ? intensity[id] : 0f, amount);
-        if (stacks[id] == 0) intensity[id] = 0f;
+        if (active)
+            intensity[id] = Mathf.Max(intensity.ContainsKey(id) ? intensity[id] : 0f, amount);
+        if (stacks[id] == 0)
+            intensity[id] = 0f;
 
         bool enabledNow = stacks[id] > 0;
         float amt = intensity[id];
@@ -67,6 +72,11 @@ public class StatusEffectReceiver : MonoBehaviourPun
     {
         GameObject canvas = GameObject.Find("Canvas");
         PlayerAbilityManager abilityManager = canvas.GetComponent<PlayerAbilityManager>();
-        abilityManager.ModifyAbilityCooldown(0, on ? Mathf.RoundToInt(abilityManager.GetBaseCooldown(0) * (1f - amt * 0.1f)) : abilityManager.GetBaseCooldown(0));
+        abilityManager.ModifyAbilityCooldown(
+            0,
+            on
+                ? Mathf.RoundToInt(abilityManager.GetBaseCooldown(0) * (1f - amt * 0.1f))
+                : abilityManager.GetBaseCooldown(0)
+        );
     }
 }

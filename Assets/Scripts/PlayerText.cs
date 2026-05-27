@@ -9,7 +9,7 @@ public class PlayerText : MonoBehaviourPunCallbacks
     public enum PlayerTextSource
     {
         Photon,
-        Playfab
+        Playfab,
     }
 
     public PlayerTextSource source;
@@ -18,14 +18,18 @@ public class PlayerText : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
-        if(GetTextComponent)
+        if (GetTextComponent)
         {
             text = GetComponent<TMP_Text>();
         }
 
-        if(source == PlayerTextSource.Photon)
-        {   text.text = PhotonNetwork.NickName; }
-        if(source == PlayerTextSource.Playfab)
-        {   text.text = PlayfabManager.GetPlayerName(); }
+        if (source == PlayerTextSource.Photon)
+        {
+            text.text = PhotonNetwork.NickName;
+        }
+        if (source == PlayerTextSource.Playfab)
+        {
+            text.text = PlayfabManager.GetPlayerName();
+        }
     }
 }

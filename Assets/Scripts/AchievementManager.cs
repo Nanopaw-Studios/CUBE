@@ -15,7 +15,8 @@ public class AchievementManager : MonoBehaviour
     public void Unlock(string achievementID)
     {
 #if !DISABLESTEAMWORKS
-        if (!CUBESteamManager.Initialized) return;
+        if (!CUBESteamManager.Initialized)
+            return;
 
         SteamUserStats.SetAchievement(achievementID);
         SteamUserStats.StoreStats();
