@@ -1,5 +1,5 @@
- using Photon.Pun;
 using System;
+using Photon.Pun;
 using UnityEngine;
 using static BasePlayer;
 
@@ -63,7 +63,8 @@ public class ServerManager : MonoBehaviourPunCallbacks
     public void RoundStartedRPC()
     {
         // only the Master Client assigns roles
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient)
+            return;
 
         // No need to RPC to ourselves; just call directly
         HandleRoundStart();
@@ -72,22 +73,26 @@ public class ServerManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void HandleRoundStart()
     {
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient)
+            return;
 
         // SNAPSHOT players once
         CachePlayers();
 
         GameObject highestMalicePlayer = null;
         int highestMalice = int.MinValue;
-        System.Collections.Generic.List<GameObject> contenders = new System.Collections.Generic.List<GameObject>();
+        System.Collections.Generic.List<GameObject> contenders =
+            new System.Collections.Generic.List<GameObject>();
 
         // PICK HIGHEST MALICE
         foreach (GameObject player in allPlayers)
         {
-            if (player == null) continue;
+            if (player == null)
+                continue;
 
             BasePlayerStats stats = player.GetComponent<BasePlayerStats>();
-            if (stats == null) continue;
+            if (stats == null)
+                continue;
 
             if (stats.malice > highestMalice)
             {
@@ -110,7 +115,8 @@ public class ServerManager : MonoBehaviourPunCallbacks
         // ASSIGN ROLES + CHARACTER SKINS
         foreach (GameObject player in allPlayers)
         {
-            if (player == null) continue;
+            if (player == null)
+                continue;
 
             PhotonView pv = player.GetPhotonView();
             BasePlayer basePlayer = player.GetComponent<BasePlayer>();
@@ -119,9 +125,8 @@ public class ServerManager : MonoBehaviourPunCallbacks
             if (pv == null || basePlayer == null || customizer == null)
                 continue;
 
-            PlayerType type = (player == highestMalicePlayer)
-                ? PlayerType.Killer
-                : PlayerType.Survivor;
+            PlayerType type =
+                (player == highestMalicePlayer) ? PlayerType.Killer : PlayerType.Survivor;
 
             // 1) Tell everyone what role this player is
             pv.RPC("SetPlayerType", RpcTarget.AllBuffered, type);
@@ -135,10 +140,15 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
             if (type == PlayerType.Killer)
             {
-                if (photonPlayer != null &&
-                    photonPlayer.CustomProperties.TryGetValue(BasePlayer.PropEquippedKiller, out object killerNameObj) &&
-                    killerNameObj is string killerName &&
-                    !string.IsNullOrEmpty(killerName))
+                if (
+                    photonPlayer != null
+                    && photonPlayer.CustomProperties.TryGetValue(
+                        BasePlayer.PropEquippedKiller,
+                        out object killerNameObj
+                    )
+                    && killerNameObj is string killerName
+                    && !string.IsNullOrEmpty(killerName)
+                )
                 {
                     characterId = killerName;
                 }
@@ -152,16 +162,23 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
                 if (characterId == null)
                 {
-                    Debug.LogWarning($"[ServerManager] Could not resolve killer character for player {pv.OwnerActorNr} — skipping skin.");
+                    Debug.LogWarning(
+                        $"[ServerManager] Could not resolve killer character for player {pv.OwnerActorNr} — skipping skin."
+                    );
                     continue;
                 }
             }
             else
             {
-                if (photonPlayer != null &&
-                    photonPlayer.CustomProperties.TryGetValue(BasePlayer.PropEquippedSurvivor, out object survivorNameObj) &&
-                    survivorNameObj is string survivorName &&
-                    !string.IsNullOrEmpty(survivorName))
+                if (
+                    photonPlayer != null
+                    && photonPlayer.CustomProperties.TryGetValue(
+                        BasePlayer.PropEquippedSurvivor,
+                        out object survivorNameObj
+                    )
+                    && survivorNameObj is string survivorName
+                    && !string.IsNullOrEmpty(survivorName)
+                )
                 {
                     characterId = survivorName;
                 }
@@ -175,28 +192,30 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
                 if (characterId == null)
                 {
-                    Debug.LogWarning($"[ServerManager] Could not resolve survivor character for player {pv.OwnerActorNr} — skipping skin.");
+                    Debug.LogWarning(
+                        $"[ServerManager] Could not resolve survivor character for player {pv.OwnerActorNr} — skipping skin."
+                    );
                     continue;
                 }
             }
 
             // 3) Apply role + character skin to every client via PlayerCustomizer
             PhotonView customizerPV = customizer.photonView;
-            customizerPV.RPC(
-                "ApplyRoleAndCharacter",
-                RpcTarget.AllBuffered,
-                type,
-                characterId
-            );
+            customizerPV.RPC("ApplyRoleAndCharacter", RpcTarget.AllBuffered, type, characterId);
 
             // 4) Apply stats from the ScriptableObject to BasePlayerStats on this player's
             //    owning client via RPC, so health/speed/stamina reflect the character's data.
-            CubePlayerBase characterData = type == PlayerType.Killer
-                ? (CubePlayerBase)CharacterDatabase.GetKillerByName(characterId)
-                : (CubePlayerBase)CharacterDatabase.GetSurvivorByName(characterId);
+            // 4) Apply stats from the ScriptableObject to BasePlayerStats on this player's
+            //    owning client via RPC, so health/speed/stamina reflect the character's data.
+            CubePlayerBase characterData =
+                type == PlayerType.Killer
+                    ? (CubePlayerBase)CharacterDatabase.GetKillerByName(characterId)
+                    : (CubePlayerBase)CharacterDatabase.GetSurvivorByName(characterId);
 
             if (characterData != null)
             {
+                PhotonNetwork.RemoveRPCs(pv, "ApplyCharacterStats");
+
                 pv.RPC(
                     "ApplyCharacterStats",
                     RpcTarget.AllBuffered,
@@ -207,7 +226,9 @@ public class ServerManager : MonoBehaviourPunCallbacks
             }
             else
             {
-                Debug.LogWarning($"[ServerManager] Could not resolve character data for '{characterId}' — stats not applied.");
+                Debug.LogWarning(
+                    $"[ServerManager] Could not resolve character data for '{characterId}' — stats not applied."
+                );
             }
         }
     }
