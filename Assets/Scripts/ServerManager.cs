@@ -214,7 +214,7 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
             if (characterData != null)
             {
-                PhotonNetwork.RemoveRPCs(pv, "ApplyCharacterStats");
+                PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "ApplyCharacterStats");
 
                 pv.RPC(
                     "ApplyCharacterStats",
