@@ -5439,6 +5439,7 @@ GameObject:
   - component: {fileID: 8031120553231613376}
   - component: {fileID: 7952985158064879536}
   - component: {fileID: 4415015336772839046}
+  - component: {fileID: 6725146945368081108}
   m_Layer: 3
   m_Name: BaseCharacter
   m_TagString: Player
@@ -5706,7 +5707,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   groundOffset: 3
-  maxGroundSnapDistance: 6
 --- !u!114 &5142198532529002959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5788,6 +5788,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSizer
   rigObj: {fileID: 5011767928945711400}
   roundManager: {fileID: 0}
+--- !u!54 &6725146945368081108
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4360496906041607540}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &4385198401687824320
 GameObject:
   m_ObjectHideFlags: 0
