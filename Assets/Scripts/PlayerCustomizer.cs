@@ -17,8 +17,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     private BasePlayer.PlayerType pendingPlayerType;
     private string pendingCharacterId;
     private bool hasPendingRole = false;
-    private readonly System.Collections.Generic.List<GameObject> spawnedAccessories =
-        new System.Collections.Generic.List<GameObject>();
+    private readonly System.Collections.Generic.List<GameObject> spawnedAccessories = new();
 
     private void Start()
     {
@@ -115,6 +114,9 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         isInIntermission = true;
 
+        // bruh no shit it doesnt clear accessories from the last round in intermission
+        ClearSpawnedAccessories();
+
         // Clear any pending role from the previous round so stale character data
         // does not bleed into the next round if the RPC arrived late or out of order.
         hasPendingRole = false;
@@ -152,7 +154,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     public void RPC_SyncIntermissionColor(string hex)
     {
         if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
-            hex = hex.Substring(1);
+            hex = hex[1..];
 
         localHex = hex;
 
@@ -232,8 +234,10 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             if (accTransform != null)
             {
                 GameObject accInstance = Instantiate(accessory.prefab, accTransform);
-                accInstance.transform.localPosition = accessory.localPosition;
-                accInstance.transform.localRotation = accessory.localRotation;
+                accInstance.transform.SetLocalPositionAndRotation(
+                    accessory.localPosition,
+                    accessory.localRotation
+                );
                 accInstance.tag = AccessoryTag;
 
                 // Inherit the layer from the parent bone so the accessory is visible
@@ -291,8 +295,10 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
             if (accTransform != null)
             {
                 GameObject accInstance = Instantiate(accessory.prefab, accTransform);
-                accInstance.transform.localPosition = accessory.localPosition;
-                accInstance.transform.localRotation = accessory.localRotation;
+                accInstance.transform.SetLocalPositionAndRotation(
+                    accessory.localPosition,
+                    accessory.localRotation
+                );
                 accInstance.tag = AccessoryTag;
                 SetLayerRecursive(accInstance, accTransform.gameObject.layer);
                 spawnedAccessories.Add(accInstance);
@@ -308,8 +314,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         Transform itemPoses = FindDeepChild(transform, "ItemPoses");
         if (itemPoses != null)
         {
-            InputArmController armController = itemPoses.GetComponent<InputArmController>();
-            if (armController != null)
+            if (itemPoses.TryGetComponent<InputArmController>(out var armController))
                 armController.enabled = true;
         }
     }
@@ -367,7 +372,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         if (!photonView.IsMine)
             return;
         if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
-            hex = hex.Substring(1);
+            hex = hex[1..];
 
         localHex = hex;
         ApplyIntermissionColor(hex);
@@ -384,7 +389,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     {
         // Strip # prefix if present — FromHex expects raw hex digits only
         if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
-            hex = hex.Substring(1);
+            hex = hex[1..];
 
         localHex = hex;
 
@@ -406,7 +411,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
     public void ForceApplyIntermissionColor(string hex)
     {
         if (!string.IsNullOrEmpty(hex) && hex[0] == '#')
-            hex = hex.Substring(1);
+            hex = hex[1..];
 
         localHex = hex;
         // Only apply visually if we are actually in intermission right now
@@ -427,8 +432,10 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 return;
             }
 
-            instanceMaterial = new Material(baseMat);
-            instanceMaterial.name = "Intermission_Mat_" + photonView.ViewID;
+            instanceMaterial = new Material(baseMat)
+            {
+                name = "Intermission_Mat_" + photonView.ViewID,
+            };
 
             SetMaterialsOnBones(instanceMaterial);
         }
