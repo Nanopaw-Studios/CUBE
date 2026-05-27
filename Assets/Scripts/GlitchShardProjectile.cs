@@ -28,7 +28,14 @@ public class GlitchShardProjectile : MonoBehaviourPun
         // Only the owning client should process outgoing hits.
         if (photonView.IsMine)
         {
-            collisionCallback.collisionEntered.AddListener(OnCollisionEntered);
+            if (collisionCallback != null)
+            {
+                collisionCallback.collisionEntered?.AddListener(OnCollisionEntered);
+            }
+            else
+            {
+                Debug.LogError("Missing CollisionCallback on GlitchShardProjectile!");
+            }
         }
     }
 
@@ -37,25 +44,33 @@ public class GlitchShardProjectile : MonoBehaviourPun
     /// </summary>
     private void OnCollisionEntered(Collision collision)
     {
-        if (hasHit) return;
+        if (hasHit)
+            return;
 
         // Walk up the hierarchy to find a PlayerHitboxManager on the target.
-        PlayerHitboxManager targetHitbox = collision.collider.GetComponentInParent<PlayerHitboxManager>();
-        if (targetHitbox == null) return;
+        PlayerHitboxManager targetHitbox =
+            collision.collider.GetComponentInParent<PlayerHitboxManager>();
+        if (targetHitbox == null)
+            return;
 
         // Never deal damage to the killer who threw the shard.
         PhotonView targetView = targetHitbox.photonView;
-        if (targetView == null || targetView.IsMine) return;
+        if (targetView == null || targetView.IsMine)
+            return;
 
         // Only damage survivors.
-        if (targetHitbox.basePlayer == null ||
-            targetHitbox.basePlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor) return;
+        if (
+            targetHitbox.basePlayer == null
+            || targetHitbox.basePlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor
+        )
+            return;
 
         hasHit = true;
 
         // Cache health before RPC so we can check for killing blow locally.
         BasePlayerStats targetStats = targetHitbox.GetComponent<BasePlayerStats>();
-        bool isKillingBlow = targetStats != null && targetStats.health - damage <= 0 && targetStats.health > 0;
+        bool isKillingBlow =
+            targetStats != null && targetStats.health - damage <= 0 && targetStats.health > 0;
 
         targetView.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, damage);
         Debug.Log($"[GlitchShardProjectile] Hit {targetView.Owner.NickName} for {damage} damage.");
@@ -85,6 +100,8 @@ public class GlitchShardProjectile : MonoBehaviourPun
     private void OnDisable()
     {
         if (collisionCallback != null)
-            collisionCallback.collisionEntered.RemoveListener(OnCollisionEntered);
+        {
+            collisionCallback.collisionEntered?.RemoveListener(OnCollisionEntered);
+        }
     }
 }

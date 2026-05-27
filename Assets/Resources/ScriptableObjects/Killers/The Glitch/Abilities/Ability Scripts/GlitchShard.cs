@@ -1,7 +1,11 @@
 using Photon.Pun;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "GlitchShard", menuName = "ScriptableObjects/Killer Abilities/GlitchShard", order = 1)]
+[CreateAssetMenu(
+    fileName = "GlitchShard",
+    menuName = "ScriptableObjects/Killer Abilities/GlitchShard",
+    order = 1
+)]
 public class GlitchShard : Ability
 {
     public Mesh cubeMesh;
@@ -23,26 +27,39 @@ public class GlitchShard : Ability
 
     public void ThrowShard()
     {
-        GameObject shard = PhotonNetwork.Instantiate("GlitchShard", Vector3.zero, Quaternion.identity);
+        GameObject shard = PhotonNetwork.Instantiate(
+            "GlitchShard",
+            Vector3.zero,
+            Quaternion.identity
+        );
 
-        // Add the auto-destroy component so the shard is cleaned up via
-        // PhotonNetwork.Destroy on all clients after its lifetime expires.
-        // Using plain Destroy() only removes it locally on the throwing client.
         PhotonAutoDestroy autoDestroy = shard.AddComponent<PhotonAutoDestroy>();
         autoDestroy.lifetime = shardLifetime;
 
-        // Wire up the damage component and forward the configured damage value.
-        CollisionCallback collisionCallback = shard.AddComponent<CollisionCallback>();
+        CollisionCallback collision = shard.AddComponent<CollisionCallback>();
+
         GlitchShardProjectile projectile = shard.AddComponent<GlitchShardProjectile>();
         projectile.damage = damage;
 
         Rigidbody rb = shard.AddComponent<Rigidbody>();
-        rb.sleepThreshold = 0f; // prevent the rigidbody from sleeping mid-flight
-
-        GameObject cam = playerObj.transform.Find("CameraHead").Find("Cam").Find("C").gameObject;
-
-        shard.transform.position = cam.transform.position + cam.transform.forward * 1.5f;
-        rb.AddForce(cam.transform.forward * force, ForceMode.Impulse);
+        rb.sleepThreshold = 0f;
         rb.useGravity = false;
+
+        Transform c = playerObj
+            .transform.Find("CameraHead")
+            ?.Find("Cam")
+            ?.Find("ShakePivot")
+            ?.Find("C");
+
+        if (c == null)
+        {
+            Debug.LogError("[GlitchShard] Camera transform not found!");
+            PhotonNetwork.Destroy(shard);
+            return;
+        }
+
+        shard.transform.position = c.position + c.forward * 1.5f;
+
+        rb.AddForce(c.forward * force, ForceMode.Impulse);
     }
 }
