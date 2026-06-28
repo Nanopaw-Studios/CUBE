@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using NUnit.Framework;
 using Photon.Pun;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
@@ -14,6 +16,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     public GameObject pauseMenu;
     public Button QuitButton;
     public LevelLoader loader;
+    public TMP_Text roomCodeText;
+
 
     public UnityEvent onPause;
     public UnityEvent onResume;
@@ -41,6 +45,15 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     {
         pauseMenuAnimator = GetComponent<Animator>();
         roundManager = FindFirstObjectByType<RoundManager>();
+
+        if(!PhotonNetwork.CurrentRoom.IsVisible) // we know its a private room
+        {
+            roomCodeText.text = $"Private Room | {PhotonNetwork.CurrentRoom.Name}";
+        }
+        else
+        {
+            roomCodeText.text = $"Public Room | {PhotonNetwork.CurrentRoom.Name}";
+        }
     }
 
     void Update()
@@ -125,5 +138,40 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     public override void OnLeftRoom()
     {
         loader.LoadLevel("Menu");
+    }
+
+    public void OnRoomCodeCopyClicked()
+    {
+        ClipBoard = PhotonNetwork.CurrentRoom.Name;
+    }
+
+    /// <summary>
+    /// Get or set the OS clipboard contents (plain text).
+    /// </summary>
+    public static string ClipBoard
+    {
+        get
+        {
+            try
+            {
+                return GUIUtility.systemCopyBuffer;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Clipboard get failed: {e.Message}");
+                return string.Empty;
+            }
+        }
+        set
+        {
+            try
+            {
+                GUIUtility.systemCopyBuffer = value;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Clipboard set failed: {e.Message}");
+            }
+        }
     }
 }
