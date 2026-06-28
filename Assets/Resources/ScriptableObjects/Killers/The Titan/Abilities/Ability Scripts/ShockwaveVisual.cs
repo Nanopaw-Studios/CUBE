@@ -18,7 +18,7 @@ public class ShockwaveVisual : MonoBehaviourPun
         // Start tiny
         transform.localScale = Vector3.zero;
 
-        Renderer renderer = GetComponentInChildren<Renderer>();
+        MeshRenderer renderer = GetComponentInChildren<MeshRenderer>();
         if (renderer != null)
         {
             // Use an instance so we don't modify the shared material
