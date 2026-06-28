@@ -28,6 +28,12 @@ public class PlayerTeleportHandler : MonoBehaviourPun
         pv = GetComponent<PhotonView>();
         rootRb = GetComponent<Rigidbody>();
 
+        if (rootRb != null)
+        {
+            rootRb.isKinematic = true;
+            rootRb.useGravity = false;
+        }
+
         if (rigRoot == null)
         {
             var found = transform.Find("RIG");
@@ -153,7 +159,11 @@ public class PlayerTeleportHandler : MonoBehaviourPun
             rb.isKinematic = false;
 
         if (rootRb != null)
-            rootRb.isKinematic = false;
+        {
+            rootRb.isKinematic = true;
+            rootRb.linearVelocity = Vector3.zero;
+            rootRb.angularVelocity = Vector3.zero;
+        }
 
         // ── Notify remotes to clear stale snapshots and re-snap ──
         if (TryGetComponent<RagdollNetwork>(out var ragdollNet))

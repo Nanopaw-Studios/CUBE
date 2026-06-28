@@ -1,7 +1,11 @@
 using Photon.Pun;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "WindSwipe", menuName = "ScriptableObjects/Killer Abilities/WindSwipe", order = 1)]
+[CreateAssetMenu(
+    fileName = "WindSwipe",
+    menuName = "ScriptableObjects/Killer Abilities/WindSwipe",
+    order = 1
+)]
 public class WindSwipe : Ability
 {
     [Tooltip("Damage dealt to a survivor on contact with the blade projectile.")]
@@ -21,10 +25,19 @@ public class WindSwipe : Ability
 
     private void LaunchBlade(BasePlayer player)
     {
-        GameObject cam = player.transform.Find("CameraHead").Find("Cam").Find("ShakePivot").Find("C").gameObject;
+        GameObject cam = player
+            .transform.Find("CameraHead")
+            .Find("Cam")
+            .Find("ShakePivot")
+            .Find("C")
+            .gameObject;
         Vector3 spawnPos = cam.transform.position + cam.transform.forward * 1.5f;
 
-        GameObject blade = PhotonNetwork.Instantiate("WindSwipePrefab", spawnPos, cam.transform.rotation);
+        GameObject blade = PhotonNetwork.Instantiate(
+            "WindSwipePrefab",
+            spawnPos,
+            cam.transform.rotation
+        );
 
         WindSwipeProjectile projectile = blade.AddComponent<WindSwipeProjectile>();
         projectile.damage = damage;

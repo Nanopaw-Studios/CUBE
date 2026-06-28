@@ -23,6 +23,11 @@ public class ServerManager : MonoBehaviourPunCallbacks
         foreach (BasePlayer player in allBasePlayers)
         {
             player.GetComponentInChildren<InputArmController>().enabled = false;
+
+            PhotonView pv = player.GetComponent<PhotonView>();
+
+            PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "ResetToDefaultStats");
+            pv.RPC("ResetToDefaultStats", RpcTarget.AllBuffered);
         }
     }
 

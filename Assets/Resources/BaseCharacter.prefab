@@ -5438,7 +5438,6 @@ GameObject:
   - component: {fileID: 4538152374127744256}
   - component: {fileID: 8031120553231613376}
   - component: {fileID: 7952985158064879536}
-  - component: {fileID: 4415015336772839046}
   - component: {fileID: 6725146945368081108}
   m_Layer: 3
   m_Name: BaseCharacter
@@ -5774,20 +5773,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38b1fbda6b8d547498053ef047d17cc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CubeCoinRewardManager
---- !u!114 &4415015336772839046
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4360496906041607540}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 997f5e19edfefaf4a9cbda5dbd787ca4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerSizer
-  rigObj: {fileID: 5011767928945711400}
-  roundManager: {fileID: 0}
 --- !u!54 &6725146945368081108
 Rigidbody:
   m_ObjectHideFlags: 0

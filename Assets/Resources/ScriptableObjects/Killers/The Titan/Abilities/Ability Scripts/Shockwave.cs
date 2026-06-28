@@ -1,7 +1,11 @@
 using Photon.Pun;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Shockwave", menuName = "ScriptableObjects/Killer Abilities/Shockwave", order = 1)]
+[CreateAssetMenu(
+    fileName = "Shockwave",
+    menuName = "ScriptableObjects/Killer Abilities/Shockwave",
+    order = 1
+)]
 public class Shockwave : Ability
 {
     [Tooltip("Damage dealt to any survivor touching the shockwave.")]

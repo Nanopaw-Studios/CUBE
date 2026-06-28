@@ -48,6 +48,22 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         );
     }
 
+    [PunRPC]
+    public void ResetToDefaultStats()
+    {
+        health = 100;
+        maxHealth = 100;
+
+        stamina = 100;
+        maxStamina = 100;
+
+        speed = 5;
+
+        MovementSC movement = GetComponentInChildren<MovementSC>();
+        if (movement != null)
+            movement.Force = speed;
+    }
+
     /// <summary>Maximum health for this character, set from the ScriptableObject at round start.</summary>
     public int maxHealth = 100;
 
