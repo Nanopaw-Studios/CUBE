@@ -6277,6 +6277,11 @@ GameObject:
   - component: {fileID: 5396177211074206523}
   - component: {fileID: 8651497848301310979}
   - component: {fileID: 6251008360216944659}
+  - component: {fileID: 8309761832312694963}
+  - component: {fileID: 2724477909185487974}
+  - component: {fileID: 6193652364451864959}
+  - component: {fileID: 5379672255127709454}
+  - component: {fileID: 4168904473531781210}
   m_Layer: 3
   m_Name: RIG
   m_TagString: Player
@@ -6364,7 +6369,8 @@ MonoBehaviour:
   movement: {fileID: 0}
   characterinput: {fileID: 0}
   jumping: {fileID: 0}
-  stepHandler: {fileID: 0}
+  stepHandler: {fileID: 8582524395920794549}
+  controlBlender: {fileID: 8309761832312694963}
   Ground: {x: 0, y: 0, z: 0}
   Grounded: 0
   Ragdolling: 0
@@ -6515,7 +6521,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2108f7134f73dc04088402623afd9739, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gravity: 65
+  gravity: 0.81
+  fallMultiplier: 5
 --- !u!114 &5941201523942827826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6528,41 +6535,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f524f0bdab37eab40862efb05b2a87d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Force: 125
+  Force: 50
   rigs:
   - part: {fileID: 5347560816180099550}
-    multiplier: 10
+    multiplier: 2
   - part: {fileID: 5467880568601073071}
-    multiplier: 10
+    multiplier: 2
   curve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 1.5722103
-      outSlope: 1.5722103
+      inSlope: 1
+      outSlope: 1
       tangentMode: 34
       weightedMode: 0
       inWeight: 0
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.56531703
-      value: 0.8887973
-      inSlope: 0.529254
-      outSlope: 0.529254
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.27149972
+      outWeight: 0
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 0.25582486
-      outSlope: 0.25582486
+      inSlope: 1
+      outSlope: 1
       tangentMode: 34
       weightedMode: 0
-      inWeight: 0.33333334
+      inWeight: 0
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -6669,6 +6667,130 @@ MonoBehaviour:
   stats: {fileID: 6258506952167929150}
   scriptsToDisableOnDeath:
   - {fileID: 1040637724107135775}
+--- !u!114 &8309761832312694963
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5011767928945711400}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2da1ca1033525474bb270cb57b93acc0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::PhysicsChar.Stability.ActiveControlBlender
+  rig: {fileID: 55093176602497989}
+  evaluator: {fileID: 2724477909185487974}
+  dropSpeed: 12
+  recoverSpeed: 10
+  smoothedConfidence: 1
+  activePose: 0
+--- !u!114 &2724477909185487974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5011767928945711400}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2bad8f85e1707c4d9a7d5f6371ea5d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::PhysicsChar.Stability.ControlStateEvaluator
+  rig: {fileID: 55093176602497989}
+  supportDetector: {fileID: 6193652364451864959}
+  balanceDetector: {fileID: 5379672255127709454}
+  stabilityAnalyzer: {fileID: 4168904473531781210}
+  leanWeight: 1
+  trappedFootWeight: 1.2
+  angularVelocityWeight: 1
+  centerOfMassWeight: 0.8
+  footSupportWeight: 0.8
+  motionMismatchWeight: 0.6
+  balancedThreshold: 0.8
+  uncontrolledThreshold: 0.25
+  rawConfidence: 1
+  currentPose: 0
+  standingLiftMultiplier: 1
+  rotationTorqueMultiplier: 1
+  movementForceMultiplier: 1
+--- !u!114 &6193652364451864959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5011767928945711400}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8d9cbd78d09d924285befd959cbd6ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::PhysicsChar.Stability.SupportDetector
+  rig: {fileID: 55093176602497989}
+  supportLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  pelvisRayDistance: 0.45
+  sittingHeightThreshold: 0.55
+  isPelvisSupported: 0
+  pelvisGroundPoint: {x: 0, y: 0, z: 0}
+  pelvisGroundNormal: {x: 0, y: 1, z: 0}
+  pelvisGroundDistance: 0
+  groundedFeetCount: 0
+  footSupportRatio: 0
+  averageFeetPosition: {x: 0, y: 0, z: 0}
+  supportCenter: {x: 0, y: 0, z: 0}
+--- !u!114 &5379672255127709454
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5011767928945711400}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b80b753183f81545b10cf9415c13a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::PhysicsChar.Stability.BalanceDetector
+  rig: {fileID: 55093176602497989}
+  supportDetector: {fileID: 6193652364451864959}
+  minLeanAngle: 15
+  maxLeanAngle: 70
+  minAngularVelocity: 2.5
+  maxAngularVelocity: 12
+  minCoMOffset: 0.15
+  maxCoMOffset: 0.75
+  leanConfidence: 1
+  angVelConfidence: 1
+  comConfidence: 1
+  torsoAngle: 0
+  currentAngularVelocity: 0
+  currentCoMOffset: 0
+  worldCoM: {x: 0, y: 0, z: 0}
+--- !u!114 &4168904473531781210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5011767928945711400}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dff11f5eef7cf0442a75c410373295d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::PhysicsChar.Stability.StabilityAnalyzer
+  rig: {fileID: 55093176602497989}
+  supportDetector: {fileID: 6193652364451864959}
+  normalFootOffset: 0.35
+  maxTrappedFootOffset: 0.85
+  minInputThreshold: 0.15
+  mismatchPenaltyFactor: 0.7
+  trappedFootConfidence: 1
+  motionMismatchConfidence: 1
+  impactConfidence: 1
+  currentFootOffset: 0
+  currentVelocityDot: 1
+  currentHipVelocity: {x: 0, y: 0, z: 0}
 --- !u!1 &5090083642225568710
 GameObject:
   m_ObjectHideFlags: 0

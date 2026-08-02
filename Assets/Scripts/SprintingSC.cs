@@ -253,4 +253,38 @@ public class SprintingSC : MonoBehaviour
 
         regenStartTime = Time.time + regenDelayOnStop;
     }
+
+    public void ResetSprintState()
+    {
+        isSprinting = false;
+
+        if (staminaDrainCoroutine != null)
+        {
+            StopCoroutine(staminaDrainCoroutine);
+            staminaDrainCoroutine = null;
+        }
+
+        if (staminaRegenCoroutine != null)
+        {
+            StopCoroutine(staminaRegenCoroutine);
+            staminaRegenCoroutine = null;
+        }
+
+        drainAccumulator = 0f;
+        regenAccumulator = 0f;
+        regenStartTime = -1f;
+
+        float defaultSpeed = playerStats != null ? playerStats.speed : 35f;
+        preSprintForce = defaultSpeed;
+
+        if (movement != null)
+        {
+            movement.Force = defaultSpeed;
+        }
+
+        if (data != null)
+        {
+            data.Currentstate = StateType.Walk;
+        }
+    }
 }

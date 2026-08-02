@@ -40,11 +40,27 @@ public class PlayerSizer : MonoBehaviourPun
 
     private void OnRoundStart()
     {
-        rigObj.transform.localScale = new Vector3(
-            player.equippedKiller.Size,
-            player.equippedKiller.Size,
-            player.equippedKiller.Size
-        );
+        if (player == null)
+        {
+            var camRefs = Camera.main?.GetComponent<PlayerCameraReferences>();
+            if (camRefs != null && camRefs.GetPlayer() != null)
+                player = camRefs.GetPlayer().GetComponent<BasePlayer>();
+        }
+
+        if (player != null && player.GetPlayerType() == BasePlayer.PlayerType.Killer && player.equippedKiller != null)
+        {
+            if (rigObj != null)
+                rigObj.transform.localScale = new Vector3(
+                    player.equippedKiller.Size,
+                    player.equippedKiller.Size,
+                    player.equippedKiller.Size
+                );
+        }
+        else
+        {
+            if (rigObj != null)
+                rigObj.transform.localScale = Vector3.one;
+        }
     }
 
     private void OnDisable()

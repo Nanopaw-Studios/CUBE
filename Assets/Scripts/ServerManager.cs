@@ -20,13 +20,32 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
     private void IntermissionStart()
     {
+        // Only Master Client controls resetting round state and sending buffered RPCs on intermission start
+        if (!PhotonNetwork.IsMasterClient)
+            return;
+
+        CachePlayers();
+
         foreach (BasePlayer player in allBasePlayers)
         {
-            player.GetComponentInChildren<InputArmController>().enabled = false;
+            if (player == null)
+                continue;
+
+            var armController = player.GetComponentInChildren<InputArmController>();
+            if (armController != null)
+                armController.enabled = false;
 
             PhotonView pv = player.GetComponent<PhotonView>();
+            if (pv == null)
+                continue;
 
+            // Clean up old buffered RPCs so stale roles, stats, and character skins don't bleed into intermission or future rounds
+            PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "ApplyRoleAndCharacter");
+            PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "ApplyCharacterStats");
+            PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "SetPlayerType");
             PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "ResetToDefaultStats");
+
+            pv.RPC("SetPlayerType", RpcTarget.AllBuffered, BasePlayer.PlayerType.None);
             pv.RPC("ResetToDefaultStats", RpcTarget.AllBuffered);
         }
     }
@@ -206,6 +225,7 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
             // 3) Apply role + character skin to every client via PlayerCustomizer
             PhotonView customizerPV = customizer.photonView;
+            PhotonNetwork.RemoveBufferedRPCs(customizerPV.ViewID, "ApplyRoleAndCharacter");
             customizerPV.RPC("ApplyRoleAndCharacter", RpcTarget.AllBuffered, type, characterId);
 
             // 4) Apply stats from the ScriptableObject to BasePlayerStats on this player's

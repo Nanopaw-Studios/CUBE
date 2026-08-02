@@ -97,4 +97,33 @@ public class DeathSC : MonoBehaviour
         // allow death to happen again
         died = false;
     }
+
+    public void ResetDeathState()
+    {
+        StopAllCoroutines();
+        died = false;
+
+        if (standing != null && standing.rigToLift != null)
+        {
+            foreach (RigWithMultiplier rig in standing.rigToLift)
+            {
+                if (rig != null)
+                    rig.multiplier = 1;
+            }
+        }
+
+        if (rig != null)
+        {
+            rig.control = 1;
+        }
+
+        if (scriptsToDisableOnDeath != null)
+        {
+            foreach (MonoBehaviour mb in scriptsToDisableOnDeath)
+            {
+                if (mb != null)
+                    mb.enabled = true;
+            }
+        }
+    }
 }

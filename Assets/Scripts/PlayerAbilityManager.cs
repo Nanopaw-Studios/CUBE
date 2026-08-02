@@ -113,6 +113,19 @@ public class PlayerAbilityManager : MonoBehaviour
         if (passiveLoop != null)
             StopCoroutine(passiveLoop);
         passiveLoop = null;
+
+        UnsubscribeAllAbilityCallbacks();
+        activeMoveset.Clear();
+        abilityInputs.Clear();
+        cooldownTimers.Clear();
+        cooldownTexts.Clear();
+        abilitySliders.Clear();
+
+        if (abilitiesParent != null)
+        {
+            foreach (Transform child in abilitiesParent)
+                Destroy(child.gameObject);
+        }
     }
 
     private void OnRoundStart()

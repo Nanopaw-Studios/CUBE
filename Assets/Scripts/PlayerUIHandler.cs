@@ -36,6 +36,11 @@ public class PlayerUIHandler : MonoBehaviour
     private float smoothStamina;
     public float lerpSpeed = 5f;
 
+    [Header("Damage Vignette Settings")]
+    public float flashFadeSpeed = 3f;
+    private float currentFlashAlpha = 0f;
+    private BasePlayerStats subscribedPlayerStats;
+
     private void Start()
     {
         playerStats = Camera
@@ -46,9 +51,14 @@ public class PlayerUIHandler : MonoBehaviour
             .main.GetComponent<PlayerCameraReferences>()
             .GetPlayer()
             .GetComponent<BasePlayer>();
+
         if (playerStats == null)
         {
             Debug.LogError("BasePlayerStats component not found on the player!");
+        }
+        else
+        {
+            BindPlayerStats(playerStats);
         }
 
         // Keep the money UI in sync whenever CC changes (add, spend, or refresh).
@@ -61,8 +71,36 @@ public class PlayerUIHandler : MonoBehaviour
         }
     }
 
+    private void BindPlayerStats(BasePlayerStats stats)
+    {
+        if (subscribedPlayerStats == stats)
+            return;
+
+        if (subscribedPlayerStats != null)
+        {
+            subscribedPlayerStats.OnDamageTaken -= OnLocalPlayerDamageTaken;
+        }
+
+        subscribedPlayerStats = stats;
+
+        if (subscribedPlayerStats != null)
+        {
+            subscribedPlayerStats.OnDamageTaken += OnLocalPlayerDamageTaken;
+        }
+    }
+
+    private void OnLocalPlayerDamageTaken(int damage)
+    {
+        // Instant red flash on hit
+        currentFlashAlpha = 0.75f;
+    }
+
     private void OnDestroy()
     {
+        if (subscribedPlayerStats != null)
+        {
+            subscribedPlayerStats.OnDamageTaken -= OnLocalPlayerDamageTaken;
+        }
         if (PlayfabManager.Instance != null)
             PlayfabManager.Instance.OnCubeCoinsChanged -= OnCubeCoinsChanged;
     }
@@ -80,6 +118,10 @@ public class PlayerUIHandler : MonoBehaviour
             var player = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer();
             playerStats = player.GetComponent<BasePlayerStats>();
             localBasePlayer = player.GetComponent<BasePlayer>();
+            if (playerStats != null)
+            {
+                BindPlayerStats(playerStats);
+            }
         }
 
         if (playerStats != null)
@@ -97,16 +139,46 @@ public class PlayerUIHandler : MonoBehaviour
                 if (healthText != null)
                     healthText.GetComponent<TMP_Text>().text =
                         $"{playerStats.health}/{playerStats.maxHealth}";
+            }
 
-                if (smoothHealth <= 50)
+            if (damageVingette != null)
+            {
+                // Decay hit-flash alpha over time
+                if (currentFlashAlpha > 0f)
+                {
+                    currentFlashAlpha = Mathf.MoveTowards(
+                        currentFlashAlpha,
+                        0f,
+                        Time.deltaTime * flashFadeSpeed
+                    );
+                }
+
+                // Calculate persistent low-health vignette alpha when health <= 50% maxHealth
+                float lowHealthAlpha = 0f;
+                if (playerStats.maxHealth > 0)
+                {
+                    float healthRatio = smoothHealth / playerStats.maxHealth;
+                    if (healthRatio <= 0.5f)
+                    {
+                        // Smoothly scale low health alpha from 0 at 50% HP down to 0.7 at 0 HP
+                        lowHealthAlpha = (0.5f - healthRatio) / 0.5f * 0.7f;
+                    }
+                }
+
+                float finalAlpha = Mathf.Clamp01(Mathf.Max(currentFlashAlpha, lowHealthAlpha));
+                if (finalAlpha > 0.001f)
                 {
                     damageVingette.gameObject.SetActive(true);
+                    Color c = damageVingette.color;
+                    c.a = finalAlpha;
+                    damageVingette.color = c;
                 }
                 else
                 {
                     damageVingette.gameObject.SetActive(false);
                 }
             }
+
             if (staminaBar != null)
             {
                 Slider staminaSlider = staminaBar.GetComponent<Slider>();

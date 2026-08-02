@@ -16,6 +16,7 @@ public class Rotation_MM : MonoBehaviour
     {
         if (data == null) return;
         Quaternion targetQuaternion = Quaternion.Euler(TargetRotation);
+        float torqueMult = (data.controlBlender != null) ? data.controlBlender.RotationTorqueMultiplier : 1.0f;
 
         for (int i = 0; i < rigs.Length; i++)
         {
@@ -28,13 +29,12 @@ public class Rotation_MM : MonoBehaviour
             float torqueMagnitude;
             neededRotation.ToAngleAxis(out torqueMagnitude, out torqueDirection);
 
-
             if (torqueMagnitude > 180f)
                 torqueMagnitude -= 360f;
 
             Vector3 torqueToApply = torqueDirection * (torqueMagnitude * Mathf.Deg2Rad);
 
-            rigs[i].part.AddTorque(torqueToApply * data.control * torque * rigs[i].multiplier,
+            rigs[i].part.AddTorque(torqueToApply * data.control * torqueMult * torque * rigs[i].multiplier,
                                   ForceMode.Acceleration);
         }
     }

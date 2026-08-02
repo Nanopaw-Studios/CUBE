@@ -79,4 +79,22 @@ public class StatusEffectReceiver : MonoBehaviourPun
                 : abilityManager.GetBaseCooldown(0)
         );
     }
+
+    public void ClearAllEffects()
+    {
+        stacks.Clear();
+        intensity.Clear();
+
+        SetUnstablePresence(false, 0f);
+
+        GameObject canvas = GameObject.Find("Canvas");
+        if (canvas != null)
+        {
+            PlayerAbilityManager abilityManager = canvas.GetComponent<PlayerAbilityManager>();
+            if (abilityManager != null)
+            {
+                abilityManager.ModifyAbilityCooldown(0, abilityManager.GetBaseCooldown(0));
+            }
+        }
+    }
 }

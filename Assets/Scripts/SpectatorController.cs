@@ -108,6 +108,36 @@ public class SpectatorController : MonoBehaviour
         SetSpectateUIVisible(false);
     }
 
+    private void OnEnable()
+    {
+        if (roundManager == null)
+        {
+            var go = GameObject.Find("Multiplayer");
+            roundManager = go != null ? go.GetComponent<RoundManager>() : FindFirstObjectByType<RoundManager>();
+        }
+
+        if (roundManager != null)
+        {
+            roundManager.OnIntermissionStart += OnIntermissionStart;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (roundManager != null)
+        {
+            roundManager.OnIntermissionStart -= OnIntermissionStart;
+        }
+    }
+
+    private void OnIntermissionStart()
+    {
+        if (isSpectating)
+        {
+            EndSpectating();
+        }
+    }
+
     private void OnDestroy()
     {
         UnbindInputActions();

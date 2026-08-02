@@ -121,6 +121,7 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         // does not bleed into the next round if the RPC arrived late or out of order.
         hasPendingRole = false;
         pendingCharacterId = null;
+        pendingPlayerType = BasePlayer.PlayerType.None;
 
         StartCoroutine(ApplyIntermissionNextFrame());
     }
@@ -271,6 +272,16 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 Destroy(accessory);
         }
         spawnedAccessories.Clear();
+
+        // Recursively find and destroy any leftover GameObjects tagged "SpawnedAccessory" on child bones
+        Transform[] allTransforms = GetComponentsInChildren<Transform>(true);
+        foreach (Transform t in allTransforms)
+        {
+            if (t != null && t.CompareTag("SpawnedAccessory"))
+            {
+                Destroy(t.gameObject);
+            }
+        }
     }
 
     private void ApplyKillerCustomisation(string id)

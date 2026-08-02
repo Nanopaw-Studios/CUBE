@@ -47,6 +47,7 @@ public class StandingSC : MonoBehaviour
 
     void LiftRigs()
     {
+        float liftMult = (rig != null && rig.controlBlender != null) ? rig.controlBlender.StandingLiftMultiplier : 1.0f;
         foreach (RigWithMultiplier rigw in rigToLift)
         {
             if (rig.Grounded)
@@ -54,7 +55,7 @@ public class StandingSC : MonoBehaviour
                 float distance = rig.CalculateDistanceFromGround();
                 if (rig.Ground != Vector3.zero)
                 {
-                    rigw.part.AddForce(Vector3.up * rig.control * 100 * rigw.multiplier * liftCurve.Evaluate(distance / base.transform.root.localScale.x + heightOffset), ForceMode.Acceleration);
+                    rigw.part.AddForce(Vector3.up * rig.control * liftMult * 100 * rigw.multiplier * liftCurve.Evaluate(distance / base.transform.root.localScale.x + heightOffset), ForceMode.Acceleration);
                 }
             }
         }

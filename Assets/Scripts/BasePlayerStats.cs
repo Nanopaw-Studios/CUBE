@@ -11,7 +11,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     public int stamina = 100;
 
     // speed: affects movement speed
-    public int speed = 5;
+    public int speed = 35;
 
     // malice: your chance of being killer, higher is more chance, lower is less chance
     public int malice = 1;
@@ -35,7 +35,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         maxHealth = health;
         maxStamina = characterStamina > 0 ? characterStamina : 100;
         stamina = maxStamina;
-        speed = characterSpeed > 0 ? (int)characterSpeed : 5;
+        speed = characterSpeed > 0 ? (int)characterSpeed : 35;
 
         // Push base speed into MovementSC so walk force matches the character's ScriptableObject speed.
         // MovementSC.Force acts as the "current speed" and can be modified at runtime by abilities/effects.
@@ -57,23 +57,96 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         stamina = 100;
         maxStamina = 100;
 
-        speed = 5;
+        speed = 35;
 
+        // 1. Reset Movement
         MovementSC movement = GetComponentInChildren<MovementSC>();
         if (movement != null)
+        {
+            movement.enabled = true;
             movement.Force = speed;
+        }
+
+        // 2. Reset Sprinting
+        SprintingSC sprinting = GetComponentInChildren<SprintingSC>();
+        if (sprinting != null)
+        {
+            sprinting.ResetSprintState();
+        }
+
+        // 3. Destroy dynamic ability runner components attached to player
+        PassiveRunner[] passiveRunners = GetComponents<PassiveRunner>();
+        foreach (var runner in passiveRunners)
+        {
+            if (runner != null)
+                Destroy(runner);
+        }
+        PassiveRunner[] passiveRunnersInChild = GetComponentsInChildren<PassiveRunner>();
+        foreach (var runner in passiveRunnersInChild)
+        {
+            if (runner != null)
+                Destroy(runner);
+        }
+
+        MonoBehaviour[] allComponents = GetComponents<MonoBehaviour>();
+        foreach (var mb in allComponents)
+        {
+            if (mb is CompileBoostRunner || mb is MusicBoostResetter)
+            {
+                Destroy(mb);
+            }
+        }
+
+        // 4. Clear status effects
+        StatusEffectReceiver statusEffects = GetComponent<StatusEffectReceiver>();
+        if (statusEffects != null)
+        {
+            statusEffects.ClearAllEffects();
+        }
+
+        // 5. Reset death state and rig control
+        DeathSC death = GetComponent<DeathSC>();
+        if (death != null)
+        {
+            death.ResetDeathState();
+        }
+
+        Rig rig = GetComponent<Rig>();
+        if (rig != null)
+        {
+            rig.control = 1;
+        }
+
+        // 6. Reset role type
+        BasePlayer basePlayer = GetComponent<BasePlayer>();
+        if (basePlayer != null)
+        {
+            basePlayer.SetPlayerType(BasePlayer.PlayerType.None);
+        }
     }
 
     /// <summary>Maximum health for this character, set from the ScriptableObject at round start.</summary>
     public int maxHealth = 100;
 
+    /// <summary>Fired on the local player client when taking damage.</summary>
+    public event System.Action<int> OnDamageTaken;
+
     [PunRPC]
     public void TakeDamage(int damage)
     {
-        health -= damage;
-        CameraShaker.Instance.ShakeOnce(1.4f, 4f, 0f, 0.7f);
+        int actualDamage = Mathf.Max(0, damage);
+        health -= actualDamage;
         if (health < 0)
             health = 0;
+
+        if (photonView.IsMine)
+        {
+            if (CameraShaker.Instance != null)
+            {
+                CameraShaker.Instance.ShakeOnce(1.4f, 4f, 0f, 0.7f);
+            }
+            OnDamageTaken?.Invoke(actualDamage);
+        }
     }
 
     [PunRPC]

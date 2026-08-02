@@ -15,16 +15,23 @@ public class MovementSC : MonoBehaviour
     {
         float speedMultiplier = 1f;
 
-        Vector3 camForward = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
-        
-        if (Vector3.Dot(move.normalized, camForward) < 0)
+        if (Camera.main != null)
         {
-            speedMultiplier = BackwardsSpeedMultiplier;
+            Vector3 camForward = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
+            if (Vector3.Dot(move.normalized, camForward) < 0)
+            {
+                speedMultiplier = BackwardsSpeedMultiplier;
+            }
         }
+
+        float moveMult = (data != null && data.controlBlender != null) ? data.controlBlender.MovementForceMultiplier : 1.0f;
 
         foreach (Rigidbody rb in data.allRigs)
         {
-            rb.AddForce(move * Force * data.control * speedMultiplier, ForceMode.Acceleration);
+            if (rb != null)
+            {
+                rb.AddForce(move * Force * data.control * moveMult * speedMultiplier, ForceMode.Acceleration);
+            }
         }
     }
 

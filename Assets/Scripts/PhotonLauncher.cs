@@ -20,8 +20,12 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
     public MapData[] maps;
     public GameObject currentMap;
 
+    public static PhotonLauncher Instance { get; private set; }
+
     private void Awake()
     {
+        Instance = this;
+
         // subscribe to round manager events if assigned
         if (roundManager != null)
         {
@@ -392,5 +396,51 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         // When a round starts the player leaves intermission,
         // so the next OnIntermissionStart (round end) should teleport them.
         isAlreadyAtIntermission = false;
+    }
+
+    /// <summary>
+    /// Gets a random spawn point suitable for the given player role.
+    /// </summary>
+    public Transform GetRandomSpawnForRole(BasePlayer.PlayerType type)
+    {
+        if (type == BasePlayer.PlayerType.Killer && killerSpawns != null && killerSpawns.Count > 0)
+        {
+            return killerSpawns[Random.Range(0, killerSpawns.Count)];
+        }
+        else if (type == BasePlayer.PlayerType.Survivor && survivorSpawns != null && survivorSpawns.Count > 0)
+        {
+            return survivorSpawns[Random.Range(0, survivorSpawns.Count)];
+        }
+
+        // Fallback if role specific spawn not available
+        if (survivorSpawns != null && survivorSpawns.Count > 0)
+            return survivorSpawns[Random.Range(0, survivorSpawns.Count)];
+        if (killerSpawns != null && killerSpawns.Count > 0)
+            return killerSpawns[Random.Range(0, killerSpawns.Count)];
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the current synced intermission spawn position and rotation.
+    /// </summary>
+    public void GetIntermissionSpawn(out Vector3 position, out Quaternion rotation)
+    {
+        if (roundManager != null && roundManager.SyncedIntermissionSpawnPos != Vector3.zero)
+        {
+            position = roundManager.SyncedIntermissionSpawnPos;
+            rotation = roundManager.SyncedIntermissionSpawnRot;
+            return;
+        }
+
+        if (intermissionSpawn != null)
+        {
+            position = intermissionSpawn.position;
+            rotation = intermissionSpawn.rotation;
+            return;
+        }
+
+        position = transform.position;
+        rotation = transform.rotation;
     }
 }

@@ -31,6 +31,7 @@ public class Rig : MonoBehaviour
     public CharacterInput characterinput;
     public JumpingSC jumping;
     public StepHandler stepHandler;
+    public PhysicsChar.Stability.ActiveControlBlender controlBlender;
 
     public Vector3 Ground = new Vector3();
     public bool Grounded;
@@ -43,6 +44,12 @@ public class Rig : MonoBehaviour
         characterinput = GetComponent<CharacterInput>();
         jumping = GetComponent<JumpingSC>();
         stepHandler = GetComponent<StepHandler>();
+        controlBlender = GetComponent<PhysicsChar.Stability.ActiveControlBlender>();
+
+        if (controlBlender == null)
+        {
+            controlBlender = gameObject.AddComponent<PhysicsChar.Stability.ActiveControlBlender>();
+        }
     }
 
     
