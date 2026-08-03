@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a69f99be8a983c45b8a3bd500db792b, type: 3}
+  m_Name: It's not a plane, it's a cube
+  m_EditorClassIdentifier: Assembly-CSharp::CUBE.Achievements.AchievementDefinition
+  GuidString: 16a4a7b2770849f385dd688944b89b15
+  AchievementId: cube_airtime_200
+  Version: 1
+  DisplayName: It's not a plane, it's a cube
+  Description: Gain 200m airtime in one match
+  Icon: {fileID: 0}
+  IsHidden: 0
+  Category: 1
+  Type: 1
+  Mode: 0
+  RelevantEvents: 2f010000
+  TargetValue: 200
+  LinkedStat: 702
+  LinkedStatScope: 1
+  SteamId: 
+  XboxId: 
+  PlayStationId: 
+  EpicId: 
+  PlatformMappingAssetOverride: {fileID: 0}
+  InlineRequirement:
+    rid: -2
+  RequirementAssetOverride: {fileID: 0}
+  InlineRewards: []
+  IsRepeatable: 0
+  IsDeveloperOnly: 0
+  EnableDebugLog: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }

@@ -28,6 +28,9 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
     public int CachedCC { get; private set; }
     public event Action<int> OnCubeCoinsChanged;
 
+    public bool IsLoggedIn { get; private set; }
+    public event Action OnLoginSuccessEvent;
+
     string PlayFabId;
     static string displayName;
 
@@ -163,6 +166,9 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
         GetColorFromData();
         PhotonAuth(result.PlayFabId);
+
+        IsLoggedIn = true;
+        OnLoginSuccessEvent?.Invoke();
 
         // If UI already exists, pull CC immediately.
         // If not, TryFindMoneyText() will eventually find it and call RefreshCubeCoins().

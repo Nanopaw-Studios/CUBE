@@ -37,11 +37,32 @@ namespace CUBE.Achievements
             Initialize();
         }
 
+        private float _secondAccumulator;
+
+        private void Update()
+        {
+            _secondAccumulator += Time.unscaledDeltaTime;
+            if (_secondAccumulator >= 1.0f)
+            {
+                float elapsedSeconds = Mathf.Floor(_secondAccumulator);
+                _secondAccumulator -= elapsedSeconds;
+
+                float currentSeconds = GetStat(StatId.TimePlayedSeconds, StatScope.Lifetime) + elapsedSeconds;
+                _lifetimeStats[StatId.TimePlayedSeconds] = currentSeconds;
+                _lifetimeStats[StatId.HoursPlayed] = currentSeconds / 3600.0f;
+                _dirty = true;
+            }
+        }
+
         private void OnDestroy()
         {
             if (Instance == this)
             {
                 GameplayEventBus.OnAnyGameplayEvent -= OnGameplayEvent;
+                if (PlayfabManager.Instance != null)
+                {
+                    PlayfabManager.Instance.OnLoginSuccessEvent -= OnPlayFabLoginSuccess;
+                }
                 if (_dirty) SaveLifetimeStats();
                 Instance = null;
             }
@@ -57,6 +78,42 @@ namespace CUBE.Achievements
                 _lifetimeStats[entry.Key] = entry.Value;
 
             GameplayEventBus.OnAnyGameplayEvent += OnGameplayEvent;
+
+            if (PlayfabManager.Instance != null)
+            {
+                PlayfabManager.Instance.OnLoginSuccessEvent += OnPlayFabLoginSuccess;
+                if (PlayfabManager.Instance.IsLoggedIn)
+                {
+                    OnPlayFabLoginSuccess();
+                }
+            }
+        }
+
+        private void OnPlayFabLoginSuccess()
+        {
+            _playerId = PlayfabManager.GetPlayerName() ?? SystemInfo.deviceUniqueIdentifier;
+            PlayFabAchievementSync.LoadStatisticsFromPlayFab(_playerId, cloudData =>
+            {
+                if (cloudData == null) return;
+                _saveData = PlayFabAchievementSync.MergeStatistics(_saveData, cloudData, _playerId);
+
+                foreach (var entry in _saveData.ToDictionary())
+                {
+                    StatId id = entry.Key;
+                    float value = entry.Value;
+                    _lifetimeStats.TryGetValue(id, out float oldVal);
+                    if (value != oldVal)
+                    {
+                        _lifetimeStats[id] = value;
+                        OnStatChanged?.Invoke(id, StatScope.Lifetime, value);
+                        GameplayEventBus.PublishStatChanged(new StatChangedEvent(id, StatScope.Lifetime, value, value - oldVal));
+                    }
+                }
+
+                _dirty = true;
+                SaveLifetimeStats();
+                Debug.Log($"[StatisticsService] PlayFab statistics cloud sync complete for '{_playerId}'.");
+            });
         }
 
         public float GetStat(StatId id, StatScope scope)
@@ -99,6 +156,7 @@ namespace CUBE.Achievements
             if (_saveData == null) return;
             _saveData.FromDictionary(_lifetimeStats);
             StatisticsSaveManager.Save(_playerId, _saveData);
+            PlayFabAchievementSync.SaveStatisticsToPlayFab(_saveData);
             _dirty = false;
         }
 
@@ -115,6 +173,14 @@ namespace CUBE.Achievements
 
             switch (evt.Type)
             {
+                case GameplayEventType.PlayerDied:
+                    IncrementStat(StatId.Deaths, StatScope.Lifetime, 1f);
+                    IncrementStat(StatId.DeathsThisSession, StatScope.Session, 1f);
+                    break;
+                case GameplayEventType.PlayerKilledEnemy:
+                    IncrementStat(StatId.PlayersEliminated, StatScope.Lifetime, 1f);
+                    IncrementStat(StatId.EliminationsThisRound, StatScope.Session, 1f);
+                    break;
                 case GameplayEventType.PlayerWonRound:
                     IncrementStat(StatId.LifetimeWins, StatScope.Lifetime, 1f);
                     break;
@@ -142,6 +208,7 @@ namespace CUBE.Achievements
                     break;
                 case GameplayEventType.PlayerJumped:
                     IncrementStat(StatId.JumpCount, StatScope.Lifetime, 1f);
+                    IncrementStat(StatId.JumpCountThisSession, StatScope.Session, 1f);
                     break;
             }
         }

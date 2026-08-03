@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a69f99be8a983c45b8a3bd500db792b, type: 3}
+  m_Name: Pain Simulator
+  m_EditorClassIdentifier: Assembly-CSharp::CUBE.Achievements.AchievementDefinition
+  GuidString: ff79d28b286a4f5dbd4b64289a94880c
+  AchievementId: die_25_session
+  Version: 1
+  DisplayName: Pain Simulator
+  Description: Die 25 times in one session
+  Icon: {fileID: 0}
+  IsHidden: 0
+  Category: 0
+  Type: 1
+  Mode: 0
+  RelevantEvents: 68000000
+  TargetValue: 25
+  LinkedStat: 708
+  LinkedStatScope: 1
+  SteamId: 
+  XboxId: 
+  PlayStationId: 
+  EpicId: 
+  PlatformMappingAssetOverride: {fileID: 0}
+  InlineRequirement:
+    rid: -2
+  RequirementAssetOverride: {fileID: 0}
+  InlineRewards: []
+  IsRepeatable: 0
+  IsDeveloperOnly: 0
+  EnableDebugLog: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }

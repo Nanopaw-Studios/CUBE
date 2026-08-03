@@ -44,6 +44,7 @@ namespace CUBE.Achievements
         public string XboxId;
         public string PlayStationId;
         public string EpicId;
+        public string PlayFabId;
 
         [Tooltip("Optional shared platform mapping asset. Overrides inline IDs if assigned.")]
         public PlatformMappingAsset PlatformMappingAssetOverride;
@@ -77,6 +78,7 @@ namespace CUBE.Achievements
                 "Xbox"        => XboxId,
                 "PlayStation" => PlayStationId,
                 "Epic"        => EpicId,
+                "PlayFab"     => !string.IsNullOrEmpty(PlayFabId) ? PlayFabId : AchievementId,
                 _             => AchievementId
             };
         }

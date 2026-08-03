@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a69f99be8a983c45b8a3bd500db792b, type: 3}
+  m_Name: Half Large
+  m_EditorClassIdentifier: Assembly-CSharp::CUBE.Achievements.AchievementDefinition
+  GuidString: 3239ef09c64c4c089c0ab17fcbaaa74a
+  AchievementId: mastery_titan_50
+  Version: 1
+  DisplayName: Half Large
+  Description: Get The Titan to mastery level 50
+  Icon: {fileID: 0}
+  IsHidden: 0
+  Category: 3
+  Type: 0
+  Mode: 0
+  RelevantEvents: f5010000
+  TargetValue: 1
+  LinkedStat: 0
+  LinkedStatScope: 0
+  SteamId: 
+  XboxId: 
+  PlayStationId: 
+  EpicId: 
+  PlatformMappingAssetOverride: {fileID: 0}
+  InlineRequirement:
+    rid: 536817676451249573
+  RequirementAssetOverride: {fileID: 0}
+  InlineRewards: []
+  IsRepeatable: 0
+  IsDeveloperOnly: 0
+  EnableDebugLog: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 536817676451249573
+      type: {class: RequirementGroupInline, ns: CUBE.Achievements, asm: Assembly-CSharp}
+      data:
+        Operator: 0
+        Requirements:
+        - rid: 2778652677738129897
+        - rid: 2687478160284734858
+    - rid: 2778652677738129897
+      type: {class: CharacterRequirement, ns: CUBE.Achievements, asm: Assembly-CSharp}
+      data:
+        RequiredCharacter: {fileID: 11400000, guid: 662f92f840b80394f9db1f90e02a86c7, type: 2}
+    - rid: 2687478160284734858
+      type: {class: EventPropertyRequirement, ns: CUBE.Achievements, asm: Assembly-CSharp}
+      data:
+        Property: 6
+        Operator: 0
+        Threshold: 50

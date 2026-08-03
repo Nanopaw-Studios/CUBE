@@ -23,9 +23,11 @@ namespace CUBE.Achievements
         public float Distance { get; }
         public float Duration { get; }
         public float AirTime { get; }
-        public int CoinAmount { get; }
+        public float CoinAmount { get; }
         public int MasteryLevel { get; }
         public int Health { get; }
+        public UnityEngine.Vector3 Velocity { get; }
+        public float Speed { get; }
 
         // ── Character & Role References ───────────────────────────────
         public CubePlayerBase SourceCharacter { get; }
@@ -64,6 +66,8 @@ namespace CUBE.Achievements
             CoinAmount        = builder.CoinAmount;
             MasteryLevel      = builder.MasteryLevel;
             Health            = builder.Health;
+            Velocity          = builder.Velocity;
+            Speed             = builder.Speed;
 
             SourceCharacter   = builder.SourceCharacter;
             TargetCharacter   = builder.TargetCharacter;

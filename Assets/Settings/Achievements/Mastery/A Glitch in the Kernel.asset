@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a69f99be8a983c45b8a3bd500db792b, type: 3}
+  m_Name: A Glitch in the Kernel
+  m_EditorClassIdentifier: Assembly-CSharp::CUBE.Achievements.AchievementDefinition
+  GuidString: 94d6f54dd3be482ab07f12f71eadc23f
+  AchievementId: mastery_glitch_100
+  Version: 1
+  DisplayName: A Glitch in the Kernel
+  Description: Get The Glitch to mastery level 100
+  Icon: {fileID: 0}
+  IsHidden: 0
+  Category: 3
+  Type: 0
+  Mode: 0
+  RelevantEvents: f5010000
+  TargetValue: 1
+  LinkedStat: 0
+  LinkedStatScope: 0
+  SteamId: 
+  XboxId: 
+  PlayStationId: 
+  EpicId: 
+  PlatformMappingAssetOverride: {fileID: 0}
+  InlineRequirement:
+    rid: 1533089145258120041
+  RequirementAssetOverride: {fileID: 0}
+  InlineRewards: []
+  IsRepeatable: 0
+  IsDeveloperOnly: 0
+  EnableDebugLog: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 1533089145258120041
+      type: {class: RequirementGroupInline, ns: CUBE.Achievements, asm: Assembly-CSharp}
+      data:
+        Operator: 0
+        Requirements:
+        - rid: 1085890953007531226
+        - rid: 1946512844464442578
+    - rid: 1085890953007531226
+      type: {class: CharacterRequirement, ns: CUBE.Achievements, asm: Assembly-CSharp}
+      data:
+        RequiredCharacter: {fileID: 11400000, guid: 5b43e81e501c72c4e96d7356e7e59dcc, type: 2}
+    - rid: 1946512844464442578
+      type: {class: EventPropertyRequirement, ns: CUBE.Achievements, asm: Assembly-CSharp}
+      data:
+        Property: 6
+        Operator: 0
+        Threshold: 100

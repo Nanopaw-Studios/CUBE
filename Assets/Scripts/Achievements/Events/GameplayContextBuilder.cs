@@ -20,6 +20,8 @@ namespace CUBE.Achievements
         public int CoinAmount { get; private set; }
         public int MasteryLevel { get; private set; }
         public int Health { get; private set; }
+        public UnityEngine.Vector3 Velocity { get; private set; }
+        public float Speed { get; private set; }
 
         public CubePlayerBase SourceCharacter { get; private set; }
         public CubePlayerBase TargetCharacter { get; private set; }
@@ -53,6 +55,8 @@ namespace CUBE.Achievements
         public GameplayContextBuilder SetCoins(int val) { CoinAmount = val; return this; }
         public GameplayContextBuilder SetMastery(int val) { MasteryLevel = val; return this; }
         public GameplayContextBuilder SetHealth(int val) { Health = val; return this; }
+        public GameplayContextBuilder SetVelocity(UnityEngine.Vector3 vel) { Velocity = vel; Speed = vel.magnitude; return this; }
+        public GameplayContextBuilder SetSpeed(float speed) { Speed = speed; return this; }
 
         public GameplayContextBuilder SetSourceCharacter(CubePlayerBase character) { SourceCharacter = character; return this; }
         public GameplayContextBuilder SetTargetCharacter(CubePlayerBase character) { TargetCharacter = character; return this; }

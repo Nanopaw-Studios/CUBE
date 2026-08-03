@@ -15,6 +15,7 @@ namespace CUBE.Achievements
         public AchievementDatabase Database;
         public bool IncludeDeveloperAchievements;
         public float AutoSaveInterval = 30f;
+        public bool EnableDebugLogs = true;
 
         public event Action<AchievementUnlockedEventArgs> OnAchievementUnlocked;
         public event Action<AchievementProgressEventArgs> OnProgressUpdated;
@@ -55,6 +56,11 @@ namespace CUBE.Achievements
                 GameplayEventBus.OnAnyGameplayEvent -= OnGameplayEvent;
                 GameplayEventBus.UnsubscribeStatChanged(OnStatChanged);
 
+                if (PlayfabManager.Instance != null)
+                {
+                    PlayfabManager.Instance.OnLoginSuccessEvent -= OnPlayFabLoginSuccess;
+                }
+
                 if (_dirty) FlushSave();
 
                 for (int i = 0; i < _platforms.Count; i++)
@@ -80,7 +86,48 @@ namespace CUBE.Achievements
 
         private void Initialize()
         {
-            if (_initialized || Database == null) return;
+            if (_initialized) return;
+
+            if (Database == null)
+            {
+                Database = Resources.Load<AchievementDatabase>("CUBE Achievements");
+
+#if UNITY_EDITOR
+                if (Database == null)
+                {
+                    string[] dbGuids = UnityEditor.AssetDatabase.FindAssets("t:AchievementDatabase");
+                    if (dbGuids.Length > 0)
+                    {
+                        string dbPath = UnityEditor.AssetDatabase.GUIDToAssetPath(dbGuids[0]);
+                        Database = UnityEditor.AssetDatabase.LoadAssetAtPath<AchievementDatabase>(dbPath);
+                    }
+                }
+#endif
+            }
+
+            if (Database == null)
+            {
+                Debug.LogError("[CUBE Achievements] AchievementDatabase not found! Assign it in the Inspector or ensure 'CUBE Achievements' asset exists.");
+                return;
+            }
+
+#if UNITY_EDITOR
+            if (Database.Achievements == null || Database.Achievements.Length == 0)
+            {
+                string[] defGuids = UnityEditor.AssetDatabase.FindAssets("t:AchievementDefinition", new[] { "Assets/Settings/Achievements" });
+                var defs = new List<AchievementDefinition>();
+                foreach (var g in defGuids)
+                {
+                    var d = UnityEditor.AssetDatabase.LoadAssetAtPath<AchievementDefinition>(UnityEditor.AssetDatabase.GUIDToAssetPath(g));
+                    if (d != null) defs.Add(d);
+                }
+                if (defs.Count > 0)
+                {
+                    Database.Achievements = defs.ToArray();
+                    UnityEditor.EditorUtility.SetDirty(Database);
+                }
+            }
+#endif
 
             _playerId = PlayfabManager.GetPlayerName() ?? SystemInfo.deviceUniqueIdentifier;
             _saveData = AchievementSaveManager.Load(_playerId);
@@ -123,7 +170,61 @@ namespace CUBE.Achievements
             GameplayEventBus.OnAnyGameplayEvent += OnGameplayEvent;
             GameplayEventBus.SubscribeStatChanged(OnStatChanged);
 
+            if (PlayfabManager.Instance != null)
+            {
+                PlayfabManager.Instance.OnLoginSuccessEvent += OnPlayFabLoginSuccess;
+                if (PlayfabManager.Instance.IsLoggedIn)
+                {
+                    OnPlayFabLoginSuccess();
+                }
+            }
+
             _initialized = true;
+
+            if (EnableDebugLogs)
+                Debug.Log($"[CUBE Achievements] AchievementService initialized with {_states.Count} active achievement definitions.");
+        }
+
+        private void OnPlayFabLoginSuccess()
+        {
+            _playerId = PlayfabManager.GetPlayerName() ?? SystemInfo.deviceUniqueIdentifier;
+            PlayFabAchievementSync.LoadAchievementsFromPlayFab(_playerId, cloudData =>
+            {
+                if (cloudData == null) return;
+                _saveData = PlayFabAchievementSync.MergeAchievements(_saveData, cloudData, _playerId);
+                var mergedStates = _saveData.ToDictionary();
+
+                foreach (var kvp in mergedStates)
+                {
+                    if (kvp.Value == null) continue;
+                    if (_states.TryGetValue(kvp.Key, out var existing))
+                    {
+                        existing.IsUnlocked = existing.IsUnlocked || kvp.Value.IsUnlocked;
+                        existing.CurrentProgress = Mathf.Max(existing.CurrentProgress, kvp.Value.CurrentProgress);
+                        existing.UnlockCount = Mathf.Max(existing.UnlockCount, kvp.Value.UnlockCount);
+                        if (string.IsNullOrEmpty(existing.UnlockedTimestamp))
+                            existing.UnlockedTimestamp = kvp.Value.UnlockedTimestamp;
+                    }
+                    else
+                    {
+                        _states[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                _dirty = true;
+                FlushSave();
+                if (EnableDebugLogs)
+                    Debug.Log($"[CUBE Achievements] PlayFab achievement cloud sync complete for '{_playerId}'.");
+            });
+        }
+
+        public void TriggerCloudSync()
+        {
+            if (_saveData != null)
+            {
+                _saveData.FromDictionary(_states);
+                PlayFabAchievementSync.SaveAchievementsToPlayFab(_saveData);
+            }
         }
 
         public void RegisterPlatform(IAchievementPlatform platform)
@@ -161,6 +262,9 @@ namespace CUBE.Achievements
                 if (state.CurrentProgress != old)
                 {
                     _dirty = true;
+                    if (EnableDebugLogs || def.EnableDebugLog)
+                        Debug.Log($"[CUBE Achievements] Progress updated: '{def.DisplayName}' ({def.AchievementId}) -> {state.CurrentProgress}/{def.TargetValue}");
+
                     ReportProgressToPlatforms(def, state);
                     OnProgressUpdated?.Invoke(new AchievementProgressEventArgs
                     {
@@ -185,6 +289,9 @@ namespace CUBE.Achievements
                 if (state.CurrentProgress != old)
                 {
                     _dirty = true;
+                    if (EnableDebugLogs || def.EnableDebugLog)
+                        Debug.Log($"[CUBE Achievements] Progress updated: '{def.DisplayName}' ({def.AchievementId}) -> {state.CurrentProgress}/{def.TargetValue}");
+
                     ReportProgressToPlatforms(def, state);
                     OnProgressUpdated?.Invoke(new AchievementProgressEventArgs
                     {
@@ -316,6 +423,8 @@ namespace CUBE.Achievements
             state.UnlockCount++;
             _dirty = true;
 
+            Debug.Log($"<color=#55FF55><b>[CUBE Achievements] UNLOCKED!</b></color> '{def.DisplayName}' ({def.AchievementId}) — \"{def.Description}\"");
+
             // Platforms
             for (int i = 0; i < _platforms.Count; i++)
             {
@@ -362,6 +471,7 @@ namespace CUBE.Achievements
             if (_saveData == null) return;
             _saveData.FromDictionary(_states);
             AchievementSaveManager.Save(_playerId, _saveData);
+            TriggerCloudSync();
             _dirty = false;
         }
 

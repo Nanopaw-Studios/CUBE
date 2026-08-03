@@ -38,6 +38,14 @@ namespace CUBE.Achievements
         EliminationsThisRound = 704,
         AbilitiesUsedThisRound= 705,
         TimeWithoutSprinting  = 706,
-        HealingThisRound      = 707
+        HealingThisRound      = 707,
+        DeathsThisSession     = 708,
+        JumpCountThisSession  = 709,
+
+        // ── Time Tracking ──────────────────────────────────────────────
+        TimePlayedSeconds     = 800,
+        HoursPlayed           = 801,
+        ConsecutiveLoginDays  = 900,
+        CubeCoins             = 901
     }
 }

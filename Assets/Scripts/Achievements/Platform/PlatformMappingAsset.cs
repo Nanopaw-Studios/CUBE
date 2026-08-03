@@ -22,6 +22,9 @@ namespace CUBE.Achievements
         [Tooltip("Epic Online Services achievement ID.")]
         public string EpicId;
 
+        [Tooltip("PlayFab achievement ID.")]
+        public string PlayFabId;
+
         public string GetPlatformId(string platformName)
         {
             return platformName switch
@@ -30,6 +33,7 @@ namespace CUBE.Achievements
                 "Xbox"        => XboxId,
                 "PlayStation" => PlayStationId,
                 "Epic"        => EpicId,
+                "PlayFab"     => PlayFabId,
                 _             => null
             };
         }

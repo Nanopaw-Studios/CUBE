@@ -6,7 +6,7 @@ namespace CUBE.Achievements
     [Serializable]
     public class EventPropertyRequirement : AchievementRequirement
     {
-        public enum TargetProperty { DamageAmount, HealAmount, Distance, Duration, AirTime, CoinAmount, MasteryLevel, Health }
+        public enum TargetProperty { DamageAmount, HealAmount, Distance, Duration, AirTime, CoinAmount, MasteryLevel, Health, Speed }
         public enum ComparisonOp { GreaterThanOrEqual, LessThanOrEqual, Equal, NotEqual }
 
         public TargetProperty Property = TargetProperty.DamageAmount;
@@ -27,6 +27,7 @@ namespace CUBE.Achievements
                 TargetProperty.CoinAmount   => context.Context.CoinAmount,
                 TargetProperty.MasteryLevel => context.Context.MasteryLevel,
                 TargetProperty.Health       => context.Context.Health,
+                TargetProperty.Speed        => context.Context.Speed,
                 _                           => 0f
             };
 

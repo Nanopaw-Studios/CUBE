@@ -38,6 +38,7 @@ namespace CUBE.Achievements
         PlayerEscaped            = 304,
         PlayerLaunchedIntoVoid   = 305,
         PlayerReachedHighestCube = 306,
+        PlayerLeftBounds         = 307,
 
         // ── Abilities / actions ───────────────────────────────────────
         PlayerUsedAbility        = 400,

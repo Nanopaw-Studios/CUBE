@@ -41,6 +41,22 @@ public class PlayerUIHandler : MonoBehaviour
     private float currentFlashAlpha = 0f;
     private BasePlayerStats subscribedPlayerStats;
 
+    [Header("Achievement UI References")]
+    public GameObject achievementUI;
+    public TMP_Text achievementTitleText;
+    public TMP_Text achievementDescText;
+    public float achievementDisplayDuration = 4.0f;
+
+    private struct AchievementToastData
+    {
+        public string Title;
+        public string Description;
+    }
+
+    private readonly System.Collections.Generic.Queue<AchievementToastData> _achievementQueue = new();
+    private bool _isShowingAchievement;
+    private float _achievementTimer;
+
     private void Start()
     {
         playerStats = Camera
@@ -68,6 +84,15 @@ public class PlayerUIHandler : MonoBehaviour
             // Seed the display with whatever is already cached.
             if (moneyText != null)
                 moneyText.text = PlayfabManager.Instance.CachedCC.ToString();
+        }
+
+        AutoBindAchievementUI();
+        if (achievementUI != null)
+            achievementUI.SetActive(false);
+
+        if (CUBE.Achievements.AchievementService.Instance != null)
+        {
+            CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked += OnAchievementUnlocked;
         }
     }
 
@@ -103,6 +128,54 @@ public class PlayerUIHandler : MonoBehaviour
         }
         if (PlayfabManager.Instance != null)
             PlayfabManager.Instance.OnCubeCoinsChanged -= OnCubeCoinsChanged;
+
+        if (CUBE.Achievements.AchievementService.Instance != null)
+        {
+            CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked -= OnAchievementUnlocked;
+        }
+    }
+
+    private void OnAchievementUnlocked(CUBE.Achievements.AchievementUnlockedEventArgs args)
+    {
+        if (args.Definition == null) return;
+
+        string name = args.Definition.DisplayName;
+        string desc = args.Definition.Description;
+
+        _achievementQueue.Enqueue(new AchievementToastData
+        {
+            Title = $"'{name}' achieved",
+            Description = $"You achieved '{name}'!\n{desc}"
+        });
+    }
+
+    private void AutoBindAchievementUI()
+    {
+        if (achievementUI == null)
+        {
+            Transform bgTr = transform.Find("Achievement/Background") 
+                          ?? transform.Find("Canvas/Achievement/Background") 
+                          ?? transform.Find("Achievement");
+            if (bgTr != null)
+            {
+                achievementUI = bgTr.gameObject;
+            }
+        }
+
+        if (achievementUI != null)
+        {
+            if (achievementTitleText == null)
+            {
+                Transform tTr = achievementUI.transform.Find("Title");
+                if (tTr != null) achievementTitleText = tTr.GetComponent<TMP_Text>();
+            }
+
+            if (achievementDescText == null)
+            {
+                Transform dTr = achievementUI.transform.Find("Description");
+                if (dTr != null) achievementDescText = dTr.GetComponent<TMP_Text>();
+            }
+        }
     }
 
     private void OnCubeCoinsChanged(int newBalance)
@@ -113,6 +186,41 @@ public class PlayerUIHandler : MonoBehaviour
 
     private void Update()
     {
+        if (CUBE.Achievements.AchievementService.Instance != null)
+        {
+            CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked -= OnAchievementUnlocked;
+            CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked += OnAchievementUnlocked;
+        }
+
+        // Process Achievement Notification Queue
+        if (_isShowingAchievement)
+        {
+            _achievementTimer -= Time.unscaledDeltaTime;
+            if (_achievementTimer <= 0f)
+            {
+                _isShowingAchievement = false;
+                if (achievementUI != null)
+                    achievementUI.SetActive(false);
+            }
+        }
+
+        if (!_isShowingAchievement && _achievementQueue.Count > 0)
+        {
+            AutoBindAchievementUI();
+            var toast = _achievementQueue.Dequeue();
+            _isShowingAchievement = true;
+            _achievementTimer = achievementDisplayDuration;
+
+            if (achievementTitleText != null)
+                achievementTitleText.text = toast.Title;
+
+            if (achievementDescText != null)
+                achievementDescText.text = toast.Description;
+
+            if (achievementUI != null)
+                achievementUI.SetActive(true);
+        }
+
         if (playerStats == null || localBasePlayer == null)
         {
             var player = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer();
