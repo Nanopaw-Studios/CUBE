@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 public class CameraInput : MonoBehaviour
 {
     [Header("Sensitivity Settings")]
-    public float mouseSensitivity = 20f;
+    public float mouseSensitivity = 2f;
     public float gamepadSensitivity = 100f;
 
     [Header("Input Smoothing")]
@@ -33,10 +33,19 @@ public class CameraInput : MonoBehaviour
 
     private void Awake()
     {
-        mouseSensitivity = LoadFloatWithMigration(KEY_MOUSE_SENSITIVITY, OLD_KEY_MOUSE_SENSITIVITY, 20f);
-        gamepadSensitivity = LoadFloatWithMigration(KEY_GAMEPAD_SENSITIVITY, OLD_KEY_GAMEPAD_SENSITIVITY, 100f);
-
+        RefreshSensitivity();
         ResolveInput();
+    }
+
+    private void OnEnable()
+    {
+        RefreshSensitivity();
+    }
+
+    public void RefreshSensitivity()
+    {
+        mouseSensitivity = LoadFloatWithMigration(KEY_MOUSE_SENSITIVITY, OLD_KEY_MOUSE_SENSITIVITY, 2f);
+        gamepadSensitivity = LoadFloatWithMigration(KEY_GAMEPAD_SENSITIVITY, OLD_KEY_GAMEPAD_SENSITIVITY, 100f);
     }
 
     private void ResolveInput()
@@ -72,13 +81,15 @@ public class CameraInput : MonoBehaviour
     {
         if (lookAction == null) return;
 
+        RefreshSensitivity();
+
         Vector2 rawInput = lookAction.ReadValue<Vector2>();
 
         bool isGamepad = lookAction.activeControl != null &&
                          lookAction.activeControl.device is Gamepad;
 
         float sensitivity = isGamepad ? gamepadSensitivity : mouseSensitivity;
-        float multiplier = isGamepad ? Time.deltaTime : 1f;
+        float multiplier = isGamepad ? Time.deltaTime : 0.0025f;
 
         // 🎯 Smooth INPUT instead of rotation
         currentInput = Vector2.SmoothDamp(

@@ -28,6 +28,10 @@ public class Settings : MonoBehaviour
     private const string KEY_VSYNC = "Vsync";
     private const string KEY_QUALITY = "Quality";
 
+    private const string MIXER_MASTER = "MasterVolume";
+    private const string MIXER_SFX = "SfxVolume";
+    private const string MIXER_MUSIC = "MusicVolume";
+
     private void Start()
     {
         LoadSettings();
@@ -48,31 +52,39 @@ public class Settings : MonoBehaviour
 
     // ---------------- AUDIO ----------------
 
+    private float LinearToDecibels(float linear)
+    {
+        return linear > 0.0001f ? Mathf.Log10(linear) * 20f : -80f;
+    }
+
     public void SetMasterVolume(float value)
     {
         Debug.Log("Master changed to: " + value);
         if (mixer != null)
-            mixer.SetFloat("MasterVolume", value);
+            mixer.SetFloat(MIXER_MASTER, LinearToDecibels(value));
 
         PlayerPrefs.SetFloat(KEY_MASTER, value);
+        PlayerPrefs.Save();
     }
 
     public void SetSFXVolume(float value)
     {
         Debug.Log("SFX changed to: " + value);
         if (mixer != null)
-            mixer.SetFloat("SFXVolume", value);
+            mixer.SetFloat(MIXER_SFX, LinearToDecibels(value));
 
         PlayerPrefs.SetFloat(KEY_SFX, value);
+        PlayerPrefs.Save();
     }
 
     public void SetMusicVolume(float value)
     {
         Debug.Log("Music changed to: " + value);
         if (mixer != null)
-            mixer.SetFloat("MusicVolume", value);
+            mixer.SetFloat(MIXER_MUSIC, LinearToDecibels(value));
 
         PlayerPrefs.SetFloat(KEY_MUSIC, value);
+        PlayerPrefs.Save();
     }
 
     // ---------------- SENSITIVITY ----------------
@@ -80,11 +92,13 @@ public class Settings : MonoBehaviour
     public void SetMouseSensitivity(float value)
     {
         PlayerPrefs.SetFloat(KEY_MOUSE_SENSITIVITY, value);
+        PlayerPrefs.Save();
     }
 
     public void SetGamepadSensitivity(float value)
     {
         PlayerPrefs.SetFloat(KEY_GAMEPAD_SENSITIVITY, value);
+        PlayerPrefs.Save();
     }
 
     // ---------------- GRAPHICS ----------------
@@ -93,18 +107,21 @@ public class Settings : MonoBehaviour
     {
         Screen.fullScreen = fullscreen;
         PlayerPrefs.SetInt(KEY_FULLSCREEN, fullscreen ? 1 : 0);
+        PlayerPrefs.Save();
     }
 
     public void SetVsync(int vsyncCount)
     {
         QualitySettings.vSyncCount = vsyncCount;
         PlayerPrefs.SetInt(KEY_VSYNC, vsyncCount);
+        PlayerPrefs.Save();
     }
 
     public void SetQuality(int quality)
     {
         QualitySettings.SetQualityLevel(quality, true);
         PlayerPrefs.SetInt(KEY_QUALITY, quality);
+        PlayerPrefs.Save();
     }
 
     // ---------------- LOAD ----------------
@@ -127,9 +144,9 @@ public class Settings : MonoBehaviour
         SetSFXVolume(sfxVal);
         SetMusicVolume(musicVal);
 
-        // Sensitivity
-        float mouseVal = PlayerPrefs.GetFloat(KEY_MOUSE_SENSITIVITY, 20f);
-        float gamepadVal = PlayerPrefs.GetFloat(KEY_GAMEPAD_SENSITIVITY, 100f);
+        // Sensitivity (default = 2)
+        float mouseVal = PlayerPrefs.GetFloat(KEY_MOUSE_SENSITIVITY, 2f);
+        float gamepadVal = PlayerPrefs.GetFloat(KEY_GAMEPAD_SENSITIVITY, 150f);
 
         if (mouseSensitivity != null)
             mouseSensitivity.SetValueWithoutNotify(mouseVal);
@@ -159,6 +176,11 @@ public class Settings : MonoBehaviour
             vsyncDropdown.SetValueWithoutNotify(vsync);
             vsyncDropdown.RefreshShownValue();
         }
+    }
+
+    private void OnDisable()
+    {
+        PlayerPrefs.Save();
     }
 
     private void OnApplicationQuit()
