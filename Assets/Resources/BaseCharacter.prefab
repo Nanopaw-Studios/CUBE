@@ -5063,6 +5063,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4108778627866863923}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.99777657, z: -0.0666483, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: -0.1568}
   m_LocalScale: {x: 0.001416602, y: 0.001416602, z: 0.001416602}
@@ -5096,6 +5097,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -7318,6 +7320,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5524559357401396837}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -7408,7 +7411,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -8314,6 +8317,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6388608419872559473}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.51736945, y: 0.51736945, z: 0.51736945}
@@ -8931,6 +8935,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6897078548616415176}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -9021,7 +9026,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -10995,5 +11000,5 @@ MonoBehaviour:
   - {fileID: 5776401975736072747, guid: 6241b388968f0c344a7e0cc29773bff0, type: 3}
   - {fileID: 5776401975736072747, guid: 716fe5af6cbae5d43a132cfd7277693e, type: 3}
   - {fileID: 5776401975736072747, guid: 5f32a4a80beac264e91bf66a325ae4ce, type: 3}
-  LeftPoseIndexes: 0100000003000000
-  RightPoseIndexes: 0200000004000000
+  LeftPoseIndexes: 0100000003000000i
+  RightPoseIndexes: 0200000004000000i
