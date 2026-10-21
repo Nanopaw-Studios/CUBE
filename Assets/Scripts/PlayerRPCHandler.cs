@@ -43,4 +43,16 @@ public class PlayerRPCHandler : MonoBehaviourPunCallbacks
 
         receiver.ApplyEffect((ClientEffectId)effectId, on, intensity);
     }
+
+    /// <summary>
+    /// Static event invoked when any player activates an ability.
+    /// Provides hip position and actor number so proximity passives (like Hype) can trigger.
+    /// </summary>
+    public static event System.Action<Vector3, int> OnNetworkAbilityUsed;
+
+    [PunRPC]
+    public void RPC_NotifyAbilityUsed(Vector3 position, int actorNumber)
+    {
+        OnNetworkAbilityUsed?.Invoke(position, actorNumber);
+    }
 }

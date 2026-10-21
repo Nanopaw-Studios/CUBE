@@ -4,6 +4,7 @@ using Photon.Realtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 public class PlayerNameSyncer : MonoBehaviourPunCallbacks
 {
@@ -91,6 +92,8 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
                 verification = string.IsNullOrEmpty(verification1) ? "" : verification1;
                 verificationLoaded = true;
 
+                PlayfabManager.SetVerificationStatus(verification);
+
                 TryApply();
             }
         );
@@ -176,6 +179,12 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
                 default:
                     verificationBadge.gameObject.SetActive(false);
                     break;
+            }
+
+            var devPhysics = GetComponent<DevPhysicsController>();
+            if (devPhysics != null)
+            {
+                devPhysics.OnVerificationBadgeReceived(verification);
             }
         }
     }

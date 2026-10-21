@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Photon.Pun;
 using UnityEngine;
 
@@ -23,7 +23,10 @@ public class UnstablePresenceRunner : PassiveRunner
         // who is in range this tick
         var inRangeNow = new HashSet<int>();
 
-        foreach (var collider in Physics.OverlapSphere(transform.position, range))
+        Transform hip = GetComponent<RagdollNetwork>()?.hip;
+        Vector3 centerPos = hip != null ? hip.position : transform.position;
+
+        foreach (var collider in Physics.OverlapSphere(centerPos, range))
         {
             var survivor = collider.GetComponentInParent<BasePlayer>();
             if (survivor == null) continue;

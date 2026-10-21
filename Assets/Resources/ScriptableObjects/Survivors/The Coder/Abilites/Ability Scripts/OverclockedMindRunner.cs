@@ -1,60 +1,52 @@
-﻿using System.Collections.Generic;
 using Photon.Pun;
 using UnityEngine;
 
+/// <summary>
+/// Passive runner for The Coder's Overclocked Mind ability.
+/// Accelerates active ability cooldown progression by 10% whenever The Coder is not in a chase.
+/// </summary>
 public class OverclockedMindRunner : PassiveRunner
 {
-    public float range = 10f;
+    private PlayerAbilityManager abilityManager;
 
-    // Track who is currently affected (by PhotonViewID)
-    private readonly HashSet<int> affected = new HashSet<int>();
-
-    private void SendToggle(PhotonView targetPV, bool on)
+    protected override void OnEnable()
     {
-        // RPC method is on BasePlayer (exists on all players)
-        targetPV.RPC(nameof(PlayerRPCHandler.RPC_ApplyClientEffect), targetPV.Owner,
-            (byte)ClientEffectId.OverclockedMind, on, 1f);
+        base.OnEnable();
+
+        if (!photonView || !photonView.IsMine) return;
+
+        abilityManager = FindFirstObjectByType<PlayerAbilityManager>();
+        if (abilityManager != null)
+        {
+            abilityManager.SetOverclockedMindActive(true);
+        }
+
+        CUBEStatusText.CreateText("<color=green>Overclocked Mind: Active</color>");
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
+
+        if (abilityManager != null)
+        {
+            abilityManager.SetOverclockedMindActive(false);
+        }
     }
 
     public override void Tick()
     {
         base.Tick();
 
-        // who is in range this tick
-        var inRangeNow = new HashSet<int>();
+        if (!photonView.IsMine) return;
 
-        foreach (var collider in Physics.OverlapSphere(transform.position, range))
+        if (abilityManager == null)
         {
-            var survivor = collider.GetComponentInParent<BasePlayer>();
-            if (survivor == null) continue;
-            if (survivor.playerType != BasePlayer.PlayerType.Survivor) continue;
-
-            var pv = survivor.photonView;
-            if (pv == null) continue;
-
-            inRangeNow.Add(pv.ViewID);
-
-            // ENTER
-            if (!affected.Contains(pv.ViewID))
+            abilityManager = FindFirstObjectByType<PlayerAbilityManager>();
+            if (abilityManager != null)
             {
-                affected.Add(pv.ViewID);
-                SendToggle(pv, true);
+                abilityManager.SetOverclockedMindActive(true);
             }
-        }
-
-        // EXIT
-        // remove anyone who was affected but is no longer in range
-        // (use temp list because we modify the set)
-        var toRemove = new List<int>();
-        foreach (var viewId in affected)
-            if (!inRangeNow.Contains(viewId))
-                toRemove.Add(viewId);
-
-        foreach (var viewId in toRemove)
-        {
-            affected.Remove(viewId);
-            var pv = PhotonView.Find(viewId);
-            if (pv != null) SendToggle(pv, false);
         }
     }
 }

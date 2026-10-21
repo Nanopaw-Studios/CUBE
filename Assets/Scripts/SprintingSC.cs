@@ -17,7 +17,7 @@ public class SprintingSC : MonoBehaviour
 
     // Captures movement.Force the moment sprinting begins so any runtime
     // speed modifiers (abilities, debuffs, etc.) are preserved on restore.
-    private float preSprintForce;
+    public float preSprintForce;
 
     [Header("Stamina (points/sec) - tune these")]
     // How many stamina points are removed per second while sprinting
@@ -208,6 +208,11 @@ public class SprintingSC : MonoBehaviour
         if (playerStats != null && playerStats.stamina <= 0)
             return;
 
+        // If crouching, prevent sprinting
+        CrouchingSC crouching = GetComponent<CrouchingSC>();
+        if (crouching != null && crouching.isCrouched)
+            return;
+
         preSprintForce = movement != null ? movement.Force : 0f;
 
         isSprinting = true;
@@ -231,7 +236,18 @@ public class SprintingSC : MonoBehaviour
     {
         isSprinting = false;
         if (movement != null)
-            movement.Force = preSprintForce;
+        {
+            CrouchingSC crouching = GetComponent<CrouchingSC>();
+            if (crouching != null && crouching.isCrouched)
+            {
+                float baseSpeed = playerStats != null && playerStats.speed > 0 ? playerStats.speed : 35f;
+                movement.Force = baseSpeed * crouching.crouchSpeedMultiplier;
+            }
+            else
+            {
+                movement.Force = preSprintForce;
+            }
+        }
 
         data.Currentstate = StateType.Walk;
 
@@ -279,7 +295,15 @@ public class SprintingSC : MonoBehaviour
 
         if (movement != null)
         {
-            movement.Force = defaultSpeed;
+            CrouchingSC crouching = GetComponent<CrouchingSC>();
+            if (crouching != null && crouching.isCrouched)
+            {
+                movement.Force = defaultSpeed * crouching.crouchSpeedMultiplier;
+            }
+            else
+            {
+                movement.Force = defaultSpeed;
+            }
         }
 
         if (data != null)

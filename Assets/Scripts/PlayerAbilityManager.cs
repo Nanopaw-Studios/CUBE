@@ -41,6 +41,9 @@ public class PlayerAbilityManager : MonoBehaviour
     private bool subscribed = false;
     private bool abilitiesEnabled = true;
 
+    private bool hasOverclockedMind = false;
+    private ChaseHandler localChaseHandler;
+
     private Coroutine passiveLoop;
 
     private void Awake()
@@ -108,6 +111,8 @@ public class PlayerAbilityManager : MonoBehaviour
     private void OnIntermissionStart()
     {
         abilitiesEnabled = false;
+        hasOverclockedMind = false;
+        localChaseHandler = null;
         SetAllCooldownTexts("Disabled");
 
         if (passiveLoop != null)
@@ -132,15 +137,9 @@ public class PlayerAbilityManager : MonoBehaviour
     {
         abilitiesEnabled = true;
 
-        if (!TryResolveLocalPlayer())
-        {
-            Debug.LogError("PlayerAbilityManager: Local BasePlayer not found on round start.");
-            return;
-        }
-
         if (passiveLoop != null)
             StopCoroutine(passiveLoop);
-        passiveLoop = StartCoroutine(PassiveTickLoop());
+        passiveLoop = null;
 
         StartCoroutine(BuildAbilitiesWithDelay());
     }
@@ -403,6 +402,11 @@ public class PlayerAbilityManager : MonoBehaviour
                 // Notify the reward manager that an active ability was successfully used.
                 CubeCoinRewardManager rewardManager = player.GetComponent<CubeCoinRewardManager>();
                 rewardManager?.OnAbilitySuccessfullyUsed();
+
+                // Broadcast network notification so proximity passives (such as The DJ's Hype) can react
+                Transform hip = player.GetComponent<RagdollNetwork>()?.hip;
+                Vector3 hipPos = hip != null ? hip.position : player.transform.position;
+                pv.RPC(nameof(PlayerRPCHandler.RPC_NotifyAbilityUsed), RpcTarget.All, hipPos, pv.OwnerActorNr);
             };
 
             act.performed += handler;
@@ -456,7 +460,17 @@ public class PlayerAbilityManager : MonoBehaviour
 
             if (cooldownTimers[i] < ability.AbilityCooldown)
             {
-                cooldownTimers[i] += Time.deltaTime;
+                float rate = 1f;
+                if (hasOverclockedMind)
+                {
+                    if (localChaseHandler == null && player != null)
+                        localChaseHandler = player.GetComponent<ChaseHandler>();
+
+                    if (localChaseHandler == null || !localChaseHandler.inChase)
+                        rate *= 1.10f; // 10% faster cooldown ticking outside of chase
+                }
+
+                cooldownTimers[i] += Time.deltaTime * rate;
                 if (cooldownTimers[i] > ability.AbilityCooldown)
                     cooldownTimers[i] = ability.AbilityCooldown;
             }
@@ -483,19 +497,18 @@ public class PlayerAbilityManager : MonoBehaviour
         }
     }
 
-    private IEnumerator PassiveTickLoop()
+    public void SetOverclockedMindActive(bool active)
     {
-        var wait = new WaitForSeconds(0.25f);
-        while (true)
+        hasOverclockedMind = active;
+        if (active && localChaseHandler == null && player != null)
         {
-            ActivatePassives();
-            yield return wait;
+            localChaseHandler = player.GetComponent<ChaseHandler>();
         }
     }
 
     private void ActivatePassives()
     {
-        if (currentMoveset == null)
+        if (currentMoveset == null || player == null)
             return;
 
         for (int i = 0; i < currentMoveset.Length; i++)
@@ -558,16 +571,41 @@ public class PlayerAbilityManager : MonoBehaviour
                 return true;
         }
 
+        if (PhotonLauncher.LocalPlayerInstance != null)
+        {
+            var pvL = PhotonLauncher.LocalPlayerInstance.GetComponent<PhotonView>();
+            if (pvL != null && pvL.IsMine)
+            {
+                player = PhotonLauncher.LocalPlayerInstance.GetComponent<BasePlayer>();
+                if (player != null)
+                    return true;
+            }
+        }
+
         var camRefs = Camera.main?.GetComponent<PlayerCameraReferences>();
         var pObj = camRefs != null ? camRefs.GetPlayer() : null;
-        if (pObj == null)
-            return false;
+        if (pObj != null)
+        {
+            var pv = pObj.GetPhotonView();
+            if (pv != null && pv.IsMine)
+            {
+                player = pObj.GetComponent<BasePlayer>();
+                if (player != null)
+                    return true;
+            }
+        }
 
-        var pv = pObj.GetPhotonView();
-        if (pv == null || !pv.IsMine)
-            return false;
+        BasePlayer[] all = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
+        foreach (var bp in all)
+        {
+            var pv = bp.GetComponent<PhotonView>();
+            if (pv != null && pv.IsMine)
+            {
+                player = bp;
+                return true;
+            }
+        }
 
-        player = pObj.GetComponent<BasePlayer>();
-        return player != null;
+        return false;
     }
 }

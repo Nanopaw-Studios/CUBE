@@ -176,6 +176,92 @@ public class Settings : MonoBehaviour
             vsyncDropdown.SetValueWithoutNotify(vsync);
             vsyncDropdown.RefreshShownValue();
         }
+
+        // Initialize developer-exclusive category if player has the developer badge
+        TryInitDevSettingsCategory();
+    }
+
+    // ---------------- DEVELOPER EXCLUSIVE CATEGORY ----------------
+
+    private void TryInitDevSettingsCategory()
+    {
+        if (PlayfabManager.IsDeveloper)
+        {
+            BuildDevCategory();
+        }
+        else
+        {
+            PlayfabManager.OnDeveloperStatusChanged += OnDevStatusChanged;
+            if (PlayfabManager.Instance != null)
+            {
+                PlayfabManager.Instance.CheckDeveloperStatus();
+            }
+        }
+    }
+
+    private void OnDevStatusChanged(bool isDev)
+    {
+        if (isDev)
+        {
+            BuildDevCategory();
+        }
+        else
+        {
+            RemoveDevCategory();
+        }
+    }
+
+    private void BuildDevCategory()
+    {
+        Transform content = FindSettingsContent();
+        if (content != null)
+        {
+            GameObject template = master != null && master.transform.parent != null
+                ? master.transform.parent.gameObject
+                : null;
+            DevSettingsUIBuilder.BuildDevCategory(content, template);
+        }
+    }
+
+    private void RemoveDevCategory()
+    {
+        Transform content = FindSettingsContent();
+        if (content != null)
+        {
+            var toDestroy = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in content)
+            {
+                if (child.name.StartsWith("Dev_") || child.name == "DevPhysicsCategory")
+                {
+                    toDestroy.Add(child.gameObject);
+                }
+            }
+            foreach (var go in toDestroy)
+            {
+                Destroy(go);
+            }
+        }
+    }
+
+    private Transform FindSettingsContent()
+    {
+        Transform content = transform.Find("Settings/Scroll View/Viewport/Content");
+        if (content != null)
+            return content;
+
+        VerticalLayoutGroup[] vlgs = GetComponentsInChildren<VerticalLayoutGroup>(true);
+        foreach (var vlg in vlgs)
+        {
+            if (vlg.gameObject.name == "Content")
+                return vlg.transform;
+        }
+
+        return null;
+    }
+
+    private void OnDestroy()
+    {
+        PlayfabManager.OnDeveloperStatusChanged -= OnDevStatusChanged;
     }
 
     private void OnDisable()
@@ -188,3 +274,4 @@ public class Settings : MonoBehaviour
         PlayerPrefs.Save();
     }
 }
+

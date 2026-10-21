@@ -386,6 +386,53 @@ public class DebugPanel : MonoBehaviour
         );
         y -= rowH + sectionGap;
 
+        // ── DEV PHYSICS (Developer Exclusive) ──
+        if (PlayfabManager.IsDeveloper)
+        {
+            CreateLabel(
+                bg.transform,
+                "DevPhysicsHeader",
+                "★ DEV SECONDARY PHYSICS ★",
+                new Vector2(panelW, rowH - 4f),
+                new Vector2(panelW * 0.5f, y),
+                11,
+                new Color(1f, 0.75f, 0.1f),
+                TextAlignmentOptions.Center
+            );
+            y -= rowH;
+
+            CreateButton(
+                bg.transform,
+                "BtnToggleDevPhysics",
+                DevPhysicsSettings.IsDevPhysicsEnabled ? "Physics: [ENABLED]" : "Physics: [DISABLED]",
+                new Vector2(panelW - 20f, rowH),
+                new Vector2(panelW * 0.5f, y),
+                () =>
+                {
+                    DevPhysicsSettings.IsDevPhysicsEnabled = !DevPhysicsSettings.IsDevPhysicsEnabled;
+                    SetStatus($"Dev Physics {(DevPhysicsSettings.IsDevPhysicsEnabled ? "Enabled" : "Disabled")}");
+                    var btnText = bg.transform.Find("BtnToggleDevPhysics/Text")?.GetComponent<TMP_Text>();
+                    if (btnText != null)
+                        btnText.text = DevPhysicsSettings.IsDevPhysicsEnabled ? "Physics: [ENABLED]" : "Physics: [DISABLED]";
+                }
+            );
+            y -= rowH;
+
+            CreateButton(
+                bg.transform,
+                "BtnResetDevPhysics",
+                "Reset Physics Defaults",
+                new Vector2(panelW - 20f, rowH),
+                new Vector2(panelW * 0.5f, y),
+                () =>
+                {
+                    DevPhysicsSettings.ResetToDefaults();
+                    SetStatus("Dev Physics reset to defaults");
+                }
+            );
+            y -= rowH + sectionGap;
+        }
+
         // ── Close ──
         CreateButton(
             bg.transform,

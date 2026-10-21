@@ -27,6 +27,10 @@ public class PauseMenu : MonoBehaviourPunCallbacks
 
     private bool isLeavingRoom = false;
 
+    [Header("Dev Physics")]
+    private GameObject devPhysicsButtonGO;
+    private GameObject devPhysicsModalGO;
+
     public override void OnEnable()
     {
         base.OnEnable();
@@ -41,18 +45,146 @@ public class PauseMenu : MonoBehaviourPunCallbacks
             pauseAction.action.Disable();
     }
 
+    private void OnDestroy()
+    {
+        PlayfabManager.OnDeveloperStatusChanged -= OnDevStatusChanged;
+    }
+
     void Start()
     {
         pauseMenuAnimator = GetComponent<Animator>();
         roundManager = FindFirstObjectByType<RoundManager>();
 
-        if(!PhotonNetwork.CurrentRoom.IsVisible) // we know its a private room
+        if (roomCodeText != null && PhotonNetwork.CurrentRoom != null)
         {
-            roomCodeText.text = $"Private Room | {PhotonNetwork.CurrentRoom.Name}";
+            if (!PhotonNetwork.CurrentRoom.IsVisible) // we know its a private room
+            {
+                roomCodeText.text = $"Private Room | {PhotonNetwork.CurrentRoom.Name}";
+            }
+            else
+            {
+                roomCodeText.text = $"Public Room | {PhotonNetwork.CurrentRoom.Name}";
+            }
+        }
+
+        PlayfabManager.OnDeveloperStatusChanged += OnDevStatusChanged;
+        if (PlayfabManager.IsDeveloper)
+        {
+            SetupDevOptions();
+        }
+        else if (PlayfabManager.Instance != null)
+        {
+            PlayfabManager.Instance.CheckDeveloperStatus(isDev =>
+            {
+                if (isDev)
+                    SetupDevOptions();
+            });
+        }
+    }
+
+    private void OnDevStatusChanged(bool isDev)
+    {
+        if (isDev)
+        {
+            SetupDevOptions();
         }
         else
         {
-            roomCodeText.text = $"Public Room | {PhotonNetwork.CurrentRoom.Name}";
+            if (devPhysicsButtonGO != null)
+                devPhysicsButtonGO.SetActive(false);
+            if (devPhysicsModalGO != null)
+                devPhysicsModalGO.SetActive(false);
+        }
+    }
+
+    private void SetupDevOptions()
+    {
+        if (devPhysicsButtonGO != null)
+        {
+            devPhysicsButtonGO.SetActive(true);
+            return;
+        }
+
+        if (QuitButton == null)
+            return;
+
+        // 1. Clone QuitButton as the Secondary Physics button
+        devPhysicsButtonGO = Instantiate(QuitButton.gameObject, QuitButton.transform.parent);
+        devPhysicsButtonGO.name = "DevPhysicsButton";
+        // Place it right before Quit button
+        devPhysicsButtonGO.transform.SetSiblingIndex(QuitButton.transform.GetSiblingIndex());
+
+        // Update Text
+        TextMeshProUGUI btnText = devPhysicsButtonGO.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (btnText != null)
+        {
+            btnText.text = "★ Dev Physics";
+            btnText.color = new Color(1f, 0.85f, 0.25f, 1f); // subtle golden tint
+            btnText.fontSize = 17f;
+            btnText.alignment = TextAlignmentOptions.Center;
+            btnText.raycastTarget = false;
+        }
+
+        // Recreate the Button component so it inherits ZERO persistent listeners from QuitButton
+        Button oldBtn = devPhysicsButtonGO.GetComponent<Button>();
+        if (oldBtn != null)
+        {
+            var colors = oldBtn.colors;
+            var spriteState = oldBtn.spriteState;
+            var navigation = oldBtn.navigation;
+            var transition = oldBtn.transition;
+
+            DestroyImmediate(oldBtn);
+
+            Button devBtn = devPhysicsButtonGO.AddComponent<Button>();
+            devBtn.colors = colors;
+            devBtn.spriteState = spriteState;
+            devBtn.navigation = navigation;
+            devBtn.transition = transition;
+
+            Image devImg = devPhysicsButtonGO.GetComponent<Image>();
+            if (devImg != null)
+            {
+                devImg.raycastTarget = true;
+                devBtn.targetGraphic = devImg;
+            }
+
+            devBtn.interactable = true;
+            devBtn.onClick.AddListener(OpenDevPhysicsModal);
+        }
+
+        // 2. Pre-build the modal under pauseMenu root
+        Transform modalParent = pauseMenu != null ? pauseMenu.transform : transform;
+        GameObject templateSlider = null;
+        if (pauseMenu != null)
+        {
+            Transform t = pauseMenu.transform.Find("Settings/Master Volume");
+            if (t != null) templateSlider = t.gameObject;
+        }
+
+        devPhysicsModalGO = DevSettingsUIBuilder.BuildDevPhysicsModal(modalParent, QuitButton.gameObject, templateSlider);
+        if (devPhysicsModalGO != null)
+            devPhysicsModalGO.SetActive(false);
+    }
+
+    public void OpenDevPhysicsModal()
+    {
+        if (devPhysicsModalGO == null)
+        {
+            Transform modalParent = pauseMenu != null ? pauseMenu.transform : transform;
+            GameObject templateSlider = null;
+            if (pauseMenu != null)
+            {
+                Transform t = pauseMenu.transform.Find("Settings/Master Volume");
+                if (t != null) templateSlider = t.gameObject;
+            }
+            devPhysicsModalGO = DevSettingsUIBuilder.BuildDevPhysicsModal(modalParent, QuitButton != null ? QuitButton.gameObject : null, templateSlider);
+        }
+
+        if (devPhysicsModalGO != null)
+        {
+            devPhysicsModalGO.SetActive(true);
+            devPhysicsModalGO.transform.SetAsLastSibling();
         }
     }
 
@@ -85,6 +217,9 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         }
         else
         {
+            if (devPhysicsModalGO != null)
+                devPhysicsModalGO.SetActive(false);
+
             onResume.Invoke();
             pauseMenuAnimator.Play("PauseFadeOut");
             CursorManager.SetState(CursorManager.CursorState.Gameplay);
@@ -100,6 +235,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     IEnumerator DisableAfterAnimation()
     {
         yield return new WaitForSeconds(0.3f);
+        if (devPhysicsModalGO != null)
+            devPhysicsModalGO.SetActive(false);
         pauseMenu.SetActive(false);
     }
 

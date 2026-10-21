@@ -48,6 +48,12 @@ public class BasePlayer : MonoBehaviourPunCallbacks
         // Restore the last equipped characters from persistent storage so every
         // session starts with the player's own selection rather than the prefab default.
         LoadEquippedCharacters();
+
+        // Ensure developer physics controller is attached
+        if (GetComponent<DevPhysicsController>() == null)
+        {
+            gameObject.AddComponent<DevPhysicsController>();
+        }
     }
 
     /// <summary>

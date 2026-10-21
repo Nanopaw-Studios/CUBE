@@ -109,7 +109,8 @@ graph TD
 | **`PlayerPuncher`** | [PlayerPuncher.cs](file:///g:/Projects/physicsgamee/Assets/Scripts/PlayerPuncher.cs) | Killer melee punch via `Physics.OverlapBox` in front of camera against `Player` layer. |
 | **`PlayerHitboxManager`** | [PlayerHitboxManager.cs](file:///g:/Projects/physicsgamee/Assets/Scripts/PlayerHitboxManager.cs) | Discovers bone `CollisionCallback` colliders; routes incoming hits to `RPC_OnHit`. |
 | **`DeathSC`** | [DeathSC.cs](file:///g:/Projects/physicsgamee/Assets/Scripts/DeathSC.cs) | Collapses ragdoll joints (`rig.control = 0`), starts 5s respawn, transitions to spectator mode mid-round. |
-| **`SpectatorController`** | [SpectatorController.cs](file:///g:/Projects/physicsgamee/Assets/Scripts/SpectatorController.cs) | Free-orbit camera orbiting living players; cycles targets via mouse clicks or controller bumpers. |
+| **`SprintingSC`** | [SprintingSC.cs](file:///g:/Projects/physicsgamee/Assets/Scripts/SprintingSC.cs) | Multiplies movement force and drains stamina while sprint key is held. |
+| **`CrouchingSC`** | [CrouchingSC.cs](file:///g:/Projects/physicsgamee/Assets/Scripts/CrouchingSC.cs) | Compresses ragdoll standing height and applies speed penalty while Left Control is held. |
 | **`PlayerCustomizer`** | [PlayerCustomizer.cs](file:///g:/Projects/physicsgamee/Assets/Scripts/PlayerCustomizer.cs) | Applies character textures during rounds, and user-selected custom hex colors during intermission. |
 
 ### Abilities & Characters

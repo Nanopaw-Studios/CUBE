@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.Events;
@@ -11,11 +11,24 @@ public class PassiveRunner : MonoBehaviourPun
     public UnityEvent onTick;
 
     private Coroutine loop;
+    private PhotonView cachedPv;
+
+    public PhotonView PV
+    {
+        get
+        {
+            if (cachedPv == null)
+            {
+                cachedPv = photonView != null ? photonView : GetComponentInParent<PhotonView>();
+            }
+            return cachedPv;
+        }
+    }
 
     protected virtual void OnEnable()
     {
         // authority: only the owner runs passives
-        if (!photonView || !photonView.IsMine) return;
+        if (PV == null || !PV.IsMine) return;
 
         loop = StartCoroutine(TickLoop());
     }
@@ -39,7 +52,7 @@ public class PassiveRunner : MonoBehaviourPun
 
     public virtual void Tick()
     {
-        if (!photonView.IsMine) return;
+        if (PV == null || !PV.IsMine) return;
         onTick?.Invoke();
     }
 }

@@ -78,6 +78,7 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             InfoRequestParameters = new GetPlayerCombinedInfoRequestParams
             {
                 GetPlayerProfile = true,
+                GetUserData = true,
             },
         };
         PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnError);
@@ -162,6 +163,17 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             InfoText(Application.version + " | " + "Not Set!" + " | " + "Logged In");
             if (nameWindow != null)
                 nameWindow.SetActive(true);
+        }
+
+        // Cache developer badge verification status from user data
+        if (result.InfoResultPayload?.UserData != null &&
+            result.InfoResultPayload.UserData.TryGetValue("VerificationStatus", out var vEntry))
+        {
+            SetVerificationStatus(vEntry.Value);
+        }
+        else
+        {
+            CheckDeveloperStatus();
         }
 
         GetColorFromData();
@@ -453,6 +465,44 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
                 onResult?.Invoke(null);
             }
         );
+    }
+
+    public static string VerificationStatus { get; private set; } = "";
+
+    /// <summary>
+    /// True if the authenticated player has the Developer verification badge.
+    /// </summary>
+    public static bool IsDeveloper
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (DevPhysicsSettings.EditorForceDevBadge)
+                return true;
+#endif
+            return string.Equals(VerificationStatus, "Developer", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    public static event Action<bool> OnDeveloperStatusChanged;
+
+    public static void SetVerificationStatus(string status)
+    {
+        VerificationStatus = status ?? "";
+        bool isDev = IsDeveloper;
+        OnDeveloperStatusChanged?.Invoke(isDev);
+    }
+
+    /// <summary>
+    /// Refreshes the local player's VerificationStatus from PlayFab and returns whether they are a Developer.
+    /// </summary>
+    public void CheckDeveloperStatus(Action<bool> callback = null)
+    {
+        GetUserDataValue("VerificationStatus", status =>
+        {
+            SetVerificationStatus(status);
+            callback?.Invoke(IsDeveloper);
+        });
     }
 
     public static Color FromHex(string hex)

@@ -4,6 +4,16 @@ using UnityEngine;
 
 public class PassiveAbility : Ability
 {
+    public PassiveAbility()
+    {
+        isPassive = true;
+    }
+
+    private void OnEnable()
+    {
+        isPassive = true;
+    }
+
     public override void ActivateAbility(BasePlayer player)
     {
         Debug.Log($"{AbilityName} is a passive ability and cannot be activated.");

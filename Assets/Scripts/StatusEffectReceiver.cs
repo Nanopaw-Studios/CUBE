@@ -52,8 +52,9 @@ public class StatusEffectReceiver : MonoBehaviourPun
 
     private void SetUnstablePresence(bool on, float amt)
     {
-        Volume vol = GameObject.Find("Global Volume").GetComponent<Volume>();
-        if (vol != null)
+        var volObj = GameObject.Find("Global Volume");
+        Volume vol = volObj != null ? volObj.GetComponent<Volume>() : FindFirstObjectByType<Volume>();
+        if (vol != null && vol.profile != null)
         {
             if (vol.profile.TryGet(out ChromaticAberration chromatic))
             {
@@ -70,14 +71,11 @@ public class StatusEffectReceiver : MonoBehaviourPun
     // Ability cooldowns tick 10% faster while NOT being chased
     private void SetOverclockedMind(bool on, float amt)
     {
-        GameObject canvas = GameObject.Find("Canvas");
-        PlayerAbilityManager abilityManager = canvas.GetComponent<PlayerAbilityManager>();
-        abilityManager.ModifyAbilityCooldown(
-            0,
-            on
-                ? Mathf.RoundToInt(abilityManager.GetBaseCooldown(0) * (1f - amt * 0.1f))
-                : abilityManager.GetBaseCooldown(0)
-        );
+        PlayerAbilityManager abilityManager = FindFirstObjectByType<PlayerAbilityManager>();
+        if (abilityManager != null)
+        {
+            abilityManager.SetOverclockedMindActive(on);
+        }
     }
 
     public void ClearAllEffects()
@@ -87,14 +85,10 @@ public class StatusEffectReceiver : MonoBehaviourPun
 
         SetUnstablePresence(false, 0f);
 
-        GameObject canvas = GameObject.Find("Canvas");
-        if (canvas != null)
+        PlayerAbilityManager abilityManager = FindFirstObjectByType<PlayerAbilityManager>();
+        if (abilityManager != null)
         {
-            PlayerAbilityManager abilityManager = canvas.GetComponent<PlayerAbilityManager>();
-            if (abilityManager != null)
-            {
-                abilityManager.ModifyAbilityCooldown(0, abilityManager.GetBaseCooldown(0));
-            }
+            abilityManager.SetOverclockedMindActive(false);
         }
     }
 }

@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4881f9a2c4d568047b316028d20a8dca, type: 3}
   m_Name: Menu Baking Set
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolumeBakingSet
+  m_SceneBakeDataMap:
+  - key: 034e5f2e09ad5b24f82935607de8f674
+    value:
+      hasProbeVolume: 0
+      bakeScene: 1
+      bounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
   m_SceneBakeData:
     m_Keys:
     - 034e5f2e09ad5b24f82935607de8f674
@@ -40,14 +48,16 @@ MonoBehaviour:
       collisionMask:
         serializedVersion: 2
         m_Bits: 4294967291
-  m_SceneGUIDs:
+  m_ScenesInBakingSet:
   - 034e5f2e09ad5b24f82935607de8f674
+  m_SceneGUIDs: []
   obsoleteScenesToNotBake: []
   m_LightingScenarios:
   - Default
   cellDescs:
     m_Keys: 
     m_Values: []
+  m_PerSceneCellData: []
   m_SerializedPerSceneCellList: []
   cellSharedDataAsset:
     m_AssetGUID: 
@@ -110,7 +120,7 @@ MonoBehaviour:
   supportOffsetsChunkSize: 0
   supportDataChunkSize: 0
   lightingScenario: Default
-  version: 2
+  version: 3
   freezePlacement: 0
   probeOffset: {x: 0, y: 0, z: 0}
   simplificationLevels: 3

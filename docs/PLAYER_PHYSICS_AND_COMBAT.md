@@ -19,7 +19,8 @@ BaseCharacter (Root GameObject)
       ├── StandingSC (Applies upward & balance torque to keep character upright)
       ├── FootBalance_MM (Maintains grounded footing)
       ├── MovementSC (Applies directional walk forces)
-      └── SprintingSC (Increases force while draining stamina)
+      ├── SprintingSC (Increases force while draining stamina)
+      └── CrouchingSC (Lowers standing height offset and slows movement force)
 ```
 
 ### Key Physics Components
@@ -30,6 +31,7 @@ BaseCharacter (Root GameObject)
 | **`Rig`** | `RIG` | Master muscle strength controller (`rig.control = 1` for standing, `0` for limp ragdoll). |
 | **`MovementSC`** | `RIG` | Reads movement direction and applies physics forces (`Force = speed`) directly to the hip and leg rigidbodies. |
 | **`SprintingSC`** | `RIG` | When sprint key is held and stamina > 0, multiplies walk force and drains stamina over time. |
+| **`CrouchingSC`** | `RIG` | When Left Control is held, compresses `StandingSC.heightOffset` down into a crouch and applies `crouchSpeedMultiplier` to `MovementSC.Force`. |
 | **`CameraInput`** | `CameraHead` | Reads mouse and gamepad look inputs to rotate the camera and yaw the character orientation. |
 
 ---

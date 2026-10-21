@@ -41,7 +41,13 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         // MovementSC.Force acts as the "current speed" and can be modified at runtime by abilities/effects.
         MovementSC movement = GetComponentInChildren<MovementSC>();
         if (movement != null)
-            movement.Force = speed;
+        {
+            CrouchingSC crouching = GetComponentInChildren<CrouchingSC>();
+            if (crouching != null && crouching.isCrouched)
+                movement.Force = speed * crouching.crouchSpeedMultiplier;
+            else
+                movement.Force = speed;
+        }
 
         Debug.Log(
             $"[BasePlayerStats] Stats applied — health={health}, speed={speed}, stamina={stamina}/{maxStamina}"
@@ -58,6 +64,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         maxStamina = 100;
 
         speed = 35;
+        damageResistance = 0f;
 
         // 1. Reset Movement
         MovementSC movement = GetComponentInChildren<MovementSC>();
@@ -72,6 +79,13 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         if (sprinting != null)
         {
             sprinting.ResetSprintState();
+        }
+
+        // 3. Reset Crouching
+        CrouchingSC crouching = GetComponentInChildren<CrouchingSC>();
+        if (crouching != null)
+        {
+            crouching.ResetCrouchState();
         }
 
         // 3. Destroy dynamic ability runner components attached to player
@@ -128,6 +142,9 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     /// <summary>Maximum health for this character, set from the ScriptableObject at round start.</summary>
     public int maxHealth = 100;
 
+    /// <summary>Fractional damage resistance (0 to 1). When > 0, incoming damage is reduced.</summary>
+    public float damageResistance = 0f;
+
     /// <summary>Fired on the local player client when taking damage.</summary>
     public event System.Action<int> OnDamageTaken;
 
@@ -135,6 +152,10 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     public void TakeDamage(int damage)
     {
         int actualDamage = Mathf.Max(0, damage);
+        if (damageResistance > 0f)
+        {
+            actualDamage = Mathf.Max(1, Mathf.RoundToInt(actualDamage * (1f - Mathf.Clamp01(damageResistance))));
+        }
         health -= actualDamage;
         if (health < 0)
             health = 0;
