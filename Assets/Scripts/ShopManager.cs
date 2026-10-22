@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using PlayFab;
@@ -155,12 +156,27 @@ public class ShopManager : MonoBehaviour
         if (newState)
         {
             RefreshShopFromInventory();
-            EventSystem.current.SetSelectedGameObject(uiSelectionActive);
+            StartCoroutine(SelectDelayed(uiSelectionActive));
+        }
+        else
+        {
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(null);
         }
 
         CursorManager.SetState(
             newState ? CursorManager.CursorState.UI : CursorManager.CursorState.Gameplay
         );
+    }
+
+    private IEnumerator SelectDelayed(GameObject target)
+    {
+        yield return null;
+        if (target != null && target.activeInHierarchy && EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(target);
+        }
     }
 
     private void RefreshShopFromInventory()

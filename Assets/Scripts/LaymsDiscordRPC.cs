@@ -26,6 +26,10 @@ public class LaymsDiscordRPC : MonoBehaviour
 
     private void Connect()
     {
+#if UNITY_GAMECORE || UNITY_GAMECORE_XBOXONE || UNITY_GAMECORE_SCARLETT || UNITY_PS4 || UNITY_PS5 || UNITY_SWITCH
+        Debug.Log("[RPC] Discord RPC via named pipes is disabled on console platforms.");
+        return;
+#else
         for (int i = 0; i < 10; i++)
         {
             try
@@ -42,13 +46,14 @@ public class LaymsDiscordRPC : MonoBehaviour
                 Debug.Log($"[RPC] Connected on discord-ipc-{i}");
                 return;
             }
-            catch
+            catch (Exception)
             {
                 pipe?.Dispose();
                 pipe = null;
             }
         }
         Debug.LogWarning("[RPC] Could not connect to Discord. Is Discord running?");
+#endif
     }
 
     private void Handshake()

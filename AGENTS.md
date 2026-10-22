@@ -27,6 +27,8 @@ Welcome to the **CUBE** codebase. This document is the primary onboarding guide 
 > [!CAUTION]
 > ### RULE 1: NEVER RUN `dotnet build` OR TRIGGER UNITY BUILDS
 > Do not propose, generate, or execute `dotnet build`, `csc`, or command-line Unity batch builds unless explicitly instructed by the user.
+> 
+> **To check compilation or drive the running Editor:** Always use the **Unity CLI / MCP Bridge** (`unity recompile`, `unity cmd console_status`, `unity cmd eval_file`). See [Section 8: Unity CLI & MCP Bridge Guide](#8-unity-cli--mcp-bridge-guide-for-ai-agents).
 
 > [!CAUTION]
 > ### RULE 2: NEVER SET `transform.position` DIRECTLY ON PLAYERS
@@ -232,3 +234,74 @@ For exhaustive technical breakdowns of individual subsystems, consult the modula
 - [docs/CHARACTERS_AND_ABILITIES.md](file:///g:/Projects/physicsgamee/docs/CHARACTERS_AND_ABILITIES.md) — Data schemas, `CharacterDatabase` dynamic resolution, full moveset details, and ability input binding.
 - [docs/GAME_LOOP_AND_ECONOMY.md](file:///g:/Projects/physicsgamee/docs/GAME_LOOP_AND_ECONOMY.md) — Intermission/Round state machine, Malice killer algorithm, Cube Coin (`CC`) reward triggers, and PlayFab shop.
 - [docs/ACHIEVEMENTS_AND_EVENTS.md](file:///g:/Projects/physicsgamee/docs/ACHIEVEMENTS_AND_EVENTS.md) — Decoupled `GameplayEventBus`, statistics aggregation, requirement trees, and multi-platform adapters (Steam/PlayFab).
+
+---
+
+## 8. Unity CLI & MCP Bridge Guide for AI Agents
+
+> [!TIP]
+> **Use the live Unity CLI / MCP bridge instead of guessing or building from the command line.**
+> When Unity Editor is open, a local automation bridge runs on port 7800. AI agents should use the installed Unity CLI binary to trigger recompilation, inspect live scene hierarchies, read console logs, and author GameObjects/components directly in scenes and prefabs.
+
+### 8.1 Tool Location & Configuration
+- **CLI Executable Path**: `C:\Users\Dylan\AppData\Local\Unity\bin\unity.exe`
+- **MCP Config**: `C:\Users\Dylan\.gemini\config\mcp_config.json` (server name: `unity`, args: `["mcp"]`)
+- **Connected Port**: `7800` (auto-detected when running commands from project root `G:\Projects\physicsgamee`).
+
+### 8.2 Essential Commands Cheat Sheet
+
+| Task | Command | Description |
+| :--- | :--- | :--- |
+| **Check Editor Status** | `unity status` | Verifies connected Editor PID, version (`7000.0.0a10`), active project path, and port. |
+| **Recompile Scripts** | `unity recompile` | Requests the running Editor to recompile scripts. Returns exit code 0 on success or list of `CS` errors with line numbers. |
+| **Ground-Truth Console** | `unity cmd console_status` | Returns compilation status (`compilationFailed: false`), console error count, and warnings without polling logs. |
+| **Read Console Entries** | `unity cmd console --json` | Retrieves recent log entries, warnings, exceptions, and stack traces directly from Unity's internal buffer. |
+| **Execute C# Script** | `unity cmd eval_file <path.cs>` | Compiles and executes an arbitrary C# script in the running Editor via Roslyn. Ideal for scene authoring. |
+| **Evaluate One-Liner** | `unity cmd eval "return <code>;"` | Evaluates a single C# expression and returns the serialized JSON result. |
+| **Save Scene** | `unity cmd save_scene` | Saves open scenes to persist changes made via `eval_file`. |
+
+### 8.3 Recipe: Direct Scene Authoring (No Runtime Procedural Building)
+
+**Rule**: Do not write monolithic C# scripts that procedurally instantiate UI hierarchies, add buttons, and style colors at runtime in `Start()`. Instead, use `unity cmd eval_file` to author GameObjects and wire components directly into the scene or prefab asset.
+
+1. **Write an Editor Script into Scratch**:
+   Save a `.cs` file to your conversation scratch folder (`<appDataDir>/brain/<conversationId>/scratch/setup_ui.cs`):
+   ```csharp
+   // scratch/setup_ui.cs
+   var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+   var root = UnityEngine.GameObject.Find("Pause/Paused");
+
+   // Modify existing buttons
+   var btnTransform = root.transform.Find("List/Players");
+   var btn = btnTransform.GetComponent<UnityEngine.UI.Button>();
+   var targetComponent = root.GetComponentInParent<PauseMenu>();
+
+   // Add persistent onClick listener via UnityEventTools
+   while (btn.onClick.GetPersistentEventCount() > 0)
+       UnityEditor.Events.UnityEventTools.RemovePersistentListener(btn.onClick, 0);
+
+   var action = System.Delegate.CreateDelegate(
+       typeof(UnityEngine.Events.UnityAction),
+       targetComponent,
+       "OpenPlayersModal"
+   ) as UnityEngine.Events.UnityAction;
+
+   UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, action);
+   UnityEditor.EditorUtility.SetDirty(btn);
+
+   // Mark scene dirty and save
+   UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+   UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+   return "UI authored and saved successfully!";
+   ```
+
+2. **Run it via CLI**:
+   ```powershell
+   & "C:\Users\Dylan\AppData\Local\Unity\bin\unity.exe" cmd eval_file "C:\Users\Dylan\...path...\scratch\setup_ui.cs"
+   ```
+
+3. **Verify via Console Status**:
+   ```powershell
+   & "C:\Users\Dylan\AppData\Local\Unity\bin\unity.exe" cmd console_status
+   ```
+

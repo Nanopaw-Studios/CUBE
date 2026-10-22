@@ -34,6 +34,9 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
     string PlayFabId;
     static string displayName;
 
+    /// <summary>The authenticated local player's PlayFabId (null until login succeeds).</summary>
+    public string LocalPlayFabId => PlayFabId;
+
     private float searchInterval = 1f;
     private float searchTimer = 0f;
 
@@ -71,6 +74,43 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     void Login()
     {
+        CrossPlatformManager.EnsureExists();
+
+        if (CrossPlatformManager.Instance.CurrentPlatform == PlatformType.Xbox)
+        {
+            Debug.Log("[PlayfabManager] Xbox platform detected. Initiating Xbox Live authentication...");
+            CrossPlatformManager.Instance.AuthenticatePlatform((success, gamertag, xuid, token) =>
+            {
+                if (success && !string.IsNullOrEmpty(token) && token != "SIMULATED_XBOX_TOKEN")
+                {
+                    Debug.Log($"[PlayfabManager] Performing LoginWithXbox for Gamertag: {gamertag}...");
+                    var request = new LoginWithXboxRequest
+                    {
+                        XboxToken = token,
+                        CreateAccount = true,
+                        InfoRequestParameters = new GetPlayerCombinedInfoRequestParams
+                        {
+                            GetPlayerProfile = true,
+                            GetUserData = true,
+                        },
+                    };
+                    PlayFabClientAPI.LoginWithXbox(request, res => OnLoginSuccess(res, gamertag), OnError);
+                }
+                else
+                {
+                    Debug.Log($"[PlayfabManager] Using device fallback auth (simulated/offline Xbox token) for Gamertag: {gamertag}...");
+                    LoginWithCustomId(gamertag);
+                }
+            });
+        }
+        else
+        {
+            LoginWithCustomId(null);
+        }
+    }
+
+    void LoginWithCustomId(string platformGamertag)
+    {
         var request = new LoginWithCustomIDRequest
         {
             CustomId = SystemInfo.deviceUniqueIdentifier,
@@ -81,8 +121,9 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
                 GetUserData = true,
             },
         };
-        PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnError);
+        PlayFabClientAPI.LoginWithCustomID(request, res => OnLoginSuccess(res, platformGamertag), OnError);
     }
+
 
     void SceneChanged(Scene prev, Scene next)
     {
@@ -147,22 +188,54 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
 
     private void OnLoginSuccess(LoginResult result)
     {
+        OnLoginSuccess(result, null);
+    }
+
+    private void OnLoginSuccess(LoginResult result, string platformGamertag)
+    {
         Debug.Log("Logged in! additional info: " + result.ToJson());
 
         if (!string.IsNullOrEmpty(result.PlayFabId))
             PlayFabId = result.PlayFabId;
 
-        var profile = result.InfoResultPayload?.PlayerProfile;
-        if (profile != null && !string.IsNullOrEmpty(profile.DisplayName))
+        bool isXbox = CrossPlatformManager.Instance != null && CrossPlatformManager.Instance.CurrentPlatform == PlatformType.Xbox;
+
+        if (isXbox || !string.IsNullOrEmpty(platformGamertag))
         {
-            displayName = profile.DisplayName;
+            // XR-045: On Xbox, the Gamertag MUST be the user's display name and nameWindow must NEVER be shown.
+            string targetName = !string.IsNullOrEmpty(platformGamertag) ? platformGamertag :
+                                (CrossPlatformManager.Instance != null && !string.IsNullOrEmpty(CrossPlatformManager.Instance.LocalGamertag) ? CrossPlatformManager.Instance.LocalGamertag : "XboxPlayer");
+
+            displayName = targetName;
             InfoText(Application.version + " | " + displayName + " | " + "Logged In");
+
+            if (nameWindow != null)
+                nameWindow.SetActive(false);
+
+            var profile = result.InfoResultPayload?.PlayerProfile;
+            if (profile == null || profile.DisplayName != targetName)
+            {
+                var updateReq = new UpdateUserTitleDisplayNameRequest { DisplayName = targetName };
+                PlayFabClientAPI.UpdateUserTitleDisplayName(updateReq,
+                    updateRes => Debug.Log($"[PlayfabManager] Synced PlayFab display name to Xbox Gamertag: {updateRes.DisplayName}"),
+                    updateErr => Debug.LogWarning($"[PlayfabManager] Could not update PlayFab display name to Gamertag: {updateErr.ErrorMessage}")
+                );
+            }
         }
         else
         {
-            InfoText(Application.version + " | " + "Not Set!" + " | " + "Logged In");
-            if (nameWindow != null)
-                nameWindow.SetActive(true);
+            var profile = result.InfoResultPayload?.PlayerProfile;
+            if (profile != null && !string.IsNullOrEmpty(profile.DisplayName))
+            {
+                displayName = profile.DisplayName;
+                InfoText(Application.version + " | " + displayName + " | " + "Logged In");
+            }
+            else
+            {
+                InfoText(Application.version + " | " + "Not Set!" + " | " + "Logged In");
+                if (nameWindow != null)
+                    nameWindow.SetActive(true);
+            }
         }
 
         // Cache developer badge verification status from user data
@@ -239,6 +312,8 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         Debug.Log("Updated name to: " + result.DisplayName);
         displayName = result.DisplayName;
         InfoText(Application.version + " | " + displayName + " | " + "Logged In");
+        if (nameWindow != null)
+            nameWindow.SetActive(false);
     }
 
     // =============================
@@ -433,6 +508,31 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
     }
 
     public static string GetPlayerName() => displayName;
+
+    /// <summary>
+    /// Returns the active platform type (Xbox, Steam, PC, etc.) detected for this client.
+    /// </summary>
+    public static PlatformType GetActivePlatform()
+    {
+        return CrossPlatformManager.Instance != null ? CrossPlatformManager.Instance.CurrentPlatform : PlatformType.PC;
+    }
+
+    /// <summary>
+    /// Returns true if this client is running in an Xbox GDK/GameCore environment or simulated Xbox mode.
+    /// </summary>
+    public static bool IsXboxPlatform()
+    {
+        return GetActivePlatform() == PlatformType.Xbox;
+    }
+
+    /// <summary>
+    /// Returns the local player's 64-bit Xbox User ID (XUID) if authenticated on Xbox Live, or 0.
+    /// </summary>
+    public static ulong GetLocalXuid()
+    {
+        return CrossPlatformManager.Instance != null ? CrossPlatformManager.Instance.LocalXuid : 0;
+    }
+
 
     /// <summary>
     /// Gets a single UserData value by key.

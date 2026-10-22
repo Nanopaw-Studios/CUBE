@@ -21,9 +21,12 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
     [Tooltip("The root GameObject of the world-space nametag canvas. Hidden during rounds.")]
     public GameObject nametagRoot;
 
-    private const string PROP_NAME = "n";
-    private const string PROP_TITLE = "t";
-    private const string PROP_VERIFICATION = "v";
+    public const string PROP_NAME = "n";
+    public const string PROP_TITLE = "t";
+    public const string PROP_VERIFICATION = "v";
+    public const string PROP_PLATFORM = "plt";
+    public const string PROP_XUID = "xuid";
+    public const string PROP_GAMERTAG = "gt";
 
     private RoundManager roundManager;
 
@@ -61,11 +64,26 @@ public class PlayerNameSyncer : MonoBehaviourPunCallbacks
             if (!titleLoaded || !verificationLoaded)
                 return;
 
+            string platformStr = CrossPlatformManager.Instance != null
+                ? CrossPlatformManager.Instance.LocalPlatformString
+                : PlayfabManager.GetActivePlatform().ToString();
+
+            string xuidStr = CrossPlatformManager.Instance != null && CrossPlatformManager.Instance.LocalXuid != 0
+                ? CrossPlatformManager.Instance.LocalXuid.ToString()
+                : "";
+
+            string gamertag = CrossPlatformManager.Instance != null
+                ? (CrossPlatformManager.Instance.LocalGamertag ?? "")
+                : "";
+
             var props = new Hashtable
             {
                 { PROP_NAME, playerName },
                 { PROP_TITLE, titleId },
                 { PROP_VERIFICATION, verification },
+                { PROP_PLATFORM, platformStr },
+                { PROP_XUID, xuidStr },
+                { PROP_GAMERTAG, gamertag },
             };
 
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);

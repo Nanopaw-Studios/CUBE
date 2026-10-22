@@ -60,40 +60,63 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
         SceneManager.sceneLoaded += sceneChange;
     }
 
+    public static string LastDisconnectReason = string.Empty;
+
     private void sceneChange(Scene scene, LoadSceneMode mode)
     {
         if (scene.name == "Menu")
         {
-            joinCode = GameObject
-                .Find("Canvas")
-                .transform.Find("Join/List/InputField (TMP)")
-                .GetComponent<TMP_InputField>();
+            var joinCodeTransform = GameObject.Find("Canvas")?.transform.Find("Join/List/InputField (TMP)");
+            if (joinCodeTransform != null)
+                joinCode = joinCodeTransform.GetComponent<TMP_InputField>();
 
             joiningInProgress = false;
             intent = JoinIntent.None;
             targetRoomName = null;
 
-            // 🔥 Rebind buttons
-            Button publicBtn = GameObject
-                .Find("Canvas")
-                .transform.Find("Play Menu/List/Public")
-                .GetComponent<Button>();
-            publicBtn.onClick.RemoveAllListeners();
-            publicBtn.onClick.AddListener(ClickPublic);
+            // 🔥 Rebind buttons safely
+            var canvas = GameObject.Find("Canvas");
+            if (canvas != null)
+            {
+                var publicBtnTransform = canvas.transform.Find("Play Menu/List/Public");
+                if (publicBtnTransform != null)
+                {
+                    Button publicBtn = publicBtnTransform.GetComponent<Button>();
+                    if (publicBtn != null)
+                    {
+                        publicBtn.onClick.RemoveAllListeners();
+                        publicBtn.onClick.AddListener(ClickPublic);
+                    }
+                }
 
-            Button createBtn = GameObject
-                .Find("Canvas")
-                .transform.Find("Play Menu/List/Host Private Game")
-                .GetComponent<Button>();
-            createBtn.onClick.RemoveAllListeners();
-            createBtn.onClick.AddListener(ClickCreatePrivate);
+                var createBtnTransform = canvas.transform.Find("Play Menu/List/Host Private Game");
+                if (createBtnTransform != null)
+                {
+                    Button createBtn = createBtnTransform.GetComponent<Button>();
+                    if (createBtn != null)
+                    {
+                        createBtn.onClick.RemoveAllListeners();
+                        createBtn.onClick.AddListener(ClickCreatePrivate);
+                    }
+                }
 
-            Button joinBtn = GameObject
-                .Find("Cavas")
-                .transform.Find("Play Menu/List/Join Private Game")
-                .GetComponent<Button>();
-            joinBtn.onClick.RemoveAllListeners();
-            joinBtn.onClick.AddListener(ClickJoinPrivate_InputField);
+                var joinBtnTransform = canvas.transform.Find("Play Menu/List/Join Private Game");
+                if (joinBtnTransform != null)
+                {
+                    Button joinBtn = joinBtnTransform.GetComponent<Button>();
+                    if (joinBtn != null)
+                    {
+                        joinBtn.onClick.RemoveAllListeners();
+                        joinBtn.onClick.AddListener(ClickJoinPrivate_InputField);
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(LastDisconnectReason))
+            {
+                Debug.LogWarning($"[PhotonMenuConnector] Returned to Menu due to: {LastDisconnectReason}");
+                LastDisconnectReason = string.Empty;
+            }
 
             Debug.Log("PhotonMenuConnector reset for menu.");
         }
@@ -180,7 +203,9 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
     public override void OnJoinRandomFailed(short returnCode, string message)
     {
         Debug.Log($"JoinRandomFailed: {message} -> creating public room");
-        PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = 8 }, TypedLobby.Default);
+        // PublishUserId: lets room members read each other's PlayFabId (Photon UserId)
+        // for reporting and persistent muting. See PlayerSafetyIdentity.
+        PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = 8, PublishUserId = true }, TypedLobby.Default);
     }
 
     public override void OnJoinRoomFailed(short returnCode, string message)
@@ -203,6 +228,46 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
         }
 
         joiningInProgress = false;
+    }
+
+    public override void OnDisconnected(DisconnectCause cause)
+    {
+        Debug.LogWarning($"[PhotonMenuConnector] OnDisconnected: {cause}");
+        joiningInProgress = false;
+        intent = JoinIntent.None;
+
+        if (cause != DisconnectCause.DisconnectByClientLogic && cause != DisconnectCause.None)
+        {
+            LastDisconnectReason = $"Disconnected from match ({cause})";
+        }
+
+        string activeScene = SceneManager.GetActiveScene().name;
+        if (activeScene != "Menu")
+        {
+            Debug.LogWarning($"[PhotonMenuConnector] Disconnected while in '{activeScene}'. Recovering to Menu.");
+            CursorManager.SetState(CursorManager.CursorState.UI);
+            SceneManager.LoadScene("Menu");
+        }
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        // When resuming from suspend / Quick Resume (pauseStatus == false)
+        if (!pauseStatus)
+        {
+            Debug.Log("[PhotonMenuConnector] Resumed from application pause. Checking connection status...");
+            if (!PhotonNetwork.IsConnected)
+            {
+                string activeScene = SceneManager.GetActiveScene().name;
+                if (activeScene != "Menu")
+                {
+                    Debug.LogWarning("[PhotonMenuConnector] Network dropped during suspension. Recovering to Menu.");
+                    LastDisconnectReason = "Session expired while suspended.";
+                    CursorManager.SetState(CursorManager.CursorState.UI);
+                    SceneManager.LoadScene("Menu");
+                }
+            }
+        }
     }
 
     // ====== Core logic ======
@@ -231,6 +296,7 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
                     MaxPlayers = 8,
                     IsVisible = false, // hidden from lobby lists
                     IsOpen = true,
+                    PublishUserId = true, // required for reporting / persistent muting
                 };
                 PhotonNetwork.CreateRoom(targetRoomName, opts, TypedLobby.Default);
                 break;

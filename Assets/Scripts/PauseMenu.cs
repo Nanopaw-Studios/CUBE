@@ -31,6 +31,11 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     private GameObject devPhysicsButtonGO;
     private GameObject devPhysicsModalGO;
 
+    [Header("Player Safety / Moderation")]
+    [SerializeField] private Button resumeButton;
+    [SerializeField] private Button playersButton;
+    [SerializeField] private PlayerModerationUI moderationUI;
+
     public override void OnEnable()
     {
         base.OnEnable();
@@ -54,6 +59,17 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     {
         pauseMenuAnimator = GetComponent<Animator>();
         roundManager = FindFirstObjectByType<RoundManager>();
+
+        if (resumeButton == null && pauseMenu != null)
+        {
+            Transform r = pauseMenu.transform.Find("List/Resume");
+            if (r != null) resumeButton = r.GetComponent<Button>();
+        }
+        if (playersButton == null && pauseMenu != null)
+        {
+            Transform p = pauseMenu.transform.Find("List/Players");
+            if (p != null) playersButton = p.GetComponent<Button>();
+        }
 
         if (roomCodeText != null && PhotonNetwork.CurrentRoom != null)
         {
@@ -185,14 +201,98 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         {
             devPhysicsModalGO.SetActive(true);
             devPhysicsModalGO.transform.SetAsLastSibling();
+            Selectable firstSel = devPhysicsModalGO.GetComponentInChildren<Selectable>();
+            if (firstSel != null)
+                SetFocus(firstSel.gameObject);
+        }
+    }
+
+    public void OpenPlayersModal()
+    {
+        if (moderationUI != null)
+        {
+            moderationUI.OpenDialog();
+        }
+        else
+        {
+            Transform modalParent = pauseMenu != null ? pauseMenu.transform : transform;
+            moderationUI = PlayerModerationUI.Open(modalParent, QuitButton != null ? QuitButton.gameObject : null);
+        }
+    }
+
+    public void ClosePlayersModal()
+    {
+        if (moderationUI != null)
+            moderationUI.CloseDialog();
+        else
+            PlayerModerationUI.Close();
+
+        SetFocusToPlayersButton();
+    }
+
+    public void SetFocus(GameObject target)
+    {
+        StartCoroutine(SelectDelayed(target));
+    }
+
+    public void SetFocusToPlayersButton()
+    {
+        if (playersButton != null)
+            SetFocus(playersButton.gameObject);
+    }
+
+    private IEnumerator SelectDelayed(GameObject target)
+    {
+        yield return null;
+        if (target != null && target.activeInHierarchy && UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(target);
         }
     }
 
     void Update()
     {
-        if (pauseAction != null && pauseAction.action.WasPressedThisFrame())
+        bool pausePressed = pauseAction != null && pauseAction.action.WasPressedThisFrame();
+        bool cancelPressed = false;
+        if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
+            cancelPressed = true;
+        else if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            cancelPressed = true;
+
+        if (pausePressed)
         {
-            PauseStateChange();
+            if (PlayerModerationUI.IsOpen)
+            {
+                ClosePlayersModal();
+            }
+            else if (devPhysicsModalGO != null && devPhysicsModalGO.activeSelf)
+            {
+                devPhysicsModalGO.SetActive(false);
+                if (devPhysicsButtonGO != null)
+                    SetFocus(devPhysicsButtonGO);
+            }
+            else
+            {
+                PauseStateChange();
+            }
+        }
+        else if (cancelPressed && GameIsPaused)
+        {
+            if (PlayerModerationUI.IsOpen)
+            {
+                ClosePlayersModal();
+            }
+            else if (devPhysicsModalGO != null && devPhysicsModalGO.activeSelf)
+            {
+                devPhysicsModalGO.SetActive(false);
+                if (devPhysicsButtonGO != null)
+                    SetFocus(devPhysicsButtonGO);
+            }
+            else
+            {
+                PauseStateChange();
+            }
         }
 
         if (QuitButton != null && roundManager != null)
@@ -214,11 +314,19 @@ public class PauseMenu : MonoBehaviourPunCallbacks
 
             if (shopManager != null)
                 shopManager.enabled = false;
+
+            GameObject focusTarget = resumeButton != null ? resumeButton.gameObject : (QuitButton != null ? QuitButton.gameObject : null);
+            SetFocus(focusTarget);
         }
         else
         {
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+
             if (devPhysicsModalGO != null)
                 devPhysicsModalGO.SetActive(false);
+            if (PlayerModerationUI.IsOpen)
+                PlayerModerationUI.Close();
 
             onResume.Invoke();
             pauseMenuAnimator.Play("PauseFadeOut");
@@ -237,6 +345,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         yield return new WaitForSeconds(0.3f);
         if (devPhysicsModalGO != null)
             devPhysicsModalGO.SetActive(false);
+        if (PlayerModerationUI.IsOpen)
+            PlayerModerationUI.Close();
         pauseMenu.SetActive(false);
     }
 
@@ -257,6 +367,7 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         isLeavingRoom = true;
 
         GameIsPaused = false;
+        PlayerReportService.ResetSession();
 
         if (PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Joined)
         {
@@ -274,6 +385,7 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnLeftRoom()
     {
+        PlayerReportService.ResetSession();
         loader.LoadLevel("Menu");
     }
 

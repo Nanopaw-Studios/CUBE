@@ -31,6 +31,13 @@ public class CameraInput : MonoBehaviour
     private const string OLD_KEY_MOUSE_SENSITIVITY = "MouseSensivity";
     private const string OLD_KEY_GAMEPAD_SENSITIVITY = "GamepadSensivity";
 
+    public static event System.Action OnSensitivityChanged;
+
+    public static void NotifySensitivityChanged()
+    {
+        OnSensitivityChanged?.Invoke();
+    }
+
     private void Awake()
     {
         RefreshSensitivity();
@@ -40,6 +47,12 @@ public class CameraInput : MonoBehaviour
     private void OnEnable()
     {
         RefreshSensitivity();
+        OnSensitivityChanged += RefreshSensitivity;
+    }
+
+    private void OnDisable()
+    {
+        OnSensitivityChanged -= RefreshSensitivity;
     }
 
     public void RefreshSensitivity()
@@ -80,8 +93,6 @@ public class CameraInput : MonoBehaviour
     private void Update()
     {
         if (lookAction == null) return;
-
-        RefreshSensitivity();
 
         Vector2 rawInput = lookAction.ReadValue<Vector2>();
 

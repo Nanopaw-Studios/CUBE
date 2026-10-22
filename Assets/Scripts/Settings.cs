@@ -93,12 +93,14 @@ public class Settings : MonoBehaviour
     {
         PlayerPrefs.SetFloat(KEY_MOUSE_SENSITIVITY, value);
         PlayerPrefs.Save();
+        CameraInput.NotifySensitivityChanged();
     }
 
     public void SetGamepadSensitivity(float value)
     {
         PlayerPrefs.SetFloat(KEY_GAMEPAD_SENSITIVITY, value);
         PlayerPrefs.Save();
+        CameraInput.NotifySensitivityChanged();
     }
 
     // ---------------- GRAPHICS ----------------
