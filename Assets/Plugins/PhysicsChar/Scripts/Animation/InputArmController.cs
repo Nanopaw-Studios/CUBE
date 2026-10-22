@@ -19,7 +19,17 @@ public class InputArmController : MonoBehaviour
 
     private void OnEnable()
     {
+        var pv = GetComponentInParent<Photon.Pun.PhotonView>();
+        if (pv != null && !pv.IsMine)
+        {
+            enabled = false;
+            return;
+        }
+
         armController = GetComponent<ArmController>();
+
+        if (leftClickAction == null && leftClickActionRef != null)
+            leftClickAction = leftClickActionRef.action;
 
         if (leftClickAction != null)
         {
@@ -41,11 +51,13 @@ public class InputArmController : MonoBehaviour
 
     private void OnLeftClickStarted(InputAction.CallbackContext context)
     {
-        armController.ArmHandle(Hands.Right, false);
+        if (armController != null)
+            armController.ArmHandle(Hands.Right, false);
     }
 
     private void OnLeftClickCanceled(InputAction.CallbackContext context)
     {
-        armController.ArmHandle(Hands.Right, true);
+        if (armController != null)
+            armController.ArmHandle(Hands.Right, true);
     }
 }

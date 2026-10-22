@@ -148,6 +148,8 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     /// <summary>Fired on the local player client when taking damage.</summary>
     public event System.Action<int> OnDamageTaken;
 
+    private CameraShaker localCameraShaker;
+
     [PunRPC]
     public void TakeDamage(int damage)
     {
@@ -162,10 +164,26 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
 
         if (photonView.IsMine)
         {
-            if (CameraShaker.Instance != null)
+            if (localCameraShaker == null)
+            {
+                localCameraShaker = GetComponentInChildren<CameraShaker>();
+            }
+
+            if (localCameraShaker != null)
+            {
+                localCameraShaker.ShakeOnce(1.4f, 4f, 0f, 0.7f);
+            }
+            else if (CameraShaker.Instance != null)
             {
                 CameraShaker.Instance.ShakeOnce(1.4f, 4f, 0f, 0.7f);
             }
+
+            AudioClip hitClip = Resources.Load<AudioClip>("SFX/punch_hit");
+            if (hitClip != null)
+            {
+                AudioSource.PlayClipAtPoint(hitClip, transform.position);
+            }
+
             OnDamageTaken?.Invoke(actualDamage);
         }
     }

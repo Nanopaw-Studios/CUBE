@@ -34,6 +34,12 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     {
         Debug.Log($"Setting player type to: {type}");
         playerType = type;
+
+        var armController = GetComponentInChildren<InputArmController>(true);
+        if (armController != null)
+        {
+            armController.enabled = (type == PlayerType.Killer && photonView.IsMine);
+        }
     }
 
     #endregion

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 namespace EZCameraShake
@@ -35,8 +35,12 @@ namespace EZCameraShake
 
         void Awake()
         {
-            Instance = this;
-            instanceList.Add(gameObject.name, this);
+            var pv = GetComponentInParent<Photon.Pun.PhotonView>();
+            if (pv == null || pv.IsMine || Instance == null)
+            {
+                Instance = this;
+            }
+            instanceList[gameObject.name] = this;
         }
 
         void Update()
@@ -177,6 +181,8 @@ namespace EZCameraShake
 
         void OnDestroy()
         {
+            if (Instance == this)
+                Instance = null;
             instanceList.Remove(gameObject.name);
         }
     }

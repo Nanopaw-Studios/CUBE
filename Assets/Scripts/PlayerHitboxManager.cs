@@ -33,11 +33,15 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
 
         // Ensure hitbox collider GameObjects are on the Player layer so physics
         // collision matrix works and OverlapBox queries find them correctly.
-        foreach (CollisionCallback callback in damageColliders)
+        int playerLayer = LayerMask.NameToLayer("Player");
+        if (playerLayer != -1)
         {
-            if (callback == null)
-                continue;
-            callback.gameObject.layer = LayerMask.GetMask("Player");
+            foreach (CollisionCallback callback in damageColliders)
+            {
+                if (callback == null)
+                    continue;
+                callback.gameObject.layer = playerLayer;
+            }
         }
 
         // Only the local owner's hitboxes should fire outgoing hits.
@@ -50,6 +54,11 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
             }
         }
     }
+
+    [Header("Collision Hit Settings")]
+    [SerializeField]
+    private float collisionHitCooldown = 0.4f;
+    private readonly System.Collections.Generic.Dictionary<PhotonView, float> lastCollisionHitPerTarget = new();
 
     void CollisionEntered(Collision collision)
     {
@@ -81,6 +90,14 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
         )
             return;
 
+        // Debounce collision hits per target to prevent multi-hit instakills from physics contacts
+        if (lastCollisionHitPerTarget.TryGetValue(targetView, out float lastHitTime) &&
+            Time.time - lastHitTime < collisionHitCooldown)
+        {
+            return;
+        }
+        lastCollisionHitPerTarget[targetView] = Time.time;
+
         int damage = killerType.PunchDamage;
 
         // Cache the target's current health before the RPC reduces it.
@@ -96,6 +113,20 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
         {
             CubeCoinRewardManager rewardManager = GetComponent<CubeCoinRewardManager>();
             rewardManager?.OnKilledSurvivor();
+
+            CUBE.Achievements.GameplayEventBus.Publish(
+                new CUBE.Achievements.GameplayEvent(CUBE.Achievements.GameplayEventType.PlayerKilledEnemy)
+            );
+        }
+
+        // Attacker feedback: shake killer's camera & play punch impact sound
+        CameraShaker localShaker = GetComponentInChildren<CameraShaker>();
+        localShaker?.ShakeOnce(1.0f, 4f, 0.05f, 0.2f);
+
+        AudioClip hitSound = Resources.Load<AudioClip>("SFX/punch_hit");
+        if (hitSound != null)
+        {
+            AudioSource.PlayClipAtPoint(hitSound, collision.GetContact(0).point);
         }
     }
 

@@ -59,23 +59,7 @@ public class PlayerUIHandler : MonoBehaviour
 
     private void Start()
     {
-        playerStats = Camera
-            .main.GetComponent<PlayerCameraReferences>()
-            .GetPlayer()
-            .GetComponent<BasePlayerStats>();
-        localBasePlayer = Camera
-            .main.GetComponent<PlayerCameraReferences>()
-            .GetPlayer()
-            .GetComponent<BasePlayer>();
-
-        if (playerStats == null)
-        {
-            Debug.LogError("BasePlayerStats component not found on the player!");
-        }
-        else
-        {
-            BindPlayerStats(playerStats);
-        }
+        TryBindLocalPlayer();
 
         // Keep the money UI in sync whenever CC changes (add, spend, or refresh).
         if (PlayfabManager.Instance != null)
@@ -93,6 +77,39 @@ public class PlayerUIHandler : MonoBehaviour
         if (CUBE.Achievements.AchievementService.Instance != null)
         {
             CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked += OnAchievementUnlocked;
+        }
+    }
+
+    private void TryBindLocalPlayer()
+    {
+        if (playerStats != null && localBasePlayer != null)
+            return;
+
+        GameObject player = null;
+        if (PhotonLauncher.LocalPlayerInstance != null)
+        {
+            player = PhotonLauncher.LocalPlayerInstance;
+        }
+        else if (Camera.main != null)
+        {
+            var camRefs = Camera.main.GetComponent<PlayerCameraReferences>();
+            if (camRefs != null)
+                player = camRefs.GetPlayer();
+        }
+
+        if (player != null)
+        {
+            var stats = player.GetComponent<BasePlayerStats>();
+            var basePlayer = player.GetComponent<BasePlayer>();
+            if (stats != null)
+            {
+                playerStats = stats;
+                BindPlayerStats(playerStats);
+            }
+            if (basePlayer != null)
+            {
+                localBasePlayer = basePlayer;
+            }
         }
     }
 
@@ -223,13 +240,7 @@ public class PlayerUIHandler : MonoBehaviour
 
         if (playerStats == null || localBasePlayer == null)
         {
-            var player = Camera.main.GetComponent<PlayerCameraReferences>().GetPlayer();
-            playerStats = player.GetComponent<BasePlayerStats>();
-            localBasePlayer = player.GetComponent<BasePlayer>();
-            if (playerStats != null)
-            {
-                BindPlayerStats(playerStats);
-            }
+            TryBindLocalPlayer();
         }
 
         if (playerStats != null)
@@ -277,7 +288,7 @@ public class PlayerUIHandler : MonoBehaviour
                 if (finalAlpha > 0.001f)
                 {
                     damageVingette.gameObject.SetActive(true);
-                    Color c = damageVingette.color;
+                    Color c = Color.red;
                     c.a = finalAlpha;
                     damageVingette.color = c;
                 }
