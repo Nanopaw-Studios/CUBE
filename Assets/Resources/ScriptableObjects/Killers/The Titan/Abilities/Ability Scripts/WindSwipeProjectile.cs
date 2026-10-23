@@ -47,7 +47,15 @@ public class WindSwipeProjectile : MonoBehaviourPun
         bool isKillingBlow = targetStats != null && targetStats.health - damage <= 0 && targetStats.health > 0;
 
         targetPV.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, damage);
-        Debug.Log($"[WindSwipe] Hit {targetPV.Owner.NickName} for {damage} damage.");
+
+        // Apply WindStagger status effect (Tier 2, 3 seconds)
+        StatusEffectManager targetFx = targetHitbox.GetComponent<StatusEffectManager>();
+        if (targetFx != null)
+        {
+            targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.WindStagger, (byte)2, 3f);
+        }
+
+        Debug.Log($"[WindSwipe] Hit {targetPV.Owner.NickName} for {damage} damage and applied WindStagger.");
 
         if (isKillingBlow)
         {

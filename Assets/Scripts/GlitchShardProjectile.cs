@@ -73,7 +73,15 @@ public class GlitchShardProjectile : MonoBehaviourPun
             targetStats != null && targetStats.health - damage <= 0 && targetStats.health > 0;
 
         targetView.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, damage);
-        Debug.Log($"[GlitchShardProjectile] Hit {targetView.Owner.NickName} for {damage} damage.");
+
+        // Apply Glitch Distortion status effect (Tier 2, 5 seconds)
+        StatusEffectManager targetFx = targetHitbox.GetComponent<StatusEffectManager>();
+        if (targetFx != null)
+        {
+            targetView.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.GlitchDistortion, (byte)2, 5f);
+        }
+
+        Debug.Log($"[GlitchShardProjectile] Hit {targetView.Owner.NickName} for {damage} damage and applied Glitch Distortion.");
 
         if (isKillingBlow)
         {

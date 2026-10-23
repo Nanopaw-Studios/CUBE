@@ -107,9 +107,6 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
         if (cam == null)
             return;
 
-        // Play swing sound
-        PlaySwingSound(cam.position);
-
         Vector3 size = killerType.punchHitboxSize;
         Vector3 center = cam.position + cam.forward * (size.z / 2f + 0.6f);
         Quaternion rotation = Quaternion.Euler(0f, cam.eulerAngles.y, 0f);
@@ -154,6 +151,24 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
                 targetStats != null && targetStats.health - damage <= 0 && targetStats.health > 0;
 
             targetPV.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, damage);
+
+            // Apply killer-specific status effect on punch impact
+            StatusEffectManager targetFx = target.GetComponent<StatusEffectManager>();
+            if (targetFx != null)
+            {
+                if (killerType != null && killerType._Name.Contains("Glitch"))
+                {
+                    targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.GlitchDistortion, (byte)1, 3.5f);
+                }
+                else if (killerType != null && killerType._Name.Contains("Titan"))
+                {
+                    targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.Tremor, (byte)1, 2.5f);
+                }
+                else
+                {
+                    targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.HeavyLegs, (byte)1, 1.5f);
+                }
+            }
 
             Debug.Log($"[Punch] Hit {targetPV.Owner.NickName} for {damage}");
 

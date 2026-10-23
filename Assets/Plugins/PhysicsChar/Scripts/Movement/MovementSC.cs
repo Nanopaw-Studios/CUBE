@@ -4,6 +4,7 @@ public class MovementSC : MonoBehaviour
 {
     Rig data;
     public float Force;
+    public float SpeedModifier = 1f;
     public float BackwardsSpeedMultiplier = 0.9f;
 
     private void Awake()
@@ -13,6 +14,9 @@ public class MovementSC : MonoBehaviour
 
     public void Move(Vector3 move)
     {
+        if (SpeedModifier <= 0f)
+            return; // Completely frozen/immobilized
+
         float speedMultiplier = 1f;
 
         if (Camera.main != null)
@@ -30,7 +34,7 @@ public class MovementSC : MonoBehaviour
         {
             if (rb != null)
             {
-                rb.AddForce(move * Force * data.control * moveMult * speedMultiplier, ForceMode.Acceleration);
+                rb.AddForce(move * Force * SpeedModifier * data.control * moveMult * speedMultiplier, ForceMode.Acceleration);
             }
         }
     }

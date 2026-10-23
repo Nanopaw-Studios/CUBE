@@ -542,6 +542,22 @@ public class PlayerAbilityManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Instantly resets all ability cooldowns so they are ready to cast immediately.
+    /// Useful for testing and debug menus.
+    /// </summary>
+    public void ResetAllCooldowns()
+    {
+        for (int i = 0; i < cooldownTimers.Count; i++)
+        {
+            if (i < activeMoveset.Count && activeMoveset[i] != null)
+            {
+                cooldownTimers[i] = activeMoveset[i].AbilityCooldown;
+            }
+        }
+        SetAllCooldownTexts("Ready");
+    }
+
     private void DumpActions()
     {
         if (inputActions == null)

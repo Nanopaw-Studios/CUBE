@@ -77,17 +77,18 @@ public class EqualizerWallFunction : MonoBehaviourPunCallbacks
         PhotonView pv = PhotonView.Find(viewId);
         if (pv == null || !pv.IsMine) return;
 
-        MovementSC movement = pv.gameObject.GetComponentInChildren<MovementSC>();
-        if (movement == null) return;
+        StatusEffectManager sem = pv.gameObject.GetComponent<StatusEffectManager>();
+        if (sem == null)
+            sem = pv.gameObject.AddComponent<StatusEffectManager>();
 
-        BasePlayerStats stats = pv.gameObject.GetComponent<BasePlayerStats>();
-        float baseSpeed = stats != null ? stats.speed : 5f;
-
-        movement.Force = on ? baseSpeed * multiplier : baseSpeed;
-
-        CUBEStatusText.CreateText(on
-            ? "<color=yellow>You've been slowed by the Equalizer!</color>"
-            : "Equalizer slow removed.");
+        if (on)
+        {
+            sem.ApplyEffect(StatusEffectType.Equalized, 2, 999f, multiplier);
+        }
+        else
+        {
+            sem.RemoveEffect(StatusEffectType.Equalized);
+        }
     }
 
     private void NetworkDestroy()

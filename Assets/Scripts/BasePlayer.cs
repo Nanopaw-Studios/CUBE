@@ -60,6 +60,17 @@ public class BasePlayer : MonoBehaviourPunCallbacks
         {
             gameObject.AddComponent<DevPhysicsController>();
         }
+
+        // Ensure StatusEffectManager and StatusEffectHUD are present
+        if (GetComponent<StatusEffectManager>() == null)
+        {
+            gameObject.AddComponent<StatusEffectManager>();
+        }
+
+        if (photonView.IsMine && GetComponent<StatusEffectHUD>() == null)
+        {
+            gameObject.AddComponent<StatusEffectHUD>();
+        }
     }
 
     /// <summary>

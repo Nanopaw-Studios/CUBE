@@ -80,7 +80,15 @@ public class ShockwaveRunner : MonoBehaviourPun
                 alreadyHit.Add(targetPV.ViewID);
 
                 targetPV.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, damage);
-                Debug.Log($"[Shockwave] Hit {targetPV.Owner.NickName} for {damage} damage.");
+
+                // Apply Tremor status effect (Tier 2, 4 seconds)
+                StatusEffectManager targetFx = target.GetComponent<StatusEffectManager>();
+                if (targetFx != null)
+                {
+                    targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.Tremor, (byte)2, 4f);
+                }
+
+                Debug.Log($"[Shockwave] Hit {targetPV.Owner.NickName} for {damage} damage and applied Tremor.");
             }
         }
 

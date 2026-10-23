@@ -29,30 +29,16 @@ public class CompileBoostRunner : MonoBehaviour
     {
         isRunning = true;
 
-        MovementSC movement = GetComponentInChildren<MovementSC>();
-        if (movement == null)
-        {
-            Debug.LogError("[CompileBoostRunner] MovementSC not found — cannot apply Compile Boost.");
-            isRunning = false;
-            activeSequence = null;
-            yield break;
-        }
+        StatusEffectManager statusManager = GetComponent<StatusEffectManager>();
+        if (statusManager == null)
+            statusManager = gameObject.AddComponent<StatusEffectManager>();
 
-        // Capture base speed from stats so the restore is always correct,
-        // even if Force was already modified by sprint or another effect.
-        BasePlayerStats stats = GetComponent<BasePlayerStats>();
-        float baseForce = stats != null ? stats.speed : movement.Force;
-
-        // --- Phase 1: Freeze ---
-        movement.Force = 0f;
+        // --- Phase 1: Freeze (Compiling...) ---
+        statusManager.ApplyEffect(StatusEffectType.Freeze, 1, freezeDuration);
         yield return new WaitForSeconds(freezeDuration);
 
-        // --- Phase 2: Boost ---
-        movement.Force = baseForce * boostMultiplier;
-        yield return new WaitForSeconds(boostDuration);
-
-        // --- Restore ---
-        movement.Force = baseForce;
+        // --- Phase 2: Boost (Speed III) ---
+        statusManager.ApplyEffect(StatusEffectType.Speed, 3, boostDuration, boostMultiplier > 0f ? boostMultiplier : 1.75f);
 
         isRunning = false;
         activeSequence = null;

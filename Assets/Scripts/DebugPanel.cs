@@ -17,9 +17,9 @@ public class DebugPanel : MonoBehaviour
     //  Inspector
     // ------------------------------------------------------------------ //
 
-    [Header("Toggle Key")]
+    [Header("Toggle Key (Deprecated - replaced by CubeDebugMenu)")]
     [Tooltip("Key that shows/hides the debug panel.")]
-    public Key toggleKey = Key.F2;
+    public Key toggleKey = Key.None;
 
     [Header("Currency")]
     [Tooltip("Amount of coins to grant per button press.")]
@@ -87,6 +87,9 @@ public class DebugPanel : MonoBehaviour
 
     private void Update()
     {
+        if (toggleKey == Key.None)
+            return;
+
         if (Keyboard.current != null && Keyboard.current[toggleKey].wasPressedThisFrame)
         {
             if (!isVisible)

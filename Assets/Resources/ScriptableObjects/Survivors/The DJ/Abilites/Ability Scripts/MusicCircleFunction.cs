@@ -75,29 +75,17 @@ public class MusicCircleFunction : MonoBehaviourPunCallbacks
         PhotonView pv = PhotonView.Find(viewId);
         if (pv == null || !pv.IsMine) return;
 
-        MovementSC movement = pv.gameObject.GetComponentInChildren<MovementSC>();
-        if (movement == null) return;
-
-        BasePlayerStats stats = pv.gameObject.GetComponent<BasePlayerStats>();
-        float baseSpeed = stats != null ? stats.speed : 5f;
+        StatusEffectManager statusManager = pv.gameObject.GetComponent<StatusEffectManager>();
+        if (statusManager == null)
+            statusManager = pv.gameObject.AddComponent<StatusEffectManager>();
 
         if (on)
         {
-            movement.Force = baseSpeed * multiplier;
-
-            // Schedule a reset in case the circle expires while they're still inside
-            MusicBoostResetter resetter = pv.gameObject.GetComponent<MusicBoostResetter>();
-            if (resetter == null)
-                resetter = pv.gameObject.AddComponent<MusicBoostResetter>();
-
-            resetter.ScheduleReset(baseSpeed, duration);
+            statusManager.ApplyEffect(StatusEffectType.Groove, 2, duration > 0f ? duration : 999f, multiplier);
         }
         else
         {
-            // Immediate exit — restore base speed
-            movement.Force = baseSpeed;
-            MusicBoostResetter resetter = pv.gameObject.GetComponent<MusicBoostResetter>();
-            resetter?.CancelReset();
+            statusManager.RemoveEffect(StatusEffectType.Groove);
         }
     }
 

@@ -118,6 +118,12 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
             statusEffects.ClearAllEffects();
         }
 
+        StatusEffectManager statusEffectManager = GetComponent<StatusEffectManager>();
+        if (statusEffectManager != null)
+        {
+            statusEffectManager.ClearAllEffects();
+        }
+
         // 5. Reset death state and rig control
         DeathSC death = GetComponent<DeathSC>();
         if (death != null)
@@ -158,6 +164,13 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         {
             actualDamage = Mathf.Max(1, Mathf.RoundToInt(actualDamage * (1f - Mathf.Clamp01(damageResistance))));
         }
+
+        StatusEffectManager statusManager = GetComponent<StatusEffectManager>();
+        if (statusManager != null)
+        {
+            actualDamage = Mathf.Max(1, Mathf.RoundToInt(actualDamage * statusManager.GetDamageTakenMultiplier()));
+        }
+
         health -= actualDamage;
         if (health < 0)
             health = 0;

@@ -38,6 +38,14 @@ public class HealCircleFunction : MonoBehaviourPunCallbacks
 
             // Call Heal RPC on the target player's BasePlayerStats
             targetPV.RPC(nameof(BasePlayerStats.Heal), RpcTarget.All, (int)healAmount);
+
+            // Grant Regeneration and Sanctuary status effects to survivors in the circle
+            StatusEffectManager targetFx = player.GetComponent<StatusEffectManager>();
+            if (targetFx != null)
+            {
+                targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.Regeneration, (byte)1, 3f);
+                targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.Sanctuary, (byte)1, 3f);
+            }
         }
     }
 

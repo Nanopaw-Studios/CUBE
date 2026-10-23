@@ -6775,6 +6775,7 @@ MonoBehaviour:
   - {fileID: 1787537367023644854}
   basePlayer: {fileID: 6010820129828816600}
   stats: {fileID: 6258506952167929150}
+  collisionHitCooldown: 0.4
 --- !u!114 &8031120553231613376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7518,6 +7519,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Force: 32
+  SpeedModifier: 1
   BackwardsSpeedMultiplier: 0.75
 --- !u!114 &4883887757714572179
 MonoBehaviour:
