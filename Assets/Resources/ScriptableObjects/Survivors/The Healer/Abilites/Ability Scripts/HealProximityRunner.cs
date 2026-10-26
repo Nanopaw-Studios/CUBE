@@ -16,6 +16,8 @@ public class HealProximityRunner : MonoBehaviourPun
     private BasePlayer caster;
     private bool cancelled;
 
+    public bool IsCancelled => cancelled;
+
     /// <summary>
     /// Starts (or restarts) the startup → heal sequence.
     /// </summary>
@@ -67,13 +69,17 @@ public class HealProximityRunner : MonoBehaviourPun
         BasePlayer closest = null;
         float closestDist = float.MaxValue;
 
+        Transform myHip = caster.GetComponent<RagdollNetwork>()?.hip ?? caster.transform;
+        Vector3 myPos = myHip.position;
+
         BasePlayer[] allPlayers = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
         foreach (BasePlayer player in allPlayers)
         {
             if (player == caster) continue;
             if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor) continue;
 
-            float dist = Vector3.Distance(caster.transform.position, player.transform.position);
+            Transform otherHip = player.GetComponent<RagdollNetwork>()?.hip ?? player.transform;
+            float dist = Vector3.Distance(myPos, otherHip.position);
             if (dist < closestDist)
             {
                 closestDist = dist;

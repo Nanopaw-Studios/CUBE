@@ -13,6 +13,9 @@ public class Equalizer : Ability
     [Tooltip("Startup seconds before the wall is placed. Killer can damage the caster to cancel.")]
     public float startupDuration = 1f;
 
+    public override float GetStartupDuration() => startupDuration;
+    public override string GetStartupText() => "Placing Equalizer...";
+
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);

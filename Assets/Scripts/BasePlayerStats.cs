@@ -125,13 +125,13 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         }
 
         // 5. Reset death state and rig control
-        DeathSC death = GetComponent<DeathSC>();
+        DeathSC death = GetComponentInChildren<DeathSC>() ?? GetComponent<DeathSC>();
         if (death != null)
         {
             death.ResetDeathState();
         }
 
-        Rig rig = GetComponent<Rig>();
+        Rig rig = GetComponentInChildren<Rig>() ?? GetComponent<Rig>();
         if (rig != null)
         {
             rig.control = 1;
@@ -194,7 +194,8 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
             AudioClip hitClip = Resources.Load<AudioClip>("SFX/punch_hit");
             if (hitClip != null)
             {
-                AudioSource.PlayClipAtPoint(hitClip, transform.position);
+                Vector3 soundPos = Camera.main != null ? Camera.main.transform.position : transform.position;
+                AudioSource.PlayClipAtPoint(hitClip, soundPos);
             }
 
             OnDamageTaken?.Invoke(actualDamage);

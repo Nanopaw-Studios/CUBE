@@ -4,6 +4,8 @@ public class Rotation_MM : MonoBehaviour
 {
     Rig data;
     public float torque;
+    [Tooltip("Angular velocity damping to prevent rotational overshoot and jitter.")]
+    public float damping = 25f;
     public RigWithMultiplier[] rigs;
     public Vector3 TargetRotation;
 
@@ -14,7 +16,7 @@ public class Rotation_MM : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (data == null) return;
+        if (data == null || rigs == null) return;
         Quaternion targetQuaternion = Quaternion.Euler(TargetRotation);
         float torqueMult = (data.controlBlender != null) ? data.controlBlender.RotationTorqueMultiplier : 1.0f;
 
@@ -34,8 +36,12 @@ public class Rotation_MM : MonoBehaviour
 
             Vector3 torqueToApply = torqueDirection * (torqueMagnitude * Mathf.Deg2Rad);
 
-            rigs[i].part.AddTorque(torqueToApply * data.control * torqueMult * torque * rigs[i].multiplier,
-                                  ForceMode.Acceleration);
+            // PD controller: Proportional torque toward target + Derivative damping against angular velocity
+            Vector3 angVel = rigs[i].part.angularVelocity;
+            Vector3 dampingTorque = -angVel * damping;
+            Vector3 totalTorque = (torqueToApply * torque * rigs[i].multiplier + dampingTorque) * (data.control * torqueMult);
+
+            rigs[i].part.AddTorque(totalTorque, ForceMode.Acceleration);
         }
     }
 }

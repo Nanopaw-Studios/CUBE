@@ -13,8 +13,8 @@ public class StandingSC : MonoBehaviour
     [Space]
 
     public float heightOffset;
-    
-
+    [Tooltip("Damping applied to vertical velocity to eliminate bouncy standing bobbing and instability.")]
+    public float verticalDamping = 10f;
 
     private void Start()
     {
@@ -23,6 +23,8 @@ public class StandingSC : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (rig == null || rig.torso == null) return;
+
         KeepStanding();
         LiftRigs();
     }
@@ -30,33 +32,38 @@ public class StandingSC : MonoBehaviour
     void KeepStanding()
     {
         RaycastHit hit;
-        if (Physics.Raycast(rig.torso.transform.position, Vector3.down, out hit, 1.9f, groundlayer))
-
+        if (Physics.Raycast(rig.torso.transform.position, Vector3.down, out hit, 1.9f, groundlayer, QueryTriggerInteraction.Ignore))
         {
-            Debug.DrawRay(rig.torso.transform.position, Vector3.down * hit.distance, Color.yellow);
-         //   rig.Grounded = true;
-            rig.Ground = hit.point;
-        } else
-        {
-            rig.Ground = Vector3.zero;
-        //    rig.Grounded = false;   
+            if (!hit.transform.IsChildOf(transform.root))
+            {
+                Debug.DrawRay(rig.torso.transform.position, Vector3.down * hit.distance, Color.yellow);
+                rig.Ground = hit.point;
+                return;
+            }
         }
+
+        rig.Ground = Vector3.zero;
     }
-
-
 
     void LiftRigs()
     {
-        float liftMult = (rig != null && rig.controlBlender != null) ? rig.controlBlender.StandingLiftMultiplier : 1.0f;
+        if (rigToLift == null || !rig.Grounded || rig.Ground == Vector3.zero) return;
+
+        float liftMult = (rig.controlBlender != null) ? rig.controlBlender.StandingLiftMultiplier : 1.0f;
+        float distance = rig.CalculateDistanceFromGround();
+        float scaleX = base.transform.root != null ? base.transform.root.localScale.x : 1f;
+        float curveVal = liftCurve != null ? liftCurve.Evaluate(distance / scaleX + heightOffset) : 1f;
+
         foreach (RigWithMultiplier rigw in rigToLift)
         {
-            if (rig.Grounded)
+            if (rigw != null && rigw.part != null)
             {
-                float distance = rig.CalculateDistanceFromGround();
-                if (rig.Ground != Vector3.zero)
-                {
-                    rigw.part.AddForce(Vector3.up * rig.control * liftMult * 100 * rigw.multiplier * liftCurve.Evaluate(distance / base.transform.root.localScale.x + heightOffset), ForceMode.Acceleration);
-                }
+                float liftForce = rig.control * liftMult * 100f * rigw.multiplier * curveVal;
+                // Vertical damping eliminates jitter, bouncy bobbing, and overshoot when standing
+                float dampingForce = -rigw.part.linearVelocity.y * verticalDamping * rig.control;
+                float totalLift = Mathf.Max(0f, liftForce + dampingForce);
+
+                rigw.part.AddForce(Vector3.up * totalLift, ForceMode.Acceleration);
             }
         }
     }

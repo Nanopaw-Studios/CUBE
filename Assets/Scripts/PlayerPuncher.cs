@@ -107,6 +107,8 @@ public class PlayerPuncher : MonoBehaviourPunCallbacks
         if (cam == null)
             return;
 
+        PlaySwingSound(cam.position);
+
         Vector3 size = killerType.punchHitboxSize;
         Vector3 center = cam.position + cam.forward * (size.z / 2f + 0.6f);
         Quaternion rotation = Quaternion.Euler(0f, cam.eulerAngles.y, 0f);

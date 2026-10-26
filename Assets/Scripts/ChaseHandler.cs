@@ -36,10 +36,29 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
         }
     }
 
+    private int currentMusicLayer = 0;
+    private AudioSource cachedAudioSource;
+
+    private void Awake()
+    {
+        if (player == null)
+            player = GetComponent<BasePlayer>();
+
+        if (hip == null)
+        {
+            var ragdoll = GetComponent<RagdollNetwork>();
+            if (ragdoll != null && ragdoll.hip != null)
+                hip = ragdoll.hip;
+            else
+                hip = transform.Find("RIG/Hip") ?? transform.Find("RIG/hip") ?? transform;
+        }
+    }
+
     private void OnIntermissionStart()
     {
         // Reset chase state and cached killer data so it doesn't bleed into the next round.
         inChase = false;
+        currentMusicLayer = 0;
         killer = null;
         data = null;
         enabled = true;
@@ -48,6 +67,7 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
     private void OnRoundStart()
     {
         inChase = false;
+        currentMusicLayer = 0;
         killer = null;
         data = null;
 
@@ -91,42 +111,97 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
         if (player == null || killer == null || hip == null)
             return;
 
-        // Only killers check for chase states
-        if (player.GetPlayerType() != BasePlayer.PlayerType.Killer)
+        // Only the local killer client evaluates chase distance to avoid multiple clients fighting over RPCs
+        if (!photonView.IsMine || player.GetPlayerType() != BasePlayer.PlayerType.Killer)
             return;
 
-        foreach (BasePlayer otherPlayer in FindFirstObjectByType<ServerManager>().allBasePlayers)
+        ServerManager sm = FindFirstObjectByType<ServerManager>();
+        if (sm == null || sm.allBasePlayers == null)
+            return;
+
+        float minDistance = float.MaxValue;
+        bool hasAliveSurvivor = false;
+
+        foreach (BasePlayer otherPlayer in sm.allBasePlayers)
         {
-            if (otherPlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+            if (otherPlayer == null || otherPlayer.GetPlayerType() != BasePlayer.PlayerType.Survivor)
                 continue;
 
-            float distance = Vector3.Distance(hip.position, otherPlayer.transform.position);
+            BasePlayerStats otherStats = otherPlayer.GetComponent<BasePlayerStats>();
+            if (otherStats != null && otherStats.health <= 0)
+                continue;
 
-            if (!inChase && distance <= chaseStartDistance)
-            {
-                inChase = true;
-                photonView.RPC("StartMusic", RpcTarget.All, 1); // start layer 1 music for all
-            }
-            else if (inChase && distance > chaseStopDistance)
-            {
-                inChase = false;
-                photonView.RPC("StopMusic", RpcTarget.All);
-            }
+            hasAliveSurvivor = true;
+            Transform otherHip = otherPlayer.GetComponent<RagdollNetwork>()?.hip;
+            Vector3 survivorPos = otherHip != null ? otherHip.position : otherPlayer.transform.position;
 
-            // Optionally, add logic for stronger music layers based on distance thresholds
-            if (inChase)
+            float dist = Vector3.Distance(hip.position, survivorPos);
+            if (dist < minDistance)
             {
-                int layer = 1;
-                if (distance < 12f)
-                    layer = 2;
-                if (distance < 8f)
-                    layer = 3;
-                if (distance < 4f)
-                    layer = 4;
-
-                photonView.RPC("StartMusic", RpcTarget.All, layer);
+                minDistance = dist;
             }
         }
+
+        if (!hasAliveSurvivor)
+        {
+            if (inChase)
+            {
+                inChase = false;
+                currentMusicLayer = 0;
+                photonView.RPC(nameof(StopMusic), RpcTarget.All);
+            }
+            return;
+        }
+
+        if (!inChase)
+        {
+            if (minDistance <= chaseStartDistance)
+            {
+                inChase = true;
+                currentMusicLayer = 1;
+                photonView.RPC(nameof(StartMusic), RpcTarget.All, 1);
+            }
+        }
+        else
+        {
+            if (minDistance > chaseStopDistance)
+            {
+                inChase = false;
+                currentMusicLayer = 0;
+                photonView.RPC(nameof(StopMusic), RpcTarget.All);
+            }
+            else
+            {
+                int desiredLayer = 1;
+                if (minDistance < 4f)
+                    desiredLayer = 4;
+                else if (minDistance < 8f)
+                    desiredLayer = 3;
+                else if (minDistance < 12f)
+                    desiredLayer = 2;
+
+                if (desiredLayer != currentMusicLayer)
+                {
+                    currentMusicLayer = desiredLayer;
+                    photonView.RPC(nameof(StartMusic), RpcTarget.All, currentMusicLayer);
+                }
+            }
+        }
+    }
+
+    private AudioSource GetChaseAudioSource()
+    {
+        if (cachedAudioSource != null)
+            return cachedAudioSource;
+
+        var go = GameObject.Find("Audio Source");
+        if (go != null)
+            cachedAudioSource = go.GetComponent<AudioSource>();
+
+        if (cachedAudioSource == null)
+            cachedAudioSource = FindFirstObjectByType<AudioSource>();
+
+        return cachedAudioSource;
     }
 
     [PunRPC]
@@ -134,7 +209,6 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
     {
         if (data == null)
         {
-            Debug.LogWarning("Killer data is null in ChaseHandler.StartMusic");
             return;
         }
         if (layer < 1 || layer > 4)
@@ -143,22 +217,19 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
             return;
         }
 
-        AudioSource source = GameObject.Find("Audio Source").GetComponent<AudioSource>();
+        AudioSource source = GetChaseAudioSource();
         if (source == null)
         {
-            Debug.LogWarning("Audio Source not found in ChaseHandler.StartMusic");
             return;
         }
 
-        // Replace with your layered audio logic
-        // Example: use snapshots, blend groups, or swap clips
         Debug.Log($"Playing chase music layer {layer}");
     }
 
     [PunRPC]
     public void StopMusic()
     {
-        AudioSource source = GameObject.Find("Audio Source").GetComponent<AudioSource>();
+        AudioSource source = GetChaseAudioSource();
         if (source != null)
         {
             source.Stop();

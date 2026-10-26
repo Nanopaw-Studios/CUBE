@@ -102,11 +102,19 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
         distanceAccumulator = 0f;
         distanceRewardsGrantedThisRound = 0;
         abilityRewardsGrantedThisRound = 0;
-        lastPosition = transform.position;
+        lastPosition = GetTrackedPosition();
 
         if (distanceCoroutine != null)
             StopCoroutine(distanceCoroutine);
         distanceCoroutine = StartCoroutine(DistanceTracker());
+    }
+
+    private Vector3 GetTrackedPosition()
+    {
+        RagdollNetwork ragdoll = GetComponent<RagdollNetwork>();
+        if (ragdoll != null && ragdoll.hip != null)
+            return ragdoll.hip.position;
+        return transform.position;
     }
 
     private void OnIntermissionStart()
@@ -130,18 +138,26 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
         var wait = new WaitForSeconds(1f);
         while (roundActive)
         {
-            float delta = Vector3.Distance(transform.position, lastPosition);
-            lastPosition = transform.position;
+            Vector3 currentPos = GetTrackedPosition();
+            float delta = Vector3.Distance(currentPos, lastPosition);
+            lastPosition = currentPos;
             distanceAccumulator += delta;
 
+            int completedSegments = 0;
             while (
                 distanceAccumulator >= DistanceSegmentMeters
-                && distanceRewardsGrantedThisRound < MaxDistanceRewardsPerRound
+                && distanceRewardsGrantedThisRound + completedSegments < MaxDistanceRewardsPerRound
             )
             {
                 distanceAccumulator -= DistanceSegmentMeters;
-                distanceRewardsGrantedThisRound++;
-                GrantCC(DistanceCCPerSegment, $"distance_{distanceRewardsGrantedThisRound}x100m");
+                completedSegments++;
+            }
+
+            if (completedSegments > 0)
+            {
+                distanceRewardsGrantedThisRound += completedSegments;
+                int totalCoins = completedSegments * DistanceCCPerSegment;
+                GrantCC(totalCoins, $"distance_{distanceRewardsGrantedThisRound}x100m");
             }
 
             yield return wait;

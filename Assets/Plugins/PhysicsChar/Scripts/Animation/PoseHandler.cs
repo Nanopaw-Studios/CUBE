@@ -28,12 +28,95 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
 
     public float rotP = 30f;
 
+    [Header("Pose Interpolation")]
+    [Tooltip("If true, smooth spherical interpolation (Slerp) is applied between poses. Keep disabled for crisp, responsive ragdoll arms.")]
+    public bool usePoseInterpolation = false;
+
+    [Tooltip("Speed of pose interpolation. Higher is faster/crisper, lower is softer/smoother.")]
+    [Range(5f, 40f)]
+    public float poseInterpolationSpeed = 16f;
+
+    private Quaternion[] currentTargetRotations;
+    private bool[] targetRotationsInitialized;
+
     // Reference to the relay on the root, used to send RPCs via the root PhotonView.
     private PoseHandlerNetworkRelay relay;
+
+    private void Awake()
+    {
+        // Clone pose presets at runtime if they are asset references,
+        // so rotating them in FixedUpdate never modifies or dirties project assets on disk.
+        if (AllPoses != null && AllPoses.Length > 0)
+        {
+            var runtimePoses = new PosePreset[AllPoses.Length];
+            for (int i = 0; i < AllPoses.Length; i++)
+            {
+                if (AllPoses[i] != null)
+                {
+                    if (!AllPoses[i].gameObject.scene.IsValid())
+                    {
+                        var copy = Instantiate(AllPoses[i].gameObject, transform);
+                        copy.name = AllPoses[i].name + "_RuntimeInstance";
+                        SanitizePoseInstance(copy);
+                        runtimePoses[i] = copy.GetComponent<PosePreset>();
+                    }
+                    else
+                    {
+                        runtimePoses[i] = AllPoses[i];
+                    }
+                }
+            }
+            AllPoses = runtimePoses;
+        }
+
+        if (RestPose != null)
+        {
+            if (AllPoses != null && AllPoses.Length > 0 && AllPoses[0] != null)
+            {
+                RestPose = AllPoses[0];
+            }
+            else if (!RestPose.gameObject.scene.IsValid())
+            {
+                var copy = Instantiate(RestPose.gameObject, transform);
+                copy.name = RestPose.name + "_RestInstance";
+                SanitizePoseInstance(copy);
+                RestPose = copy.GetComponent<PosePreset>();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Strips joints, rigidbodies, and colliders from an instantiated pose preset so it behaves purely
+    /// as a kinematic Transform reference hierarchy. This prevents spawning dynamic ghost ragdolls that
+    /// fall through the world, collide with the player, or detach in PhysX simulation!
+    /// </summary>
+    private void SanitizePoseInstance(GameObject instance)
+    {
+        if (instance == null) return;
+
+        foreach (var joint in instance.GetComponentsInChildren<ConfigurableJoint>(true))
+        {
+            DestroyImmediate(joint);
+        }
+        foreach (var rb in instance.GetComponentsInChildren<Rigidbody>(true))
+        {
+            DestroyImmediate(rb);
+        }
+        foreach (var col in instance.GetComponentsInChildren<Collider>(true))
+        {
+            DestroyImmediate(col);
+        }
+    }
 
     private void Start()
     {
         data = transform.parent.parent.GetComponentInChildren<Rig>();
+
+        if (data != null && data.allRigs != null)
+        {
+            currentTargetRotations = new Quaternion[data.allRigs.Count];
+            targetRotationsInitialized = new bool[data.allRigs.Count];
+        }
 
         // Locate the relay on the root (walks up to root automatically since we
         // GetComponentInParent from any depth).
@@ -43,7 +126,7 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
             Debug.LogWarning("[PoseHandler] PoseHandlerNetworkRelay not found on root. RPCs will not be sent.");
         }
 
-        // 🔥 CRITICAL: ensure we always have a pose
+        // Ensure we always have a pose
         if (RestPose != null)
         {
             CurrentTargetPose = RestPose;
@@ -157,7 +240,16 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
                 continue;
             }
 
-            Follow(i, pose);
+            Follow(i, pose, num);
+        }
+    }
+
+    public void ResetInterpolation()
+    {
+        if (targetRotationsInitialized != null)
+        {
+            for (int i = 0; i < targetRotationsInitialized.Length; i++)
+                targetRotationsInitialized[i] = false;
         }
     }
 
@@ -236,21 +328,78 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
         DoingAnimation = false;
     }
 
-    private void Follow(Rigidbody rig, Transform target)
+    private void Follow(Rigidbody rig, Transform target, int boneIndex)
     {
-        Vector3 forward = target.forward;
-        Vector3 up = target.up;
+        Quaternion targetRot = target.rotation;
 
-        Vector3 torque =
-            (0f - Vector3.Angle(forward, rig.transform.forward)) *
-            Vector3.Cross(forward, rig.transform.forward).normalized +
-            (0f - Vector3.Angle(up, rig.transform.up)) *
-            Vector3.Cross(up, rig.transform.up).normalized;
+        if (usePoseInterpolation)
+        {
+            // Pose interpolation operates in local space relative to the pose root.
+            // This ensures turning/looking/dashing rotates the arm targets INSTANTLY with the body,
+            // while pose-to-pose transitions (e.g. idle -> punch -> idle) remain buttery smooth without
+            // lagging behind in world space or pulling arms behind the back!
+            Transform rootT = (CurrentTargetPose != null) ? CurrentTargetPose.transform : (RotationObject != null ? RotationObject : transform);
+            Quaternion rootRot = rootT.rotation;
+            Quaternion targetLocalRot = Quaternion.Inverse(rootRot) * targetRot;
+
+            if (currentTargetRotations == null || boneIndex >= currentTargetRotations.Length)
+            {
+                int count = data != null && data.allRigs != null ? data.allRigs.Count : boneIndex + 1;
+                Array.Resize(ref currentTargetRotations, count);
+                Array.Resize(ref targetRotationsInitialized, count);
+            }
+
+            if (!targetRotationsInitialized[boneIndex])
+            {
+                currentTargetRotations[boneIndex] = targetLocalRot;
+                targetRotationsInitialized[boneIndex] = true;
+            }
+            else
+            {
+                currentTargetRotations[boneIndex] = Quaternion.Slerp(
+                    currentTargetRotations[boneIndex],
+                    targetLocalRot,
+                    1f - Mathf.Exp(-poseInterpolationSpeed * Time.fixedDeltaTime)
+                );
+            }
+
+            targetRot = rootRot * currentTargetRotations[boneIndex];
+        }
+
+        Vector3 forward = targetRot * Vector3.forward;
+        Vector3 up = targetRot * Vector3.up;
+
+        Vector3 crossForward = Vector3.Cross(forward, rig.transform.forward);
+        Vector3 crossUp = Vector3.Cross(up, rig.transform.up);
+
+        Vector3 torque = Vector3.zero;
+        if (crossForward.sqrMagnitude > 1e-6f)
+        {
+            torque += (0f - Vector3.Angle(forward, rig.transform.forward)) * crossForward.normalized;
+        }
+        if (crossUp.sqrMagnitude > 1e-6f)
+        {
+            torque += (0f - Vector3.Angle(up, rig.transform.up)) * crossUp.normalized;
+        }
 
         rig.AddTorque(Time.fixedDeltaTime * data.control * 200f * rotP * torque, ForceMode.Acceleration);
 
-        rig.angularVelocity -= rig.angularVelocity * drag * control;
-        rig.linearVelocity -= rig.linearVelocity * drag * control;
+        // Damp angular and linear velocity relative to the torso so moving, sprinting, or turning
+        // does not drag the arms backward or float away from the body.
+        Rigidbody torsoRb = (data != null && data.torso != null) ? data.torso.GetComponent<Rigidbody>() : null;
+        if (torsoRb != null)
+        {
+            Vector3 relAngVel = rig.angularVelocity - torsoRb.angularVelocity;
+            rig.angularVelocity -= relAngVel * drag * control;
+
+            Vector3 relLinearVel = rig.linearVelocity - torsoRb.linearVelocity;
+            rig.linearVelocity -= relLinearVel * drag * control;
+        }
+        else
+        {
+            rig.angularVelocity -= rig.angularVelocity * drag * control;
+            rig.linearVelocity -= rig.linearVelocity * drag * control;
+        }
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)

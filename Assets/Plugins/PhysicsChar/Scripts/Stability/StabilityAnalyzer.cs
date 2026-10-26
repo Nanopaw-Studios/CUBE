@@ -51,6 +51,15 @@ namespace PhysicsChar.Stability
 
         private void EvaluateTrappedFeet()
         {
+            // When airborne (jumping, dashing, falling), feet naturally trail behind or tuck
+            // Trapped feet only applies when grounded and feet are physically stuck/pinned!
+            if (rig != null && !rig.Grounded)
+            {
+                trappedFootConfidence = 1.0f;
+                currentFootOffset = 0.0f;
+                return;
+            }
+
             Vector3 feetPos = supportDetector != null
                 ? supportDetector.averageFeetPosition
                 : (rig.hip != null ? rig.hip.position : transform.position);
@@ -60,17 +69,23 @@ namespace PhysicsChar.Stability
             Vector3 offsetXZ = Vector3.ProjectOnPlane(hipPos - feetPos, Vector3.up);
             currentFootOffset = offsetXZ.magnitude;
 
+            // Expand threshold during high-velocity running/dashing so high momentum doesn't trigger false trapped state
+            float hipSpeed = currentHipVelocity.magnitude;
+            float dynamicMaxOffset = (hipSpeed > 6f)
+                ? maxTrappedFootOffset + (hipSpeed - 6f) * 0.12f
+                : maxTrappedFootOffset;
+
             if (currentFootOffset <= normalFootOffset)
             {
                 trappedFootConfidence = 1.0f;
             }
-            else if (currentFootOffset >= maxTrappedFootOffset)
+            else if (currentFootOffset >= dynamicMaxOffset)
             {
                 trappedFootConfidence = 0.0f;
             }
             else
             {
-                float t = (currentFootOffset - normalFootOffset) / (maxTrappedFootOffset - normalFootOffset);
+                float t = (currentFootOffset - normalFootOffset) / (dynamicMaxOffset - normalFootOffset);
                 trappedFootConfidence = Mathf.Clamp01(1.0f - t);
             }
         }
@@ -118,8 +133,8 @@ namespace PhysicsChar.Stability
                     }
                     else
                     {
-                        // Player is pushing input hard but actual velocity is almost zero (blocked against obstacle)
-                        motionMismatchConfidence = 0.5f;
+                        // Player is pushing input against a wall or obstacle; apply gentle soft penalty instead of jarring stumble
+                        motionMismatchConfidence = 0.85f;
                     }
                 }
             }
@@ -131,15 +146,17 @@ namespace PhysicsChar.Stability
             prevHipVelocity = currentHipVelocity;
 
             float accelMag = accel.magnitude;
-            float maxAccelThreshold = 40.0f;
+            // Generous threshold so high-velocity impulses (Phase Dash, knockbacks) don't immediately collapse player control
+            float minAccelThreshold = 35.0f;
+            float maxAccelThreshold = 120.0f;
 
-            if (accelMag < 15.0f)
+            if (accelMag < minAccelThreshold)
             {
                 impactConfidence = 1.0f;
             }
             else
             {
-                float t = (accelMag - 15.0f) / (maxAccelThreshold - 15.0f);
+                float t = (accelMag - minAccelThreshold) / (maxAccelThreshold - minAccelThreshold);
                 impactConfidence = Mathf.Clamp01(1.0f - t * 0.5f);
             }
         }

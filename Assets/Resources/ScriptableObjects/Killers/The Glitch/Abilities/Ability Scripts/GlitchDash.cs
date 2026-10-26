@@ -47,17 +47,46 @@ public class GlitchDash : Ability
             Object.Destroy(dashEffects, 2f); // Destroy effects after 2 seconds
         }
 
-        Transform[] bones = player.transform.Find("RIG").GetComponentsInChildren<Transform>();
-        foreach (Transform bone in bones)
-        {
-            if (bone.GetComponent<Rigidbody>() == null) continue;
+        // Determine uniform dash direction based on camera / player forward (avoid bone-local forward)
+        Transform camTransform = player.transform.Find("CameraHead")?.Find("Cam")?.Find("ShakePivot")?.Find("C")
+            ?? (Camera.main != null ? Camera.main.transform : null);
 
-            Vector3 dashDirection = bone.transform.forward * dashDistance; // Dash forward by units
-            bone.GetComponent<Rigidbody>().AddForce(dashDirection, ForceMode.VelocityChange);
+        Vector3 forward = camTransform != null ? camTransform.forward : (torso != null ? torso.forward : player.transform.forward);
+        Vector3 horizontal = Vector3.ProjectOnPlane(forward, Vector3.up).normalized;
+        if (horizontal.sqrMagnitude < 0.001f)
+        {
+            horizontal = torso != null ? Vector3.ProjectOnPlane(torso.forward, Vector3.up).normalized : player.transform.forward;
         }
 
-        // Apply brief speed status effect surge
-        StatusEffectManager sem = player.GetComponent<StatusEffectManager>();
-        sem?.ApplyEffect(StatusEffectType.Speed, 3, 1.5f);
+        // Slight upward bias so dashing on slopes or curbs doesn't dig into ground
+        Vector3 dashDir = (horizontal + Vector3.up * 0.08f).normalized;
+        Vector3 dashVelocity = dashDir * dashDistance;
+
+        Transform rigTransform = player.transform.Find("RIG");
+        if (rigTransform != null)
+        {
+            Rigidbody[] bodies = rigTransform.GetComponentsInChildren<Rigidbody>();
+
+            // 1. Clear any downward vertical velocity so gravity momentum doesn't eat into the dash
+            foreach (Rigidbody rb in bodies)
+            {
+                if (rb != null && rb.linearVelocity.y < 0f)
+                {
+                    Vector3 vel = rb.linearVelocity;
+                    vel.y = 0f;
+                    rb.linearVelocity = vel;
+                }
+            }
+
+            // 2. Apply uniform velocity to ALL bones in the EXACT same direction
+            // Applying identical velocity change prevents joint stretching, hyperextension, and leg inversion!
+            foreach (Rigidbody rb in bodies)
+            {
+                if (rb != null)
+                {
+                    rb.AddForce(dashVelocity, ForceMode.VelocityChange);
+                }
+            }
+        }
     }
 }

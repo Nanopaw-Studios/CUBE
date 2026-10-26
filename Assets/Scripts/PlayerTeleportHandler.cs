@@ -134,14 +134,22 @@ public class PlayerTeleportHandler : MonoBehaviourPun
         Vector3 offsetFromHip = hipRb.position - transform.position;
         Vector3 newRootPos = finalTargetPos - offsetFromHip;
 
+        Quaternion deltaRot = Quaternion.identity;
+        if (targetRotation.HasValue)
+        {
+            deltaRot = targetRotation.Value * Quaternion.Inverse(transform.rotation);
+        }
+
         // Move ALL bodies relative to root (ONLY ONCE)
         foreach (var rb in rbs)
         {
             Vector3 relative = rb.position - transform.position;
-            rb.position = newRootPos + relative;
-
             if (targetRotation.HasValue)
-                rb.rotation = targetRotation.Value;
+            {
+                relative = deltaRot * relative;
+                rb.rotation = deltaRot * rb.rotation;
+            }
+            rb.position = newRootPos + relative;
         }
 
         // Sync root ONCE
@@ -168,6 +176,10 @@ public class PlayerTeleportHandler : MonoBehaviourPun
         // ── Notify remotes to clear stale snapshots and re-snap ──
         if (TryGetComponent<RagdollNetwork>(out var ragdollNet))
             ragdollNet.NotifyRemotesOfTeleport();
+
+        var poseHandler = GetComponentInChildren<PoseHandler>();
+        if (poseHandler != null)
+            poseHandler.ResetInterpolation();
 
         isTeleporting = false;
     }

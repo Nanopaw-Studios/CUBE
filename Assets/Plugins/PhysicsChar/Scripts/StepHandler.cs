@@ -7,9 +7,21 @@ public class StepHandler : MonoBehaviour
     private float timer = 0f;
     public float interval = 0.5f;
     bool Left;
+    private Rig data;
+
+    private void Start()
+    {
+        data = GetComponent<Rig>();
+    }
 
     private void FixedUpdate()
     {
+        if (data != null && (!data.Grounded || data.Ragdolling || data.control <= 0.1f || data.Currentstate == StateType.Idle))
+        {
+            timer = 0f;
+            return;
+        }
+
         timer += Time.fixedDeltaTime;
 
         if (timer >= interval)
@@ -22,18 +34,19 @@ public class StepHandler : MonoBehaviour
 
     private void OnStepInterval()
     {
+        if (Legs == null || Legs.Length < 2) return;
+
         if (Left)
         {
             // left
-            Legs[0].Step();
+            if (Legs[0] != null) Legs[0].Step();
             Left = false;
         }
         else
         {
             // right
-            Legs[1].Step();
+            if (Legs[1] != null) Legs[1].Step();
             Left = true;
         }
-
     }
 }

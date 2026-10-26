@@ -67,8 +67,14 @@ public class EndgameManager : MonoBehaviour
         }
 
         // Subscribe
-        roundManager.OnRoundStart += RoundStarted;
-        roundManager.OnIntermissionStart += OnIntermission;
+        if (roundManager == null)
+            roundManager = FindFirstObjectByType<RoundManager>();
+
+        if (roundManager != null)
+        {
+            roundManager.OnRoundStart += RoundStarted;
+            roundManager.OnIntermissionStart += OnIntermission;
+        }
     }
 
     private void OnDestroy()
@@ -109,8 +115,10 @@ public class EndgameManager : MonoBehaviour
 
     private void CheckTime()
     {
-        // If currentTime is a float, consider using <= 30 and a guard instead of == 30.
-        if (!rampTriggered && roundManager.currentTime == 30)
+        if (roundManager == null)
+            return;
+
+        if (!rampTriggered && roundManager.currentTime <= 30 && roundManager.currentTime > 0)
         {
             rampTriggered = true;
 

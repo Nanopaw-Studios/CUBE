@@ -1,4 +1,4 @@
-﻿using Photon.Pun;
+using Photon.Pun;
 using UnityEngine;
 using UnityEngine.InputSystem;
 #if UNITY_EDITOR
@@ -22,6 +22,17 @@ public class Ability : ScriptableObject
 
     [Range(1, 4)]
     public int AbilityLevel = 1;
+
+    /// <summary>
+    /// Returns the startup/channeling delay in seconds before the ability executes.
+    /// During startup, a cast bar is displayed and enemies can interrupt by hitting the caster.
+    /// </summary>
+    public virtual float GetStartupDuration() => 0f;
+
+    /// <summary>
+    /// Message displayed on the HUD cast bar while channeling this ability.
+    /// </summary>
+    public virtual string GetStartupText() => $"Casting {AbilityName}...";
 
     /// <summary>
     /// This method is called when the ability is activated.

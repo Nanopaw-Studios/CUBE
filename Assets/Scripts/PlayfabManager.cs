@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using HSVPicker;
 using Photon.Pun;
@@ -353,8 +354,18 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         OnCubeCoinsChanged?.Invoke(cc);
     }
 
+    private struct PendingCCRequest
+    {
+        public int amount;
+        public string reason;
+    }
+
+    private readonly Queue<PendingCCRequest> _pendingCCRequests = new Queue<PendingCCRequest>();
+    private bool _isAddingCC = false;
+
     /// <summary>
     /// Adds CC. Use for rewards, end-of-round payouts, etc.
+    /// Safely queues and batches requests to prevent PlayFab concurrent edit conflicts.
     /// </summary>
     public void AddCubeCoins(int amount, string reason = "")
     {
@@ -364,27 +375,53 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
             return;
         }
 
+        _pendingCCRequests.Enqueue(new PendingCCRequest { amount = amount, reason = reason });
+        ProcessNextCCBatch();
+    }
+
+    private void ProcessNextCCBatch()
+    {
+        if (_isAddingCC || _pendingCCRequests.Count == 0)
+            return;
+
+        _isAddingCC = true;
+
+        int totalAmount = 0;
+        var reasons = new List<string>();
+        while (_pendingCCRequests.Count > 0)
+        {
+            var req = _pendingCCRequests.Dequeue();
+            totalAmount += req.amount;
+            if (!string.IsNullOrEmpty(req.reason))
+                reasons.Add(req.reason);
+        }
+
+        string combinedReason = string.Join(", ", reasons);
+
         var request = new AddUserVirtualCurrencyRequest
         {
             VirtualCurrency = cubeCoinsCode,
-            Amount = amount,
+            Amount = totalAmount,
         };
 
         PlayFabClientAPI.AddUserVirtualCurrency(
             request,
             result =>
             {
-                // result.Balance is the NEW balance after add.
+                _isAddingCC = false;
                 SetCachedCC(result.Balance);
                 Debug.Log(
-                    $"[PlayFab] +{amount} {cubeCoinsCode} (reason: {reason}) -> balance {result.Balance}"
+                    $"[PlayFab] +{totalAmount} {cubeCoinsCode} (reason: {combinedReason}) -> balance {result.Balance}"
                 );
+                ProcessNextCCBatch();
             },
             error =>
             {
+                _isAddingCC = false;
                 Debug.LogError(
-                    $"[PlayFab] AddCubeCoins FAILED (reason: {reason}): {error.GenerateErrorReport()}"
+                    $"[PlayFab] AddCubeCoins FAILED (reason: {combinedReason}): {error.GenerateErrorReport()}"
                 );
+                ProcessNextCCBatch();
             }
         );
     }

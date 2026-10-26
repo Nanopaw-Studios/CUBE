@@ -19,6 +19,9 @@ public class MusicCircle : Ability
     [Tooltip("Seconds of startup before the circle is placed (killer can cancel this window).")]
     public float startupDuration = 2f;
 
+    public override float GetStartupDuration() => startupDuration;
+    public override string GetStartupText() => "Setting Up Music Circle...";
+
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);

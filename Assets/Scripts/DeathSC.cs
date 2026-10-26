@@ -11,16 +11,38 @@ public class DeathSC : MonoBehaviour
 
     bool died = false;
 
+    void Awake()
+    {
+        if (stats == null)
+            stats = GetComponentInParent<BasePlayerStats>() ?? GetComponent<BasePlayerStats>();
+        if (standing == null)
+            standing = GetComponent<StandingSC>();
+        if (rig == null)
+            rig = GetComponent<Rig>();
+    }
+
     void Start()
     {
-        standing = GetComponent<StandingSC>();
-        rig = GetComponent<Rig>();
+        if (stats == null)
+            stats = GetComponentInParent<BasePlayerStats>() ?? GetComponent<BasePlayerStats>();
+        if (standing == null)
+            standing = GetComponent<StandingSC>();
+        if (rig == null)
+            rig = GetComponent<Rig>();
 
-        photonLauncher = FindFirstObjectByType<PhotonLauncher>();
+        if (photonLauncher == null)
+            photonLauncher = FindFirstObjectByType<PhotonLauncher>();
     }
 
     void Update()
     {
+        if (stats == null)
+        {
+            stats = GetComponentInParent<BasePlayerStats>() ?? GetComponent<BasePlayerStats>();
+            if (stats == null)
+                return;
+        }
+
         if (stats.health <= 0)
         {
             // Only execute once
@@ -32,16 +54,27 @@ public class DeathSC : MonoBehaviour
                 died = true;
 
                 // disable rigs
-                foreach (RigWithMultiplier rig in standing.rigToLift)
+                if (standing != null && standing.rigToLift != null)
                 {
-                    rig.multiplier = 0;
+                    foreach (RigWithMultiplier r in standing.rigToLift)
+                    {
+                        if (r != null)
+                            r.multiplier = 0;
+                    }
                 }
-                rig.control = 0;
+                if (rig != null)
+                {
+                    rig.control = 0;
+                }
 
                 // disable scripts
-                foreach (MonoBehaviour mb in scriptsToDisableOnDeath)
+                if (scriptsToDisableOnDeath != null)
                 {
-                    mb.enabled = false;
+                    foreach (MonoBehaviour mb in scriptsToDisableOnDeath)
+                    {
+                        if (mb != null)
+                            mb.enabled = false;
+                    }
                 }
 
                 // start respawn coroutine once
@@ -52,63 +85,51 @@ public class DeathSC : MonoBehaviour
 
     IEnumerator Respawn()
     {
-        // wait respawn time
+        // wait respawn delay
         yield return new WaitForSeconds(5f);
 
-        // restore health
-        stats.health = 100;
+        RoundManager rm = photonLauncher != null ? photonLauncher.roundManager : FindFirstObjectByType<RoundManager>();
+        bool isMidRound = rm != null && rm.roundActive && !rm.intermissionActive;
 
-        // re-enable scripts
-        foreach (MonoBehaviour mb in scriptsToDisableOnDeath)
+        if (isMidRound)
         {
-            mb.enabled = true;
+            // During an active round, dead players remain dead and collapsed so they can spectate.
+            // They will be revived when intermission starts via ResetDeathState() / ResetToDefaultStats().
+            Debug.Log("[DeathSC] Player died mid-round — staying collapsed for spectator mode.");
+            yield break;
         }
 
-        // re-enable rigs
-        foreach (RigWithMultiplier rig in standing.rigToLift)
-        {
-            rig.multiplier = 1;
-        }
-        rig.control = 1;
+        // Intermission / Lobby death — safe to revive immediately
+        Revive();
 
-        // Only teleport to the intermission spawn if intermission is currently active
-        // (i.e. the round has ended). If the round is still running, keep the player
-        // where they are — the round-end teleport will handle them when the time comes.
-        RoundManager rm = photonLauncher != null ? photonLauncher.roundManager : null;
-        bool intermissionActive = rm != null ? rm.intermissionActive : false;
-
-        if (intermissionActive)
+        bool intermissionActive = rm != null && rm.intermissionActive;
+        if (intermissionActive && photonLauncher != null)
         {
             Vector3 spawnPos =
-                rm != null
+                rm != null && rm.SyncedIntermissionSpawnPos != Vector3.zero
                     ? rm.SyncedIntermissionSpawnPos
-                    : photonLauncher.intermissionSpawn.position;
+                    : (photonLauncher.intermissionSpawn != null ? photonLauncher.intermissionSpawn.position : Vector3.zero);
             Quaternion spawnRot =
-                rm != null
+                rm != null && rm.SyncedIntermissionSpawnRot != Quaternion.identity
                     ? rm.SyncedIntermissionSpawnRot
-                    : photonLauncher.intermissionSpawn.rotation;
+                    : (photonLauncher.intermissionSpawn != null ? photonLauncher.intermissionSpawn.rotation : Quaternion.identity);
 
             photonLauncher.TeleportPlayer(spawnPos, spawnRot);
-
-            // Inform PhotonLauncher so the upcoming OnIntermissionStart doesn't re-teleport.
             photonLauncher.MarkPlayerAtIntermission();
         }
-
-        // allow death to happen again
-        died = false;
     }
 
-    public void ResetDeathState()
+    private void Revive()
     {
-        StopAllCoroutines();
-        died = false;
+        if (stats != null)
+            stats.health = stats.maxHealth;
 
         if (standing != null && standing.rigToLift != null)
         {
-            foreach (RigWithMultiplier rig in standing.rigToLift)
+            foreach (RigWithMultiplier r in standing.rigToLift)
             {
-                if (rig != null)
-                    rig.multiplier = 1;
+                if (r != null)
+                    r.multiplier = 1;
             }
         }
 
@@ -125,5 +146,13 @@ public class DeathSC : MonoBehaviour
                     mb.enabled = true;
             }
         }
+
+        died = false;
+    }
+
+    public void ResetDeathState()
+    {
+        StopAllCoroutines();
+        Revive();
     }
 }

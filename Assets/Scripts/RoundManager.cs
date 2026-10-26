@@ -117,6 +117,59 @@ public class RoundManager : MonoBehaviourPunCallbacks
         if (intermissionActive && HasEnoughPlayers())
         {
             endTimestamp = PhotonNetwork.Time + 3; // start soon
+            photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, endTimestamp);
+        }
+    }
+
+    [PunRPC]
+    public void UpdateIntermissionEndTimestamp(double syncedEndTimestamp)
+    {
+        endTimestamp = syncedEndTimestamp;
+        UpdateCurrentTime();
+    }
+
+    public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
+    {
+        if (!PhotonNetwork.IsMasterClient)
+            return;
+
+        // If the room is in an active round, check if we still have a killer and survivors
+        if (roundActive)
+        {
+            bool hasKiller = false;
+            int aliveSurvivors = 0;
+
+            foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
+            {
+                if (go == null)
+                    continue;
+
+                PhotonView pv = go.GetComponent<PhotonView>();
+                if (pv == null || pv.Owner == null || pv.Owner == otherPlayer)
+                    continue;
+
+                BasePlayer bp = go.GetComponent<BasePlayer>();
+                BasePlayerStats stats = go.GetComponent<BasePlayerStats>();
+                if (bp == null)
+                    continue;
+
+                if (bp.GetPlayerType() == BasePlayer.PlayerType.Killer)
+                {
+                    hasKiller = true;
+                }
+                else if (bp.GetPlayerType() == BasePlayer.PlayerType.Survivor)
+                {
+                    if (stats != null && stats.health > 0)
+                        aliveSurvivors++;
+                }
+            }
+
+            // If the killer disconnected, or no alive survivors remain, end the round early!
+            if (!hasKiller || aliveSurvivors == 0)
+            {
+                Debug.Log("[RoundManager] Ending round because a role became empty after player disconnect.");
+                photonView.RPC("EndRound", RpcTarget.All);
+            }
         }
     }
 

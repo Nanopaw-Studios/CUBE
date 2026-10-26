@@ -10,6 +10,9 @@ public class HealProximity : Ability
     [Tooltip("Seconds of startup delay before the heal is applied, during which the killer can cancel it.")]
     public float startupDuration = 2f;
 
+    public override float GetStartupDuration() => startupDuration;
+    public override string GetStartupText() => "Channeling Proximity Heal...";
+
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);

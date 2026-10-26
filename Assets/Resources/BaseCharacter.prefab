@@ -1191,6 +1191,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TouchGround: 0
   Length: 0.15
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &1066303006351665635
 GameObject:
   m_ObjectHideFlags: 0
@@ -1554,8 +1557,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -2164,9 +2167,9 @@ ConfigurableJoint:
   m_XMotion: 0
   m_YMotion: 1
   m_ZMotion: 0
-  m_AngularXMotion: 1
-  m_AngularYMotion: 1
-  m_AngularZMotion: 1
+  m_AngularXMotion: 0
+  m_AngularYMotion: 0
+  m_AngularZMotion: 0
   m_LinearLimitSpring:
     spring: 5000000
     damper: 15000
@@ -2238,8 +2241,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -2601,8 +2604,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -3327,6 +3330,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TouchGround: 0
   Length: 0.15
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!82 &3340450835698662715
 AudioSource:
   m_ObjectHideFlags: 0
@@ -4762,8 +4768,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -5385,8 +5391,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -7490,6 +7496,7 @@ MonoBehaviour:
   - part: {fileID: 6012562465077823667}
     multiplier: 1
   heightOffset: 0
+  verticalDamping: 10
 --- !u!114 &8582524395920794549
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7534,6 +7541,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   torque: 800
+  damping: 25
   rigs:
   - part: {fileID: 5347560816180099550}
     multiplier: 1
@@ -9364,7 +9372,9 @@ MonoBehaviour:
   drag: 0.1
   control: 1
   DoingAnimation: 0
-  rotP: 25
+  rotP: 30
+  usePoseInterpolation: 0
+  poseInterpolationSpeed: 16
 --- !u!1 &6388608419872559473
 GameObject:
   m_ObjectHideFlags: 0
@@ -9597,8 +9607,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -10936,8 +10946,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -11359,6 +11369,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TouchGround: 0
   Length: 0.15
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!82 &8620572978837381046
 AudioSource:
   m_ObjectHideFlags: 0
@@ -11764,8 +11777,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -12218,6 +12231,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TouchGround: 0
   Length: 0.15
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &8935688018909386670
 GameObject:
   m_ObjectHideFlags: 0

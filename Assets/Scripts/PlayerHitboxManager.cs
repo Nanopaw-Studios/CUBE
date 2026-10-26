@@ -15,6 +15,14 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
     public BasePlayer basePlayer;
     public BasePlayerStats stats;
 
+    void Awake()
+    {
+        if (basePlayer == null)
+            basePlayer = GetComponent<BasePlayer>();
+        if (stats == null)
+            stats = GetComponent<BasePlayerStats>();
+    }
+
     void Start()
     {
         if (basePlayer == null)
@@ -126,7 +134,8 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
         AudioClip hitSound = Resources.Load<AudioClip>("SFX/punch_hit");
         if (hitSound != null)
         {
-            AudioSource.PlayClipAtPoint(hitSound, collision.GetContact(0).point);
+            Vector3 contactPoint = collision.contactCount > 0 ? collision.GetContact(0).point : transform.position;
+            AudioSource.PlayClipAtPoint(hitSound, contactPoint);
         }
     }
 
@@ -136,8 +145,12 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void RPC_OnHit(int damage)
     {
+        if (stats == null)
+            stats = GetComponent<BasePlayerStats>();
+
         Debug.Log($"[HitboxManager] {gameObject.name} received {damage} damage.");
-        stats.TakeDamage(damage);
+        if (stats != null)
+            stats.TakeDamage(damage);
 
         // Cancel any pending ability startups on this player when they are hit
         if (photonView.IsMine)
@@ -145,10 +158,11 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
             GetComponent<HealProximityRunner>()?.Cancel();
             GetComponent<MusicCircleAbility>()?.CancelStartup();
             GetComponent<EqualizerAbility>()?.CancelStartup();
+            FindFirstObjectByType<PlayerAbilityManager>()?.InterruptCurrentCast("HIT!");
         }
 
         // Only the master client performs win-condition checks to avoid duplicate EndRound calls.
-        if (PhotonNetwork.IsMasterClient && stats.health <= 0)
+        if (PhotonNetwork.IsMasterClient && stats != null && stats.health <= 0)
         {
             CheckKillerWinCondition();
         }
@@ -161,34 +175,43 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
     {
         // Collect all survivor players in the scene.
         BasePlayer[] allPlayers = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
+        int totalSurvivors = 0;
+        int aliveSurvivors = 0;
+
         foreach (BasePlayer player in allPlayers)
         {
-            if (player.GetPlayerType() != BasePlayer.PlayerType.Survivor)
+            if (player == null || player.GetPlayerType() != BasePlayer.PlayerType.Survivor)
                 continue;
 
+            totalSurvivors++;
             BasePlayerStats survivorStats = player.GetComponent<BasePlayerStats>();
             if (survivorStats != null && survivorStats.health > 0)
             {
-                // At least one survivor is still alive — round continues.
-                return;
+                aliveSurvivors++;
             }
         }
 
-        // All survivors are dead — killer wins.
-        Debug.Log("[HitboxManager] All survivors eliminated. Killer wins!");
-        RoundManager roundManager = FindFirstObjectByType<RoundManager>();
-        if (roundManager != null && roundManager.roundActive)
+        // Only end the round if there were survivors in the match and all of them are now dead
+        if (totalSurvivors > 0 && aliveSurvivors == 0)
         {
-            roundManager.photonView.RPC(nameof(RoundManager.EndRound), RpcTarget.All);
+            Debug.Log("[HitboxManager] All survivors eliminated. Killer wins!");
+            RoundManager roundManager = FindFirstObjectByType<RoundManager>();
+            if (roundManager != null && roundManager.roundActive)
+            {
+                roundManager.photonView.RPC(nameof(RoundManager.EndRound), RpcTarget.All);
+            }
         }
     }
 
     new void OnDisable()
     {
-        foreach (CollisionCallback callback in damageColliders)
+        if (damageColliders != null)
         {
-            if (callback != null)
-                callback.collisionEntered.RemoveListener(CollisionEntered);
+            foreach (CollisionCallback callback in damageColliders)
+            {
+                if (callback != null)
+                    callback.collisionEntered.RemoveListener(CollisionEntered);
+            }
         }
     }
 }

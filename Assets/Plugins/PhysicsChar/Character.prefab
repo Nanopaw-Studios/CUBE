@@ -89,6 +89,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &7768051160863315628
 CapsuleCollider:
@@ -202,6 +203,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &4864170628910574847
 SphereCollider:
@@ -312,6 +314,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &458454574130214883
 GameObject:
@@ -402,6 +405,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &841080890542935604
 CapsuleCollider:
@@ -571,6 +575,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &7789562744036187636
 SphereCollider:
@@ -800,13 +805,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1288756843212319493}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 5756053377666838255}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 0, y: 0.15999961, z: 0}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -885,8 +892,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -944,8 +951,7 @@ MonoBehaviour:
   LeftUp: 0
   RightUp: 0
   timeBetween: 1
-  Pose:
-  - {fileID: 2523550893260569595, guid: ad23a943e48d68f4cacac773a67aae67, type: 3}
+  PoseIndexes: 
 --- !u!1 &1463448268925720522
 GameObject:
   m_ObjectHideFlags: 0
@@ -1053,13 +1059,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1494338692827717975}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 8959339285171633425}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: -0.0000002682209, y: -1.0680004, z: -0.000000029802322}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 1
@@ -1138,8 +1146,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -1408,13 +1416,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1505567623209453568}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 2774687421668913907}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: -1.0000005, y: 0.00000071525574, z: 0}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -1634,6 +1644,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &831074078377140033
 CapsuleCollider:
@@ -1731,20 +1742,22 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1713561971828851734}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 7832548561689537581}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 0.0000002682209, y: -1.0680001, z: 0.000000029802322}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 1
   m_ZMotion: 0
-  m_AngularXMotion: 1
-  m_AngularYMotion: 1
-  m_AngularZMotion: 1
+  m_AngularXMotion: 0
+  m_AngularYMotion: 0
+  m_AngularZMotion: 0
   m_LinearLimitSpring:
     spring: 5000000
     damper: 15000
@@ -1816,8 +1829,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -2107,6 +2120,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &1938383280441173563
 CapsuleCollider:
@@ -2220,6 +2234,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &7525646502378114058
 SphereCollider:
@@ -2423,6 +2438,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &6236322279991102950
 MonoBehaviour:
@@ -2438,6 +2454,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TouchGround: 0
   Length: 0.15
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &2809286671122404811
 GameObject:
   m_ObjectHideFlags: 0
@@ -2527,6 +2546,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &4828975194608647047
 SphereCollider:
@@ -2638,6 +2658,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &5053759649017127761
 CapsuleCollider:
@@ -2762,13 +2783,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2947446477839102425}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 5635716577464205982}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 0, y: 1, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: -0.40000015, y: 1.0959995, z: -0.000000059604645}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -2945,6 +2968,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &3106819428144751689
 GameObject:
@@ -3014,13 +3038,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3106819428144751689}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 5635716577464205982}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 0, y: 1, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 0.40000015, y: 1.0959995, z: 0.000000059604645}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -3197,6 +3223,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &3251568996149230447
 GameObject:
@@ -3287,6 +3314,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &1233248628557182759
 SphereCollider:
@@ -3377,13 +3405,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3258738902008332546}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 5400554837098755903}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 1.0000005, y: 0.00000071525574, z: 0}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -3561,6 +3591,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &8519090955496448692
 SphereCollider:
@@ -3734,6 +3765,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &4138626720591816955
 SphereCollider:
@@ -3845,6 +3877,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &5736781291814747607
 CapsuleCollider:
@@ -3958,6 +3991,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &3282438157931875541
 CapsuleCollider:
@@ -4071,6 +4105,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &2754429041440707955
 CapsuleCollider:
@@ -4164,13 +4199,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3663532680560480067}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 5756053377666838255}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 0.26000026, y: -0.0066001415, z: 0.000000029802322}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -4249,8 +4286,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -4510,13 +4547,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3924875040766483238}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 5635716577464205982}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 0, y: 1.4236, z: 0}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -4595,8 +4634,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -4808,6 +4847,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &4319422510151719682
 GameObject:
@@ -4930,6 +4970,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &1480489490285112455
 CapsuleCollider:
@@ -5043,6 +5084,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &8317091041852850125
 CapsuleCollider:
@@ -5206,6 +5248,7 @@ MonoBehaviour:
   characterinput: {fileID: 0}
   jumping: {fileID: 0}
   stepHandler: {fileID: 0}
+  controlBlender: {fileID: 0}
   Ground: {x: 0, y: 0, z: 0}
   Grounded: 0
   Ragdolling: 0
@@ -5273,6 +5316,7 @@ MonoBehaviour:
   - part: {fileID: 6300718192024171507}
     multiplier: 1
   heightOffset: 0
+  verticalDamping: 10
 --- !u!114 &8294236417283135733
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5302,6 +5346,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Force: 50
+  SpeedModifier: 1
+  BackwardsSpeedMultiplier: 0.9
 --- !u!114 &5172175740640852179
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5315,6 +5361,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   torque: 700
+  damping: 25
   rigs:
   - part: {fileID: 5635716577464205982}
     multiplier: 1
@@ -5356,6 +5403,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gravity: 30
+  fallMultiplier: 1.5
 --- !u!114 &6229374567087971442
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5541,6 +5589,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &1883840680462831099
 CapsuleCollider:
@@ -5654,6 +5703,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &6509963931886561592
 CapsuleCollider:
@@ -5767,6 +5817,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &6714498078508447908
 SphereCollider:
@@ -5878,6 +5929,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &2282428882501111025
 CapsuleCollider:
@@ -6024,6 +6076,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &2119810768708063555
 SphereCollider:
@@ -6135,6 +6188,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &9154053471598145560
 CapsuleCollider:
@@ -6281,6 +6335,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &82893628532768004
 CapsuleCollider:
@@ -6417,6 +6472,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp-firstpass::InputArmController
   armController: {fileID: 1195145614079469415}
+  leftClickActionRef: {fileID: 0}
 --- !u!114 &1195145614079469415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6500,13 +6556,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6038802260872867929}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 4939517854062517664}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 0, y: 1, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: -0.8000004, y: -0.00000023841858, z: -0.00000011920929}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -6684,6 +6742,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &2559170113609880644
 CapsuleCollider:
@@ -6797,6 +6856,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &8667945982216955346
 CapsuleCollider:
@@ -6910,6 +6970,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &630837193363835019
 CapsuleCollider:
@@ -6984,10 +7045,13 @@ MonoBehaviour:
   CameraObject: {fileID: 8099190317506205997}
   SpawnedObject: {fileID: 0}
   WeaponSpawned: 0
+  AllPoses: []
   drag: 0.1
   control: 1
   DoingAnimation: 0
   rotP: 30
+  usePoseInterpolation: 0
+  poseInterpolationSpeed: 16
 --- !u!1 &6678865611341064473
 GameObject:
   m_ObjectHideFlags: 0
@@ -7057,13 +7121,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6678865611341064473}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 5756053377666838255}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: -0.26000026, y: -0.0066001415, z: -0.000000029802322}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -7142,8 +7208,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -7391,6 +7457,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &3366594920642520963
 CapsuleCollider:
@@ -7483,13 +7550,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6945414306528914339}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 8771299865182850850}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 0.0000002682209, y: -0.8673997, z: 0.000000029802322}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -7568,8 +7637,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -7667,6 +7736,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &4324127500373893305
 CapsuleCollider:
@@ -7752,18 +7822,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mouseSensitivity: 100
-  smoothTime: 0.01
+  gamepadSensitivity: 100
+  inputSmoothTime: 0.03
+  rotationSmoothTime: 0.05
   PlayerBody: {fileID: 5172175740640852179}
-  playerInput: {fileID: 7261684620177104817}
-  lookAction:
-    m_Name: Look
-    m_Type: 0
-    m_ExpectedControlType: 
-    m_Id: 7e287722-545b-4374-8726-403e5d7f0315
-    m_Processors: 
-    m_Interactions: 
-    m_SingletonActionBindings: []
-    m_Flags: 0
+  inputActions: {fileID: 0}
 --- !u!1 &7223546664769870828
 GameObject:
   m_ObjectHideFlags: 0
@@ -7886,6 +7949,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &3638183160156383111
 CapsuleCollider:
@@ -8031,6 +8095,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &4626048700904464482
 CapsuleCollider:
@@ -8144,6 +8209,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &5490353067551657921
 MonoBehaviour:
@@ -8159,6 +8225,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TouchGround: 0
   Length: 0.15
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &8094046845200524185
 GameObject:
   m_ObjectHideFlags: 0
@@ -8248,6 +8317,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &5021079821588625989
 CapsuleCollider:
@@ -8493,13 +8563,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8641739134683077898}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 6797148185455967793}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: -0.0000002682209, y: -0.8673997, z: -0.000000029802322}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -8578,8 +8650,8 @@ ConfigurableJoint:
     maximumForce: 3.4028233e+38
     useAcceleration: 0
   m_ProjectionMode: 1
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
+  m_ProjectionDistance: 0.05
+  m_ProjectionAngle: 10
   m_ConfiguredInWorldSpace: 0
   m_SwapBodies: 0
   m_BreakForce: Infinity
@@ -8688,13 +8760,15 @@ ConfigurableJoint:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8788615653645776899}
-  serializedVersion: 4
+  serializedVersion: 5
   m_ConnectedBody: {fileID: 8379717826026911195}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 0, y: 1, z: 0}
   m_AutoConfigureConnectedAnchor: 1
   m_ConnectedAnchor: {x: 0.8000004, y: -0.00000023841858, z: 0.00000011920929}
+  m_AutoConfigureConnectedOrientation: 1
+  m_ConnectedOrientation: {x: 0, y: 0, z: 0, w: 1}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -8872,6 +8946,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &7432519502296065896
 CapsuleCollider:
@@ -8957,6 +9032,8 @@ MonoBehaviour:
   RightPoses:
   - {fileID: 5776401975736072747, guid: 6241b388968f0c344a7e0cc29773bff0, type: 3}
   - {fileID: 5776401975736072747, guid: 716fe5af6cbae5d43a132cfd7277693e, type: 3}
+  LeftPoseIndexes: 
+  RightPoseIndexes: 
 --- !u!1 &8988425487668288443
 GameObject:
   m_ObjectHideFlags: 0
@@ -9046,6 +9123,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &8591153590453696343
 SphereCollider:

@@ -12,11 +12,21 @@ public class CharacterInput : MonoBehaviour
     private InputAction moveAction;
     private InputAction ragdollAction;
     private InputAction jumpAction;
+    private Rigidbody cachedHipRb;
 
     private void Start()
     {
         data = GetComponent<Rig>();
         jumpingSC = GetComponent<JumpingSC>();
+
+        if (data != null && data.hip != null)
+        {
+            cachedHipRb = data.hip.GetComponent<Rigidbody>();
+        }
+        if (cachedHipRb == null)
+        {
+            cachedHipRb = transform.Find("Hip")?.GetComponent<Rigidbody>() ?? GetComponentInChildren<Rigidbody>();
+        }
 
         playerInput = GetComponent<PlayerInput>();
         if (playerInput == null)
@@ -143,13 +153,27 @@ public class CharacterInput : MonoBehaviour
         {
             data.movement.Move(movementInput);
         }
-        else if (data.Grounded)
+        else if (data != null && data.Grounded)
         {
-            // make sure the player doesnt move when no input
+            // Stop applying movement walk force
             data.movement.Move(Vector3.zero);
-            Rigidbody controlRB = this.transform.Find("Hip").GetComponent<Rigidbody>();
-            controlRB.linearVelocity = Vector3.zero;
-            controlRB.angularVelocity = Vector3.zero;
+
+            // Gently dampen residual horizontal walk drift when no input is active,
+            // but preserve vertical momentum and external high-velocity impulses
+            if (cachedHipRb != null)
+            {
+                Vector3 vel = cachedHipRb.linearVelocity;
+                float horizSpeed = Mathf.Sqrt(vel.x * vel.x + vel.z * vel.z);
+                // Only damp low-speed walk drift; don't kill high impulses (> 8 m/s) from dashes or knockbacks!
+                if (horizSpeed > 0.01f && horizSpeed < 8f)
+                {
+                    float newHorizSpeed = Mathf.MoveTowards(horizSpeed, 0f, 15f * Time.fixedDeltaTime);
+                    float ratio = newHorizSpeed / horizSpeed;
+                    vel.x *= ratio;
+                    vel.z *= ratio;
+                    cachedHipRb.linearVelocity = vel;
+                }
+            }
         }
     }
 }

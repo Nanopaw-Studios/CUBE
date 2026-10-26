@@ -23,7 +23,14 @@ public class ArmController : MonoBehaviour
     {
         if (PoseHandler != null)
         {
-            PoseHandler.CurrentTargetPose = Active.GetComponent<AnimationPistolHandler>().RestPose;
+            if (Active != null && Active.RestPose != null)
+            {
+                PoseHandler.CurrentTargetPose = Active.RestPose;
+            }
+            else if (PoseHandler.RestPose != null)
+            {
+                PoseHandler.CurrentTargetPose = PoseHandler.RestPose;
+            }
         }
         else
         {

@@ -46,6 +46,11 @@ public class PlayerAbilityManager : MonoBehaviour
 
     private Coroutine passiveLoop;
 
+    // Channeling / startup state
+    private bool isChanneling = false;
+    private int channelingIndex = -1;
+    private Coroutine activeChannelCoroutine;
+
     private void Awake()
     {
         TryResolveLocalPlayer();
@@ -82,6 +87,14 @@ public class PlayerAbilityManager : MonoBehaviour
 
     private void OnDisable()
     {
+        if (activeChannelCoroutine != null)
+        {
+            StopCoroutine(activeChannelCoroutine);
+            activeChannelCoroutine = null;
+        }
+        isChanneling = false;
+        channelingIndex = -1;
+
         if (passiveLoop != null)
             StopCoroutine(passiveLoop);
         passiveLoop = null;
@@ -114,6 +127,15 @@ public class PlayerAbilityManager : MonoBehaviour
         hasOverclockedMind = false;
         localChaseHandler = null;
         SetAllCooldownTexts("Disabled");
+
+        if (activeChannelCoroutine != null)
+        {
+            StopCoroutine(activeChannelCoroutine);
+            activeChannelCoroutine = null;
+        }
+        isChanneling = false;
+        channelingIndex = -1;
+        AbilityCastBar.Interrupt("INTERMISSION");
 
         if (passiveLoop != null)
             StopCoroutine(passiveLoop);
@@ -168,9 +190,12 @@ public class PlayerAbilityManager : MonoBehaviour
 
         BuildAbilitiesUI();
 
-        // Second build after a short delay to catch any late material/skin sync
-        yield return new WaitForSeconds(1.5f);
-        BuildAbilitiesUI();
+        // If abilities were not populated (e.g. character sync was late), retry once after a short delay
+        if (activeMoveset.Count == 0)
+        {
+            yield return new WaitForSeconds(1.5f);
+            BuildAbilitiesUI();
+        }
     }
 
     private void BuildAbilitiesUI()
@@ -396,17 +421,30 @@ public class PlayerAbilityManager : MonoBehaviour
                 if (cooldownTimers[index] < ability.AbilityCooldown)
                     return;
 
-                ability.ActivateAbility(player);
-                cooldownTimers[index] = 0f;
+                if (isChanneling)
+                    return;
 
-                // Notify the reward manager that an active ability was successfully used.
-                CubeCoinRewardManager rewardManager = player.GetComponent<CubeCoinRewardManager>();
-                rewardManager?.OnAbilitySuccessfullyUsed();
+                float startupDuration = ability.GetStartupDuration();
+                if (startupDuration > 0.05f)
+                {
+                    activeChannelCoroutine = StartCoroutine(
+                        ChannelAbilityStartup(index, ability, player, startupDuration)
+                    );
+                }
+                else
+                {
+                    ability.ActivateAbility(player);
+                    cooldownTimers[index] = 0f;
 
-                // Broadcast network notification so proximity passives (such as The DJ's Hype) can react
-                Transform hip = player.GetComponent<RagdollNetwork>()?.hip;
-                Vector3 hipPos = hip != null ? hip.position : player.transform.position;
-                pv.RPC(nameof(PlayerRPCHandler.RPC_NotifyAbilityUsed), RpcTarget.All, hipPos, pv.OwnerActorNr);
+                    // Notify the reward manager that an active ability was successfully used.
+                    CubeCoinRewardManager rewardManager = player.GetComponent<CubeCoinRewardManager>();
+                    rewardManager?.OnAbilitySuccessfullyUsed();
+
+                    // Broadcast network notification so proximity passives (such as The DJ's Hype) can react
+                    Transform hip = player.GetComponent<RagdollNetwork>()?.hip;
+                    Vector3 hipPos = hip != null ? hip.position : player.transform.position;
+                    pv.RPC(nameof(PlayerRPCHandler.RPC_NotifyAbilityUsed), RpcTarget.All, hipPos, pv.OwnerActorNr);
+                }
             };
 
             act.performed += handler;
@@ -454,6 +492,10 @@ public class PlayerAbilityManager : MonoBehaviour
 
         for (int i = 0; i < safeCount; i++)
         {
+            // Do not overwrite UI while an ability slot is actively channeling its startup
+            if (isChanneling && i == channelingIndex)
+                continue;
+
             var ability = activeMoveset[i];
             if (ability == null)
                 continue;
@@ -491,10 +533,143 @@ public class PlayerAbilityManager : MonoBehaviour
 
             if (abilitySliders[i] != null)
             {
-                float fillPercent = (cooldownTimers[i] / ability.AbilityCooldown) * 100f;
+                float fillPercent = ability.AbilityCooldown > 0f
+                    ? (cooldownTimers[i] / ability.AbilityCooldown) * 100f
+                    : 100f;
                 abilitySliders[i].SetSliderValue(fillPercent);
             }
         }
+    }
+
+    private IEnumerator ChannelAbilityStartup(
+        int index,
+        Ability ability,
+        BasePlayer player,
+        float duration
+    )
+    {
+        isChanneling = true;
+        channelingIndex = index;
+
+        // Show Cast Bar HUD immediately
+        AbilityCastBar.Show(ability.GetStartupText(), duration, ability.AbilityIcon);
+
+        // Execute ability logic (spawns in-world previews and starts runner coroutine)
+        ability.ActivateAbility(player);
+
+        BasePlayerStats stats = player.GetComponent<BasePlayerStats>();
+        float elapsed = 0f;
+        bool wasCancelled = false;
+
+        while (elapsed < duration)
+        {
+            yield return null;
+
+            // Check if player died, disconnected, or abilities disabled
+            if (player == null || (stats != null && stats.health <= 0) || !abilitiesEnabled)
+            {
+                wasCancelled = true;
+                break;
+            }
+
+            // Check if the runner itself was cancelled (e.g., hit by killer)
+            EqualizerAbility eqRunner = player.GetComponent<EqualizerAbility>();
+            if (eqRunner != null && eqRunner.IsCancelled)
+            {
+                wasCancelled = true;
+                break;
+            }
+
+            MusicCircleAbility mcRunner = player.GetComponent<MusicCircleAbility>();
+            if (mcRunner != null && mcRunner.IsCancelled)
+            {
+                wasCancelled = true;
+                break;
+            }
+
+            HealProximityRunner hpRunner = player.GetComponent<HealProximityRunner>();
+            if (hpRunner != null && hpRunner.IsCancelled)
+            {
+                wasCancelled = true;
+                break;
+            }
+
+            elapsed += Time.deltaTime;
+            float remaining = Mathf.Max(0f, duration - elapsed);
+            float progress = Mathf.Clamp01(elapsed / duration);
+
+            AbilityCastBar.UpdateProgress(progress, remaining);
+
+            // Update local ability HUD slot during cast
+            if (index < cooldownTexts.Count && cooldownTexts[index] != null)
+            {
+                cooldownTexts[index].text = $"Cast {remaining:F1}s";
+            }
+            if (index < abilitySliders.Count && abilitySliders[index] != null)
+            {
+                abilitySliders[index].SetSliderValue(progress * 100f);
+            }
+        }
+
+        if (wasCancelled)
+        {
+            AbilityCastBar.Interrupt("INTERRUPTED");
+            // Soft penalty: set cooldown to 2.5s before ready instead of full cooldown
+            if (index < cooldownTimers.Count)
+                cooldownTimers[index] = Mathf.Max(0f, ability.AbilityCooldown - 2.5f);
+        }
+        else
+        {
+            AbilityCastBar.Complete();
+
+            // Set cooldown to 0 now that ability finished casting
+            if (index < cooldownTimers.Count)
+                cooldownTimers[index] = 0f;
+
+            // Notify reward manager
+            CubeCoinRewardManager rewardManager = player.GetComponent<CubeCoinRewardManager>();
+            rewardManager?.OnAbilitySuccessfullyUsed();
+
+            // Broadcast network notification so proximity passives (such as The DJ's Hype) can react
+            var pv = player.GetComponent<PhotonView>();
+            if (pv != null)
+            {
+                Transform hip = player.GetComponent<RagdollNetwork>()?.hip;
+                Vector3 hipPos = hip != null ? hip.position : player.transform.position;
+                pv.RPC(nameof(PlayerRPCHandler.RPC_NotifyAbilityUsed), RpcTarget.All, hipPos, pv.OwnerActorNr);
+            }
+        }
+
+        isChanneling = false;
+        channelingIndex = -1;
+        activeChannelCoroutine = null;
+    }
+
+    /// <summary>
+    /// Interrupts any currently channeling ability. Can be triggered when receiving hits or crowd-control.
+    /// </summary>
+    public void InterruptCurrentCast(string reason = "INTERRUPTED")
+    {
+        if (!isChanneling)
+            return;
+
+        if (activeChannelCoroutine != null)
+        {
+            StopCoroutine(activeChannelCoroutine);
+            activeChannelCoroutine = null;
+        }
+
+        AbilityCastBar.Interrupt(reason);
+
+        if (channelingIndex >= 0 && channelingIndex < activeMoveset.Count && channelingIndex < cooldownTimers.Count)
+        {
+            var ability = activeMoveset[channelingIndex];
+            float penalty = ability != null ? Mathf.Max(0f, ability.AbilityCooldown - 2.5f) : 0f;
+            cooldownTimers[channelingIndex] = penalty;
+        }
+
+        isChanneling = false;
+        channelingIndex = -1;
     }
 
     public void SetOverclockedMindActive(bool active)

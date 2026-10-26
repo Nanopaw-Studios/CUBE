@@ -55,12 +55,20 @@ public class ServerManager : MonoBehaviourPunCallbacks
         if (roundManager != null)
         {
             roundManager.OnRoundStart -= RoundStartedRPC;
+            roundManager.OnIntermissionStart -= IntermissionStart;
         }
     }
 
+    private float lastCacheTime = -999f;
+    private const float CacheInterval = 1f;
+
     private void Update()
     {
-        CachePlayers();
+        if (Time.time - lastCacheTime > CacheInterval || allBasePlayers == null)
+        {
+            lastCacheTime = Time.time;
+            CachePlayers();
+        }
     }
 
     private void CachePlayers()
@@ -74,9 +82,13 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
     public static KillerType GetCurrentKiller()
     {
-        foreach (BasePlayer player in FindFirstObjectByType<ServerManager>().allBasePlayers)
+        var sm = FindFirstObjectByType<ServerManager>();
+        if (sm == null || sm.allBasePlayers == null)
+            return null;
+
+        foreach (BasePlayer player in sm.allBasePlayers)
         {
-            if (player.GetPlayerType() == PlayerType.Killer)
+            if (player != null && player.GetPlayerType() == PlayerType.Killer)
             {
                 return player.GetEquippedKiller();
             }
@@ -184,12 +196,12 @@ public class ServerManager : MonoBehaviourPunCallbacks
                         characterId = killer._Name;
                 }
 
-                if (characterId == null)
+                if (string.IsNullOrEmpty(characterId))
                 {
-                    Debug.LogWarning(
-                        $"[ServerManager] Could not resolve killer character for player {pv.OwnerActorNr} — skipping skin."
+                    characterId = "The Glitch";
+                    Debug.Log(
+                        $"[ServerManager] Could not resolve killer character for player {pv.OwnerActorNr} — defaulting to '{characterId}'."
                     );
-                    continue;
                 }
             }
             else
@@ -214,12 +226,12 @@ public class ServerManager : MonoBehaviourPunCallbacks
                         characterId = survivor._Name;
                 }
 
-                if (characterId == null)
+                if (string.IsNullOrEmpty(characterId))
                 {
-                    Debug.LogWarning(
-                        $"[ServerManager] Could not resolve survivor character for player {pv.OwnerActorNr} — skipping skin."
+                    characterId = "The Coder";
+                    Debug.Log(
+                        $"[ServerManager] Could not resolve survivor character for player {pv.OwnerActorNr} — defaulting to '{characterId}'."
                     );
-                    continue;
                 }
             }
 
