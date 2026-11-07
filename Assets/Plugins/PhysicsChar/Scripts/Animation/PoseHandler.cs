@@ -55,7 +55,7 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
                 {
                     if (!AllPoses[i].gameObject.scene.IsValid())
                     {
-                        var copy = Instantiate(AllPoses[i].gameObject, transform);
+                        var copy = Instantiate(AllPoses[i].gameObject, transform, false);
                         copy.name = AllPoses[i].name + "_RuntimeInstance";
                         SanitizePoseInstance(copy);
                         runtimePoses[i] = copy.GetComponent<PosePreset>();
@@ -77,7 +77,7 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
             }
             else if (!RestPose.gameObject.scene.IsValid())
             {
-                var copy = Instantiate(RestPose.gameObject, transform);
+                var copy = Instantiate(RestPose.gameObject, transform, false);
                 copy.name = RestPose.name + "_RestInstance";
                 SanitizePoseInstance(copy);
                 RestPose = copy.GetComponent<PosePreset>();
@@ -86,14 +86,25 @@ public class PoseHandler : MonoBehaviourPun, IPunObservable
     }
 
     /// <summary>
-    /// Strips joints, rigidbodies, and colliders from an instantiated pose preset so it behaves purely
-    /// as a kinematic Transform reference hierarchy. This prevents spawning dynamic ghost ragdolls that
-    /// fall through the world, collide with the player, or detach in PhysX simulation!
+    /// Strips joints, rigidbodies, colliders, and renderers from an instantiated pose preset so it behaves purely
+    /// as an invisible kinematic Transform reference hierarchy. This prevents spawning visible ghost ragdolls or
+    /// dynamic physics bodies at (0,0,0) in world space!
     /// </summary>
     private void SanitizePoseInstance(GameObject instance)
     {
         if (instance == null) return;
 
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+
+        foreach (var rend in instance.GetComponentsInChildren<Renderer>(true))
+        {
+            DestroyImmediate(rend);
+        }
+        foreach (var filter in instance.GetComponentsInChildren<MeshFilter>(true))
+        {
+            DestroyImmediate(filter);
+        }
         foreach (var joint in instance.GetComponentsInChildren<ConfigurableJoint>(true))
         {
             DestroyImmediate(joint);

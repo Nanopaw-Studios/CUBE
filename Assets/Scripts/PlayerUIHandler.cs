@@ -59,6 +59,16 @@ public class PlayerUIHandler : MonoBehaviour
 
     private void Start()
     {
+        if (roundManager == null)
+            roundManager = FindFirstObjectByType<RoundManager>();
+
+        if (timerText != null)
+        {
+            timerText.enableAutoSizing = true;
+            timerText.fontSizeMin = 20;
+            timerText.fontSizeMax = 46;
+        }
+
         TryBindLocalPlayer();
 
         // Keep the money UI in sync whenever CC changes (add, spend, or refresh).
@@ -321,7 +331,7 @@ public class PlayerUIHandler : MonoBehaviour
 
         if (timerText != null && roundManager != null)
         {
-            if (roundManager.HasEnoughPlayers())
+            if (roundManager.roundActive)
             {
                 int timeRemaining = roundManager.GetCurrentTime();
                 int minutes = timeRemaining / 60;
@@ -330,7 +340,22 @@ public class PlayerUIHandler : MonoBehaviour
             }
             else
             {
-                timerText.text = "Waiting for enough players..";
+                int minPlayers = roundManager.GetRequiredPlayerCount();
+                int currentPlayers = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom != null
+                    ? PhotonNetwork.CurrentRoom.PlayerCount
+                    : 1;
+
+                if (!roundManager.HasEnoughPlayers())
+                {
+                    timerText.text = $"Waiting for players ({currentPlayers}/{minPlayers} minimum)... Free-play lobby active.";
+                }
+                else
+                {
+                    int timeRemaining = roundManager.GetCurrentTime();
+                    int minutes = timeRemaining / 60;
+                    int seconds = timeRemaining % 60;
+                    timerText.text = $"Waiting for players ({currentPlayers}/{minPlayers} minimum)... {minutes}:{seconds:00}";
+                }
             }
         }
 

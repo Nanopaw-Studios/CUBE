@@ -16,6 +16,12 @@ public class RoundManager : MonoBehaviourPunCallbacks
     [HideInInspector]
     public bool intermissionActive = false;
 
+    [Tooltip("Minimum number of players required to begin a match.")]
+    public int minPlayers = 2;
+
+    [Tooltip("Countdown duration in seconds once enough players are present to start a match.")]
+    public int countdownDuration = 10;
+
     private int intermissionTime = 50;
     public Transform intermissionSpawnPoint;
 
@@ -49,7 +55,10 @@ public class RoundManager : MonoBehaviourPunCallbacks
         if (roundActive || intermissionActive)
             return;
 
-        double endTime = PhotonNetwork.Time + intermissionTime;
+        RefreshIntermissionSpawnFromPoint();
+
+        // If we don't have enough players yet, endTimestamp = 0 so no round countdown runs while waiting
+        double endTime = HasEnoughPlayers() ? (PhotonNetwork.Time + countdownDuration) : 0.0;
 
         // IMPORTANT: buffer it so everyone (and late scene loads) get it
         photonView.RPC(
@@ -65,7 +74,8 @@ public class RoundManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            double endTime = PhotonNetwork.Time + intermissionTime;
+            RefreshIntermissionSpawnFromPoint();
+            double endTime = HasEnoughPlayers() ? (PhotonNetwork.Time + countdownDuration) : 0.0;
             photonView.RPC(
                 "StartIntermission",
                 RpcTarget.AllBuffered,
@@ -116,8 +126,12 @@ public class RoundManager : MonoBehaviourPunCallbacks
 
         if (intermissionActive && HasEnoughPlayers())
         {
-            endTimestamp = PhotonNetwork.Time + 3; // start soon
-            photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, endTimestamp);
+            // If countdown is not running or was 0 while waiting, begin countdown
+            if (endTimestamp <= PhotonNetwork.Time)
+            {
+                endTimestamp = PhotonNetwork.Time + countdownDuration;
+                photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, endTimestamp);
+            }
         }
     }
 
@@ -169,6 +183,39 @@ public class RoundManager : MonoBehaviourPunCallbacks
             {
                 Debug.Log("[RoundManager] Ending round because a role became empty after player disconnect.");
                 photonView.RPC("EndRound", RpcTarget.All);
+            }
+        }
+        else if (intermissionActive)
+        {
+            // If player count drops below minimum during intermission, cancel countdown and restore waiting state
+            if (!HasEnoughPlayers())
+            {
+                Debug.Log("[RoundManager] Player count dropped below minimum during intermission. Restoring waiting lobby state.");
+                endTimestamp = 0.0;
+                photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, 0.0);
+            }
+        }
+    }
+
+    public override void OnMasterClientSwitched(Photon.Realtime.Player newMasterClient)
+    {
+        if (!PhotonNetwork.IsMasterClient)
+            return;
+
+        if (intermissionActive)
+        {
+            if (!HasEnoughPlayers())
+            {
+                if (endTimestamp > 0.0)
+                {
+                    endTimestamp = 0.0;
+                    photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, 0.0);
+                }
+            }
+            else if (endTimestamp <= PhotonNetwork.Time)
+            {
+                endTimestamp = PhotonNetwork.Time + countdownDuration;
+                photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, endTimestamp);
             }
         }
     }
@@ -319,19 +366,20 @@ public class RoundManager : MonoBehaviourPunCallbacks
         {
             UpdateCurrentTime();
 
-            if (PhotonNetwork.IsMasterClient && PhotonNetwork.Time >= endTimestamp)
+            if (PhotonNetwork.IsMasterClient)
             {
-                if (roundActive)
+                if (roundActive && endTimestamp > 0 && PhotonNetwork.Time >= endTimestamp)
                 {
                     photonView.RPC("EndRound", RpcTarget.All);
                 }
-                else if (intermissionActive)
+                else if (intermissionActive && endTimestamp > 0 && PhotonNetwork.Time >= endTimestamp)
                 {
-                    // 🚨 NEW: Only start round if enough players
+                    // Authoritative check immediately before starting round
                     if (!HasEnoughPlayers())
                     {
-                        // Extend intermission instead of starting
-                        endTimestamp = PhotonNetwork.Time + 5; // check again in 5s
+                        Debug.LogWarning("[RoundManager] Timer expired but insufficient players. Restoring waiting lobby state.");
+                        endTimestamp = 0.0;
+                        photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, 0.0);
                         continue;
                     }
 
@@ -373,7 +421,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
             }
 
             RefreshIntermissionSpawnFromPoint();
-            double endTime = PhotonNetwork.Time + intermissionTime;
+            double endTime = HasEnoughPlayers() ? (PhotonNetwork.Time + intermissionTime) : 0.0;
 
             // Flush stale buffered RPCs on this view so late joiners don't receive
             // an old StartRound when the round has ended.
@@ -393,25 +441,17 @@ public class RoundManager : MonoBehaviourPunCallbacks
         return currentTime;
     }
 
+    public int GetRequiredPlayerCount()
+    {
+        return Mathf.Max(2, minPlayers);
+    }
+
     public bool HasEnoughPlayers()
     {
-        int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
+        if (!PhotonNetwork.InRoom || PhotonNetwork.CurrentRoom == null)
+            return false;
 
-        // Check if room is private (you can change this depending on how you flag private rooms)
-        bool isPrivate =
-            PhotonNetwork.CurrentRoom.IsVisible == false
-            || PhotonNetwork.CurrentRoom.IsOpen == false;
-
-        if (isPrivate)
-        {
-            //return playerCount >= 2;
-            return true;
-        }
-        else
-        {
-            //return playerCount >= 3;
-            return true;
-        }
+        return PhotonNetwork.CurrentRoom.PlayerCount >= GetRequiredPlayerCount();
     }
 
     public void UpdateIntermissionSpawn(Transform spawn)
@@ -431,6 +471,12 @@ public class RoundManager : MonoBehaviourPunCallbacks
 
     private void UpdateCurrentTime()
     {
+        if (endTimestamp <= 0)
+        {
+            currentTime = 0;
+            return;
+        }
+
         double remaining = Math.Max(0, endTimestamp - PhotonNetwork.Time);
         currentTime = (int)Math.Ceiling(remaining);
     }

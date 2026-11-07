@@ -97,6 +97,10 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
         {
             hasPendingRole = false;
             ApplyRole(pendingPlayerType, pendingCharacterId);
+
+            // Safe to destroy old instance now that new role materials are applied.
+            if (oldInstance != null)
+                Destroy(oldInstance);
         }
         else
         {
@@ -104,10 +108,6 @@ public class PlayerCustomizer : MonoBehaviourPunCallbacks
                 "[PlayerCustomizer] WaitForRoleRPC timed out -- role RPC never arrived."
             );
         }
-
-        // Safe to destroy old instance now.
-        if (oldInstance != null)
-            Destroy(oldInstance);
     }
 
     private void IntermissionStarted()
