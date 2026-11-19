@@ -57,7 +57,10 @@ public class WindSwipeProjectile : MonoBehaviourPun
 
         Debug.Log($"[WindSwipe] Hit {targetPV.Owner.NickName} for {damage} damage and applied WindStagger.");
 
+        CubeCoinRewardManager.NotifyLocalSuccessfulAbility("wind_swipe_hit", 40);
+
         if (isKillingBlow)
+
         {
             PhotonView[] allViews = FindObjectsByType<PhotonView>(FindObjectsSortMode.None);
             foreach (PhotonView view in allViews)

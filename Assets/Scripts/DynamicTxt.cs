@@ -30,7 +30,7 @@ public class DynamicTxt : MonoBehaviour
 
     [Header("Remote")]
     public string url =
-        "https://raw.githubusercontent.com/NanoDogs-Studios/CUBE/refs/heads/main/motd.txt";
+        "https://raw.githubusercontent.com/Nanopaw-Studios/CUBE/refs/heads/main/motd.txt";
 
     [Tooltip("How often to refresh (seconds).")]
     [Min(5)]

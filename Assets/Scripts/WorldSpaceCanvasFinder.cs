@@ -6,13 +6,15 @@ public class WorldSpaceCanvasFinder : MonoBehaviour
 
     private void Update()
     {
+        if (cam != null)
+            return;
+
+        cam = Camera.main;
         if (cam == null)
-        {
-            cam = Camera.main;
-        }
-        else
-        {
-            this.GetComponent<Canvas>().worldCamera = cam;
-        }
+            return;
+
+        Canvas canvas = GetComponent<Canvas>();
+        if (canvas != null)
+            canvas.worldCamera = cam;
     }
 }

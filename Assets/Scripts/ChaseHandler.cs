@@ -61,7 +61,15 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
         currentMusicLayer = 0;
         killer = null;
         data = null;
-        enabled = true;
+
+        if (cachedAudioSource != null)
+        {
+            cachedAudioSource.Stop();
+            cachedAudioSource.clip = null;
+        }
+
+        // Role evaluation happens on round start; survivors should not poll for 5s.
+        enabled = false;
     }
 
     private void OnRoundStart()
@@ -115,7 +123,7 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
         if (!photonView.IsMine || player.GetPlayerType() != BasePlayer.PlayerType.Killer)
             return;
 
-        ServerManager sm = FindFirstObjectByType<ServerManager>();
+        ServerManager sm = ServerManager.Instance;
         if (sm == null || sm.allBasePlayers == null)
             return;
 
@@ -194,13 +202,16 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
         if (cachedAudioSource != null)
             return cachedAudioSource;
 
-        var go = GameObject.Find("Audio Source");
-        if (go != null)
-            cachedAudioSource = go.GetComponent<AudioSource>();
-
-        if (cachedAudioSource == null)
-            cachedAudioSource = FindFirstObjectByType<AudioSource>();
-
+        // Dedicated source for chase layers. Never fall back to an arbitrary
+        // AudioSource: the old fallback grabbed MusicManager.roundSource and
+        // StopMusic() silenced the round music for every client.
+        GameObject sourceObject = new GameObject("ChaseMusicSource");
+        sourceObject.transform.SetParent(transform, false);
+        cachedAudioSource = sourceObject.AddComponent<AudioSource>();
+        cachedAudioSource.playOnAwake = false;
+        cachedAudioSource.loop = true;
+        cachedAudioSource.spatialBlend = 0f;
+        cachedAudioSource.volume = 0.65f;
         return cachedAudioSource;
     }
 
@@ -217,22 +228,37 @@ public class ChaseHandler : MonoBehaviourPunCallbacks
             return;
         }
 
+        AudioClip clip = layer switch
+        {
+            1 => data.layer1,
+            2 => data.layer2,
+            3 => data.layer3,
+            _ => data.layer4,
+        };
+
+        if (clip == null)
+            return;
+
         AudioSource source = GetChaseAudioSource();
         if (source == null)
-        {
             return;
-        }
 
+        if (source.clip == clip && source.isPlaying)
+            return;
+
+        source.clip = clip;
+        source.Play();
         Debug.Log($"Playing chase music layer {layer}");
     }
 
     [PunRPC]
     public void StopMusic()
     {
-        AudioSource source = GetChaseAudioSource();
-        if (source != null)
+        // Only stop the dedicated chase source; never stop another system's audio.
+        if (cachedAudioSource != null)
         {
-            source.Stop();
+            cachedAudioSource.Stop();
+            cachedAudioSource.clip = null;
         }
     }
 }

@@ -36,6 +36,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         maxStamina = characterStamina > 0 ? characterStamina : 100;
         stamina = maxStamina;
         speed = characterSpeed > 0 ? (int)characterSpeed : 35;
+        deathReported = false;
 
         // Push base speed into MovementSC so walk force matches the character's ScriptableObject speed.
         // MovementSC.Force acts as the "current speed" and can be modified at runtime by abilities/effects.
@@ -65,6 +66,7 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
 
         speed = 35;
         damageResistance = 0f;
+        deathReported = false;
 
         // 1. Reset Movement
         MovementSC movement = GetComponentInChildren<MovementSC>();
@@ -151,10 +153,37 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     /// <summary>Fractional damage resistance (0 to 1). When > 0, incoming damage is reduced.</summary>
     public float damageResistance = 0f;
 
+    // Ensures the death signal is sent exactly once per life.
+    private bool deathReported;
+
     /// <summary>Fired on the local player client when taking damage.</summary>
     public event System.Action<int> OnDamageTaken;
 
     private CameraShaker localCameraShaker;
+
+    /// <summary>
+    /// Owner-only setter for damage resistance. The value is replicated so that
+    /// every client applies the same modifier when it simulates a hit; otherwise
+    /// the master's health copy drifts above the owner's and round-end checks fail.
+    /// </summary>
+    public void SetDamageResistance(float resistance)
+    {
+        float clamped = Mathf.Clamp01(resistance);
+
+        if (Mathf.Abs(damageResistance - clamped) < 0.001f)
+            return;
+
+        damageResistance = clamped;
+
+        if (photonView != null && photonView.IsMine)
+            photonView.RPC(nameof(RPC_SetDamageResistance), RpcTarget.Others, clamped);
+    }
+
+    [PunRPC]
+    private void RPC_SetDamageResistance(float resistance)
+    {
+        damageResistance = Mathf.Clamp01(resistance);
+    }
 
     [PunRPC]
     public void TakeDamage(int damage)
@@ -174,6 +203,16 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
         health -= actualDamage;
         if (health < 0)
             health = 0;
+
+        // The owning client is the authority on whether this player died. Report
+        // it to the master so the killer's win condition does not depend on the
+        // master's replicated health reaching zero a frame later.
+        if (health <= 0 && !deathReported)
+        {
+            deathReported = true;
+            if (photonView.IsMine)
+                photonView.RPC(nameof(RPC_ReportDeath), RpcTarget.MasterClient);
+        }
 
         if (photonView.IsMine)
         {
@@ -203,8 +242,22 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
+    private void RPC_ReportDeath()
+    {
+        PlayerHitboxManager hitbox = GetComponent<PlayerHitboxManager>();
+        if (hitbox != null)
+            hitbox.CheckKillerWinCondition();
+    }
+
+    [PunRPC]
     public void Heal(int amount)
     {
+        // Dead players stay dead until intermission. Healing a zero-health survivor
+        // would make the killer's elimination win-check treat them as alive while
+        // DeathSC still keeps them collapsed and spectating.
+        if (health <= 0)
+            return;
+
         health += amount;
         if (health > maxHealth)
             health = maxHealth;
@@ -229,16 +282,20 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     [PunRPC]
     public void GrantMalice(int amount)
     {
-        CUBEStatusText.CreateText(
-            "You feel something <color=red>malicious</color> take over you.."
-        );
+        if (photonView.IsMine)
+        {
+            CUBEStatusText.CreateText(
+                "You feel something <color=red>malicious</color> take over you.."
+            );
+        }
         malice += amount;
     }
 
     [PunRPC]
     public void RemoveMalice(int amount)
     {
-        CUBEStatusText.CreateText("You feel less malicious.");
+        if (photonView.IsMine)
+            CUBEStatusText.CreateText("You feel less malicious.");
         malice -= amount;
     }
 
@@ -257,13 +314,21 @@ public class BasePlayerStats : MonoBehaviourPunCallbacks
     [PunRPC]
     public void AdjustMalice(int amount)
     {
-        CUBEStatusText.CreateText(
-            "You feel something <color=red>malicious</color> take over you.."
-        );
+        // The RPC runs on every client, but the feedback belongs only to the player
+        // whose malice changed. Showing it everywhere made everyone think they were
+        // becoming the killer.
+        if (photonView.IsMine)
+        {
+            CUBEStatusText.CreateText(
+                "You feel something <color=red>malicious</color> take over you.."
+            );
+        }
 
         malice += amount;
         if (malice < 0)
             malice = 0;
-        Debug.Log($"{photonView.Owner.NickName} malice now {malice}");
+
+        string ownerName = photonView.Owner != null ? photonView.Owner.NickName : "unknown";
+        Debug.Log($"{ownerName} malice now {malice}");
     }
 }

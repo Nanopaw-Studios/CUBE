@@ -11,7 +11,7 @@ using UnityEngine;
 /// Reward schedule (per round):
 ///   Low-health win  — 10–50 CC scaled inversely with remaining HP (capped at 19 HP)
 ///   Distance        — 5 CC per 100 m traveled (tracked every second, round only)
-///   Ability used    — 15 CC per successful activation (up to 20 per round)
+///   Ability used    — 5 CC per successful activation (up to 20 per round)
 ///   Killer kill     — 25 CC per survivor eliminated (killer-only)
 ///   Killer win      — 30 CC when the killer's team wins
 ///   Survivor win    — 15 CC when the round ends with the survivor still alive
@@ -34,9 +34,18 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
     private const int SurvivorWinCC = 15;
     private const int RagequitEscapeCC = 40;
 
+    // ── XP & Character Mastery Reward amounts (Skill & Impact Only) ───
+    private const int KillerKillXP = 100;
+    private const int KillerWinXP = 75;
+    private const int SurvivorWinXP = 50;
+    private const int LowHpWinXPMin = 40;
+    private const int LowHpWinXPMax = 100;
+    private const int RagequitEscapeXP = 75;
+
     // ── Per-round abuse caps ──────────────────────────────────────────
     private const int MaxAbilityRewardsPerRound = 20;
-    private const int MaxDistanceRewardsPerRound = 10000; // 10 000 m max
+    private const int MaxSuccessfulAbilityXPPerRound = 12;
+    private const int MaxDistanceRewardsPerRound = 100; // 100 segments × 100 m = 10 000 m max
 
     // ── State ─────────────────────────────────────────────────────────
     private BasePlayer basePlayer;
@@ -56,6 +65,8 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
 
     // Ability
     private int abilityRewardsGrantedThisRound;
+    private int successfulAbilityXPGrantedThisRound;
+
 
     // ─────────────────────────────────────────────────────────────────
 
@@ -102,6 +113,7 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
         distanceAccumulator = 0f;
         distanceRewardsGrantedThisRound = 0;
         abilityRewardsGrantedThisRound = 0;
+        successfulAbilityXPGrantedThisRound = 0;
         lastPosition = GetTrackedPosition();
 
         if (distanceCoroutine != null)
@@ -157,7 +169,8 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             {
                 distanceRewardsGrantedThisRound += completedSegments;
                 int totalCoins = completedSegments * DistanceCCPerSegment;
-                GrantCC(totalCoins, $"distance_{distanceRewardsGrantedThisRound}x100m");
+                string reason = $"distance_{distanceRewardsGrantedThisRound}x100m";
+                GrantCC(totalCoins, reason);
             }
 
             yield return wait;
@@ -167,7 +180,8 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
     // ── Ability reward ────────────────────────────────────────────────
 
     /// <summary>
-    /// Call this from PlayerAbilityManager when an active ability is successfully activated.
+    /// Call this from PlayerAbilityManager when an active ability is cast (grants CC only).
+    /// XP is only awarded when an ability achieves a real gameplay impact via OnSuccessfulAbilityImpact.
     /// </summary>
     public void OnAbilitySuccessfullyUsed()
     {
@@ -178,6 +192,47 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
 
         abilityRewardsGrantedThisRound++;
         GrantCC(AbilityUsedCC, "ability_used");
+    }
+
+    /// <summary>
+    /// Awards Account XP and Character Mastery XP only when an ability achieves a verified
+    /// gameplay outcome (hitting a survivor, slowing the killer, closing chase distance, or healing missing HP).
+    /// </summary>
+    public void OnSuccessfulAbilityImpact(string reason, int xpAmount = 35)
+    {
+        if (!roundActive || xpAmount <= 0)
+            return;
+        if (successfulAbilityXPGrantedThisRound >= MaxSuccessfulAbilityXPPerRound)
+            return;
+
+        successfulAbilityXPGrantedThisRound++;
+        GrantXP(xpAmount, reason);
+    }
+
+    /// <summary>
+    /// Static helper to award skill-based ability impact XP to the local player's reward manager.
+    /// </summary>
+    public static void NotifyLocalSuccessfulAbility(string reason, int xpAmount = 35)
+    {
+        if (PhotonLauncher.LocalPlayerInstance != null)
+        {
+            var mgr = PhotonLauncher.LocalPlayerInstance.GetComponent<CubeCoinRewardManager>();
+            if (mgr != null)
+            {
+                mgr.OnSuccessfulAbilityImpact(reason, xpAmount);
+                return;
+            }
+        }
+
+        var all = FindObjectsByType<CubeCoinRewardManager>(FindObjectsSortMode.None);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i] != null && all[i].photonView != null && all[i].photonView.IsMine)
+            {
+                all[i].OnSuccessfulAbilityImpact(reason, xpAmount);
+                return;
+            }
+        }
     }
 
     // ── Kill reward (killer only) ─────────────────────────────────────
@@ -194,6 +249,7 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             return;
 
         GrantCC(KillerKillCC, "killer_kill");
+        GrantXP(KillerKillXP, "killer_kill");
     }
 
     // ── Ragequit escape reward (survivor's perspective) ───────────────
@@ -223,6 +279,7 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             )
             {
                 GrantCC(RagequitEscapeCC, "ragequit_escape");
+                GrantXP(RagequitEscapeXP, "ragequit_escape");
                 break;
             }
         }
@@ -240,11 +297,17 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             // Check whether the killer won: all survivors must be at 0 HP.
             bool killerWon = AllSurvivorsDead();
             if (killerWon)
+            {
                 GrantCC(KillerWinCC, "killer_win");
+                GrantXP(KillerWinXP, "killer_win");
+            }
 
             // Low-HP win bonus — only applies if the killer won.
             if (killerWon && playerStats.health < LowHpWinThreshold && playerStats.health > 0)
+            {
                 GrantCC(CalculateLowHpBonus(playerStats.health), "low_hp_win");
+                GrantXP(CalculateLowHpXPBonus(playerStats.health), "low_hp_win");
+            }
         }
         else if (role == BasePlayer.PlayerType.Survivor)
         {
@@ -252,13 +315,18 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             if (playerStats.health > 0)
             {
                 GrantCC(SurvivorWinCC, "survivor_win");
+                GrantXP(SurvivorWinXP, "survivor_win");
 
                 // Low-HP win bonus for survivors who survived with less than 20 HP.
                 if (playerStats.health < LowHpWinThreshold)
+                {
                     GrantCC(CalculateLowHpBonus(playerStats.health), "low_hp_win");
+                    GrantXP(CalculateLowHpXPBonus(playerStats.health), "low_hp_win");
+                }
             }
         }
     }
+
 
     // ── Helpers ───────────────────────────────────────────────────────
 
@@ -271,6 +339,27 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
         currentHp = Mathf.Clamp(currentHp, 1, LowHpWinThreshold - 1);
         float t = 1f - ((float)(currentHp - 1) / (LowHpWinThreshold - 2));
         return Mathf.RoundToInt(Mathf.Lerp(LowHpWinMin, LowHpWinMax, t));
+    }
+
+    private int CalculateLowHpXPBonus(int currentHp)
+    {
+        currentHp = Mathf.Clamp(currentHp, 1, LowHpWinThreshold - 1);
+        float t = 1f - ((float)(currentHp - 1) / (LowHpWinThreshold - 2));
+        return Mathf.RoundToInt(Mathf.Lerp(LowHpWinXPMin, LowHpWinXPMax, t));
+    }
+
+    private CubePlayerBase GetActiveCharacter()
+    {
+        if (basePlayer == null)
+            return null;
+
+        var role = basePlayer.GetPlayerType();
+        if (role == BasePlayer.PlayerType.Killer)
+            return basePlayer.GetEquippedKiller();
+        if (role == BasePlayer.PlayerType.Survivor)
+            return basePlayer.GetEquippedSurvivor();
+
+        return null;
     }
 
     private bool AllSurvivorsDead()
@@ -301,5 +390,17 @@ public class CubeCoinRewardManager : MonoBehaviourPunCallbacks
             $"<color=yellow>+{amount} CC</color> ({reason.Replace('_', ' ')})"
         );
         Debug.Log($"[CubeCoinReward] +{amount} CC | reason={reason}");
+    }
+
+    private void GrantXP(int amount, string reason)
+    {
+        if (amount <= 0)
+            return;
+
+        ProgressionManager prog = ProgressionManager.EnsureExists();
+        if (prog != null)
+        {
+            prog.AwardGameplayXP(GetActiveCharacter(), amount, amount, reason);
+        }
     }
 }

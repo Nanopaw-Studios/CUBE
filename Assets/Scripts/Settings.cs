@@ -14,6 +14,8 @@ public class Settings : MonoBehaviour
     [Header("Graphics UI")]
     public TMP_Dropdown vsyncDropdown;
     public TMP_Dropdown graphicsDropdown;
+    public TMP_Dropdown languageDropdown;
+
 
     [Header("Sensitivity UI")]
     public Slider mouseSensitivity;
@@ -48,7 +50,11 @@ public class Settings : MonoBehaviour
             mouseSensitivity.onValueChanged.AddListener(SetMouseSensitivity);
         if (gamepadSensitivity != null)
             gamepadSensitivity.onValueChanged.AddListener(SetGamepadSensitivity);
+
+        LocalizationManager.OnManifestUpdated += RefreshLanguageDropdown;
+        SetupLanguageDropdown();
     }
+
 
     // ---------------- AUDIO ----------------
 
@@ -125,6 +131,64 @@ public class Settings : MonoBehaviour
         PlayerPrefs.SetInt(KEY_QUALITY, quality);
         PlayerPrefs.Save();
     }
+
+    public void SetLanguage(int index)
+    {
+        LocalizationManager loc = LocalizationManager.EnsureExists();
+        if (loc != null)
+        {
+            loc.SetLanguageByIndex(index);
+        }
+    }
+
+    private void SetupLanguageDropdown()
+    {
+        if (languageDropdown == null)
+        {
+            Transform content = FindSettingsContent();
+            if (content != null)
+            {
+                Transform langRow = content.Find("Language");
+                if (langRow != null)
+                    languageDropdown = langRow.GetComponentInChildren<TMP_Dropdown>(true);
+            }
+        }
+
+        if (languageDropdown == null)
+            return;
+
+        languageDropdown.onValueChanged.RemoveListener(SetLanguage);
+        RefreshLanguageDropdown();
+        languageDropdown.onValueChanged.AddListener(SetLanguage);
+    }
+
+    private void RefreshLanguageDropdown()
+    {
+        if (languageDropdown == null)
+            return;
+
+        LocalizationManager loc = LocalizationManager.EnsureExists();
+        if (loc == null)
+            return;
+
+        var langs = loc.AvailableLanguages;
+        var options = new System.Collections.Generic.List<string>(langs.Count);
+        for (int i = 0; i < langs.Count; i++)
+        {
+            var l = langs[i];
+            string label = !string.IsNullOrEmpty(l.nativeName) && l.nativeName != l.name
+                ? $"{l.nativeName} ({l.name})"
+                : l.name;
+            options.Add(label);
+        }
+
+        languageDropdown.ClearOptions();
+        languageDropdown.AddOptions(options);
+        int currentIndex = loc.GetLanguageIndex(loc.CurrentLanguageCode);
+        languageDropdown.SetValueWithoutNotify(currentIndex);
+        languageDropdown.RefreshShownValue();
+    }
+
 
     // ---------------- LOAD ----------------
 
@@ -264,7 +328,9 @@ public class Settings : MonoBehaviour
     private void OnDestroy()
     {
         PlayfabManager.OnDeveloperStatusChanged -= OnDevStatusChanged;
+        LocalizationManager.OnManifestUpdated -= RefreshLanguageDropdown;
     }
+
 
     private void OnDisable()
     {

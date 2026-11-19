@@ -79,6 +79,10 @@ public class ShockwaveRunner : MonoBehaviourPun
                     continue;
                 alreadyHit.Add(targetPV.ViewID);
 
+                BasePlayerStats targetStats = target.GetComponent<BasePlayerStats>();
+                bool isKillingBlow =
+                    targetStats != null && targetStats.health - damage <= 0 && targetStats.health > 0;
+
                 targetPV.RPC(nameof(PlayerHitboxManager.RPC_OnHit), RpcTarget.All, damage);
 
                 // Apply Tremor status effect (Tier 2, 4 seconds)
@@ -88,7 +92,14 @@ public class ShockwaveRunner : MonoBehaviourPun
                     targetPV.RPC(nameof(StatusEffectManager.RPC_ApplyStatusEffect), RpcTarget.All, (byte)StatusEffectType.Tremor, (byte)2, 4f);
                 }
 
+                CubeCoinRewardManager.NotifyLocalSuccessfulAbility("shockwave_hit", 35);
+                if (isKillingBlow)
+                {
+                    GetComponent<CubeCoinRewardManager>()?.OnKilledSurvivor();
+                }
+
                 Debug.Log($"[Shockwave] Hit {targetPV.Owner.NickName} for {damage} damage and applied Tremor.");
+
             }
         }
 

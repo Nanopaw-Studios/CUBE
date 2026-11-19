@@ -90,15 +90,26 @@ public class HealProximityRunner : MonoBehaviourPun
         if (closest == null)
         {
             // No other survivors found — heal self
+            BasePlayerStats selfStats = caster.GetComponent<BasePlayerStats>();
+            bool hadMissingHp = selfStats != null && selfStats.health > 0 && selfStats.health < selfStats.maxHealth;
             PhotonView selfPV = caster.gameObject.GetPhotonView();
             if (selfPV != null)
                 selfPV.RPC(nameof(BasePlayerStats.Heal), RpcTarget.All, pendingHealAmount);
+            if (hadMissingHp)
+                CubeCoinRewardManager.NotifyLocalSuccessfulAbility("proximity_heal", 35);
             return;
         }
+
+        BasePlayerStats targetStats = closest.GetComponent<BasePlayerStats>();
+        bool targetHadMissingHp = targetStats != null && targetStats.health > 0 && targetStats.health < targetStats.maxHealth;
 
         PhotonView targetPV = closest.gameObject.GetPhotonView();
         if (targetPV != null)
             targetPV.RPC(nameof(BasePlayerStats.Heal), RpcTarget.All, pendingHealAmount);
+
+        if (targetHadMissingHp)
+            CubeCoinRewardManager.NotifyLocalSuccessfulAbility("proximity_heal_teammate", 45);
+
 
         CUBEStatusText.CreateText($"<color=green>Healed {closest.gameObject.GetPhotonView()?.Owner?.NickName ?? "teammate"} for {pendingHealAmount}!</color>");
         Debug.Log($"[HealProximityRunner] Healed {closest.name} for {pendingHealAmount} HP.");

@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using NUnit.Framework;
 using Photon.Pun;
 using TMPro;
 using UnityEngine;
@@ -295,12 +294,20 @@ public class PauseMenu : MonoBehaviourPunCallbacks
             }
         }
 
-        if (QuitButton != null && roundManager != null)
-            QuitButton.interactable = roundManager.intermissionActive;
+        // Never soft-lock the player in a match: leaving during a round is allowed
+        // (the Quit handler already confirms the intent by leaving the room).
+        if (QuitButton != null)
+            QuitButton.interactable = true;
     }
 
     public void PauseStateChange()
     {
+        if (pauseMenu == null)
+        {
+            Debug.LogWarning("[PauseMenu] pauseMenu reference is missing; cannot toggle pause.");
+            return;
+        }
+
         GameIsPaused = !GameIsPaused;
 
         ShopManager shopManager = FindFirstObjectByType<ShopManager>();
@@ -309,7 +316,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         {
             onPause.Invoke();
             pauseMenu.SetActive(true);
-            pauseMenuAnimator.Play("PauseFadeIn");
+            if (pauseMenuAnimator != null)
+                pauseMenuAnimator.Play("PauseFadeIn");
             CursorManager.SetState(CursorManager.CursorState.UI);
 
             if (shopManager != null)
@@ -329,7 +337,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
                 PlayerModerationUI.Close();
 
             onResume.Invoke();
-            pauseMenuAnimator.Play("PauseFadeOut");
+            if (pauseMenuAnimator != null)
+                pauseMenuAnimator.Play("PauseFadeOut");
             CursorManager.SetState(CursorManager.CursorState.Gameplay);
             Cursor.visible = false;
 
@@ -347,7 +356,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
             devPhysicsModalGO.SetActive(false);
         if (PlayerModerationUI.IsOpen)
             PlayerModerationUI.Close();
-        pauseMenu.SetActive(false);
+        if (pauseMenu != null)
+            pauseMenu.SetActive(false);
     }
 
     public void Resume()
@@ -373,7 +383,7 @@ public class PauseMenu : MonoBehaviourPunCallbacks
         {
             PhotonNetwork.LeaveRoom();
         }
-        else
+        else if (loader != null)
         {
             loader.LoadLevel("Menu");
         }
@@ -386,7 +396,8 @@ public class PauseMenu : MonoBehaviourPunCallbacks
     public override void OnLeftRoom()
     {
         PlayerReportService.ResetSession();
-        loader.LoadLevel("Menu");
+        if (loader != null)
+            loader.LoadLevel("Menu");
     }
 
     public void OnRoomCodeCopyClicked()

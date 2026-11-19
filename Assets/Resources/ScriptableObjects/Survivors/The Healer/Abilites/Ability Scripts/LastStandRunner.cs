@@ -75,9 +75,9 @@ public class LastStandRunner : PassiveRunner
 
             // Apply damage resistance: full resistance if self is critical, partial if team is critical
             if (selfHealthPercent <= criticalHealthThreshold)
-                myStats.damageResistance = damageResistance;
+                myStats.SetDamageResistance(damageResistance);
             else
-                myStats.damageResistance = damageResistance * 0.5f;
+                myStats.SetDamageResistance(damageResistance * 0.5f);
 
             ApplySpeed(baseSpeed * speedMult);
 
@@ -98,7 +98,7 @@ public class LastStandRunner : PassiveRunner
         isLastStandActive = false;
         if (myStats != null)
         {
-            myStats.damageResistance = 0f;
+            myStats.SetDamageResistance(0f);
         }
 
         float normalSpeed = myStats != null && myStats.speed > 0 ? myStats.speed : baseSpeed;

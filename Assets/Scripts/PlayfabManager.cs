@@ -642,21 +642,29 @@ public class PlayfabManager : MonoBehaviourPunCallbacks
         });
     }
 
+    /// <summary>
+    /// Parses a hex color safely. This is called with PlayerPrefs values, color-picker
+    /// input and RPC payloads from other clients, so it must never throw. Invalid input
+    /// falls back to white and logs a warning.
+    /// </summary>
     public static Color FromHex(string hex)
     {
-        if (hex.Length < 6)
-            throw new System.FormatException("Needs a string with a length of at least 6");
+        if (string.IsNullOrEmpty(hex))
+            return Color.white;
 
-        var r = hex[..2];
-        var g = hex.Substring(2, 2);
-        var b = hex.Substring(4, 2);
-        string alpha = (hex.Length >= 8) ? hex.Substring(6, 2) : "FF";
+        hex = hex.Trim();
+        if (hex.StartsWith("#"))
+            hex = hex.Substring(1);
 
-        return new Color(
-            (int.Parse(r, NumberStyles.HexNumber) / 255f),
-            (int.Parse(g, NumberStyles.HexNumber) / 255f),
-            (int.Parse(b, NumberStyles.HexNumber) / 255f),
-            (int.Parse(alpha, NumberStyles.HexNumber) / 255f)
-        );
+        if (hex.Length == 6)
+            hex += "FF";
+
+        if (hex.Length != 8 || !ColorUtility.TryParseHtmlString("#" + hex, out Color color))
+        {
+            Debug.LogWarning($"[PlayfabManager] Invalid hex color '{hex}'. Falling back to white.");
+            return Color.white;
+        }
+
+        return color;
     }
 }

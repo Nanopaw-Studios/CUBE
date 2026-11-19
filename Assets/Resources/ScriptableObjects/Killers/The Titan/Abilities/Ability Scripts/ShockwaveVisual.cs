@@ -30,8 +30,10 @@ public class ShockwaveVisual : MonoBehaviourPun
     {
         StartCoroutine(Animate());
 
-        if (photonView.IsMine)
-            Destroy(gameObject, lifetime);
+        // Destroy the local copy on EVERY client. Previously this was owner-only,
+        // and because ShockwaveRunner never added PhotonAutoDestroy, remote clients
+        // leaked one permanently expanding ring per cast.
+        Destroy(gameObject, lifetime);
     }
 
     private IEnumerator Animate()

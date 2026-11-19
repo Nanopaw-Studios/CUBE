@@ -16,6 +16,9 @@ public class RoundManager : MonoBehaviourPunCallbacks
     [HideInInspector]
     public bool intermissionActive = false;
 
+    // Guards against double round-end when two survivors die in the same frame.
+    private bool roundEnding = false;
+
     [Tooltip("Minimum number of players required to begin a match.")]
     public int minPlayers = 2;
 
@@ -70,10 +73,33 @@ public class RoundManager : MonoBehaviourPunCallbacks
         );
     }
 
+    public override void OnLeftRoom()
+    {
+        // A new room may reuse this component after leaving. Clear cycle state so
+        // OnJoinedRoom cannot mistake a fresh lobby for a running round.
+        roundActive = false;
+        intermissionActive = false;
+        roundEnding = false;
+        HasSyncedState = false;
+        endTimestamp = 0.0;
+
+        if (timerCoroutine != null)
+        {
+            StopCoroutine(timerCoroutine);
+            timerCoroutine = null;
+        }
+    }
+
     public override void OnJoinedRoom()
     {
         if (PhotonNetwork.IsMasterClient)
         {
+            // Never restart an already-running cycle, and never leave two
+            // buffered StartIntermission events in the room cache.
+            if (roundActive || intermissionActive)
+                return;
+
+            PhotonNetwork.RemoveRPCs(photonView);
             RefreshIntermissionSpawnFromPoint();
             double endTime = HasEnoughPlayers() ? (PhotonNetwork.Time + countdownDuration) : 0.0;
             photonView.RPC(
@@ -91,7 +117,41 @@ public class RoundManager : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.IsMasterClient)
             return;
 
-        // Send the current round state so late joiners keep timers, roles, and teleports in sync
+        // Best-effort push. The joining client cannot rely on this: it fires
+        // before that client has loaded SampleScene, so it also requests state
+        // itself once its scene is ready (see RequestState).
+        SendStateTo(newPlayer);
+
+        if (intermissionActive && HasEnoughPlayers())
+        {
+            // If countdown is not running or was 0 while waiting, begin countdown
+            if (endTimestamp <= PhotonNetwork.Time)
+            {
+                endTimestamp = PhotonNetwork.Time + countdownDuration;
+                photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, endTimestamp);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Pull-based state sync. A non-master client calls this after its scene has
+    /// loaded, so it receives roles, colors, timers and the current map index
+    /// even when the initial push was dropped during the scene load.
+    /// </summary>
+    [PunRPC]
+    public void RequestState(PhotonMessageInfo info)
+    {
+        if (!PhotonNetwork.IsMasterClient || info.Sender == null)
+            return;
+
+        SendStateTo(info.Sender);
+    }
+
+    private void SendStateTo(Photon.Realtime.Player newPlayer)
+    {
+        if (newPlayer == null)
+            return;
+
         var actorNumbers = new System.Collections.Generic.List<int>();
         var roleValues = new System.Collections.Generic.List<int>();
         var colorHexes = new System.Collections.Generic.List<string>();
@@ -112,7 +172,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
         }
 
         photonView.RPC(
-            "SyncState",
+            nameof(SyncState),
             newPlayer,
             roundActive,
             intermissionActive,
@@ -121,18 +181,18 @@ public class RoundManager : MonoBehaviourPunCallbacks
             SyncedIntermissionSpawnRot,
             actorNumbers.ToArray(),
             roleValues.ToArray(),
-            colorHexes.ToArray()
+            colorHexes.ToArray(),
+            GetCurrentMapIndex()
         );
+    }
 
-        if (intermissionActive && HasEnoughPlayers())
-        {
-            // If countdown is not running or was 0 while waiting, begin countdown
-            if (endTimestamp <= PhotonNetwork.Time)
-            {
-                endTimestamp = PhotonNetwork.Time + countdownDuration;
-                photonView.RPC(nameof(UpdateIntermissionEndTimestamp), RpcTarget.Others, endTimestamp);
-            }
-        }
+    private int GetCurrentMapIndex()
+    {
+        PhotonLauncher launcher = PhotonLauncher.Instance != null
+            ? PhotonLauncher.Instance
+            : FindFirstObjectByType<PhotonLauncher>();
+
+        return launcher != null ? launcher.CurrentMapIndex : -1;
     }
 
     [PunRPC]
@@ -223,6 +283,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void StartRound(double roundEndTime)
     {
+        roundEnding = false;
         roundActive = true;
         intermissionActive = false;
         endTimestamp = roundEndTime;
@@ -248,6 +309,7 @@ public class RoundManager : MonoBehaviourPunCallbacks
         double intermissionEndTime
     )
     {
+        roundEnding = false;
         roundActive = false;
         intermissionActive = true;
         SyncedIntermissionSpawnPos = spawnPosition;
@@ -264,6 +326,9 @@ public class RoundManager : MonoBehaviourPunCallbacks
         OnIntermissionStart?.Invoke();
     }
 
+    /// <summary>Set on the joining client once a full state snapshot has been applied.</summary>
+    public bool HasSyncedState { get; private set; }
+
     [PunRPC]
     private void SyncState(
         bool roundActiveState,
@@ -273,16 +338,35 @@ public class RoundManager : MonoBehaviourPunCallbacks
         Quaternion spawnRotation,
         int[] actorNumbers,
         int[] roleValues,
-        string[] colorHexes
+        string[] colorHexes,
+        int mapIndex
     )
     {
+        HasSyncedState = true;
+        roundEnding = false;
         roundActive = roundActiveState;
         intermissionActive = intermissionActiveState;
         endTimestamp = syncedEndTimestamp;
         SyncedIntermissionSpawnPos = spawnPosition;
         SyncedIntermissionSpawnRot = spawnRotation;
 
+        // Rebuild the current map locally if this client joined while one existed.
+        // ChooseMap is idempotent, so existing clients are unaffected.
+        if (mapIndex >= 0)
+        {
+            PhotonLauncher launcher = PhotonLauncher.Instance != null
+                ? PhotonLauncher.Instance
+                : FindFirstObjectByType<PhotonLauncher>();
+
+            if (launcher != null)
+                launcher.ChooseMap(mapIndex);
+        }
+
         ApplyRolesAndColors(actorNumbers, roleValues, colorHexes);
+
+        // Player objects on the joining client may still be instantiating, so
+        // re-apply for a short window until every actor has been resolved.
+        StartCoroutine(ReapplyStateUntilPlayersSpawn(actorNumbers, roleValues, colorHexes));
 
         UpdateCurrentTime();
 
@@ -315,6 +399,47 @@ public class RoundManager : MonoBehaviourPunCallbacks
                 StartCoroutine(TeleportLocalPlayerToIntermission(spawnPosition, spawnRotation));
             }
         }
+    }
+
+    private IEnumerator ReapplyStateUntilPlayersSpawn(
+        int[] actorNumbers,
+        int[] roleValues,
+        string[] colorHexes
+    )
+    {
+        const float timeout = 3f;
+        const float interval = 0.25f;
+        float elapsed = 0f;
+
+        while (elapsed < timeout)
+        {
+            ApplyRolesAndColors(actorNumbers, roleValues, colorHexes);
+
+            if (AllActorsPresent(actorNumbers))
+                yield break;
+
+            elapsed += interval;
+            yield return new WaitForSecondsRealtime(interval);
+        }
+    }
+
+    private static bool AllActorsPresent(int[] actorNumbers)
+    {
+        if (actorNumbers == null || actorNumbers.Length == 0)
+            return true;
+
+        int found = 0;
+        foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
+        {
+            PhotonView pv = go.GetComponent<PhotonView>();
+            if (pv == null)
+                continue;
+
+            if (System.Array.IndexOf(actorNumbers, pv.OwnerActorNr) >= 0)
+                found++;
+        }
+
+        return found >= actorNumbers.Length;
     }
 
     private IEnumerator TeleportLocalPlayerToIntermission(Vector3 position, Quaternion rotation)
@@ -399,6 +524,10 @@ public class RoundManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.IsMasterClient)
         {
+            if (roundEnding)
+                return;
+            roundEnding = true;
+
             foreach (GameObject go in GameObject.FindGameObjectsWithTag("Player"))
             {
                 PhotonView pv = go.GetComponent<PhotonView>();
@@ -412,11 +541,17 @@ public class RoundManager : MonoBehaviourPunCallbacks
 
                 if (basePlayer.GetPlayerType() == BasePlayer.PlayerType.Survivor)
                 {
-                    stats.photonView.RPC("AdjustMalice", RpcTarget.AllBuffered, +1);
+                    // Only survivors who actually survived the round gain malice.
+                    // Dead survivors are spectating and must not influence the next
+                    // killer selection.
+                    if (stats.health > 0)
+                        stats.photonView.RPC("AdjustMalice", RpcTarget.All, +1);
                 }
                 else if (basePlayer.GetPlayerType() == BasePlayer.PlayerType.Killer)
                 {
-                    stats.photonView.RPC("AdjustMalice", RpcTarget.AllBuffered, -5);
+                    // Malice is local state. Buffering it made every late joiner
+                    // replay all previous rounds' adjustments.
+                    stats.photonView.RPC("AdjustMalice", RpcTarget.All, -5);
                 }
             }
 
@@ -509,8 +644,10 @@ public class RoundManager : MonoBehaviourPunCallbacks
                 PlayerCustomizer customizer = go.GetComponent<PlayerCustomizer>();
                 if (customizer != null && !string.IsNullOrEmpty(color))
                 {
-                    // Store the hex and conditionally show it — works regardless of round state
-                    customizer.ForceApplyIntermissionColor(color);
+                    // Role-less players (spectators / a joining client) need the
+                    // color applied even mid-round. Players with a role keep their
+                    // character skin; the hex is still stored for intermission.
+                    customizer.ForceApplyIntermissionColor(color, force: roleValue < 0);
                 }
             }
         }

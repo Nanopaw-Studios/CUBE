@@ -1,8 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CUBE.Achievements
 {
-    [CreateAssetMenu(fileName = "CosmeticReward", menuName = "CUBE/Achievements/Rewards/Cosmetic Reward")]
     public class CosmeticReward : AchievementReward
     {
         public string ItemCatalogId;

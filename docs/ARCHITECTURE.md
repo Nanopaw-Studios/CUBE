@@ -108,7 +108,7 @@ BaseCharacter (Network Root)
 
 1. **Decoupled Gameplay Events**:
    - The achievement and stats subsystems communicate using [GameplayEventBus](file:///g:/Projects/physicsgamee/Assets/Scripts/Achievements/Events/GameplayEventBus.cs).
-   - Scripts publish events (`GameplayEventBus.RaiseEvent(new GameplayEvent(...))`) without directly referencing achievement or stat managers.
+   - Scripts publish events (`GameplayEventBus.Publish(new GameplayEvent(...))`) without directly referencing achievement or stat managers.
 
 2. **Network Remote Procedure Calls (RPCs)**:
    - High-impact state transitions (Round start, role assignment, damage, death) use `[PunRPC]` methods.

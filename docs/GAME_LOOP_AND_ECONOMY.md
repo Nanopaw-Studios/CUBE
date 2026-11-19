@@ -69,7 +69,7 @@ Cube Coins (`CC`) are the game's primary currency, stored securely in the cloud 
 | Condition | Amount | Constraints / Abuse Caps |
 | :--- | :--- | :--- |
 | **Distance Traveled** | **5 CC** per 100 meters | Sampled every second; capped at 10,000 meters per round |
-| **Ability Activation** | **15 CC** per activation | Capped at 20 rewarded activations per round (300 CC max) |
+| **Ability Activation** | **5 CC** per activation | Capped at 20 rewarded activations per round (100 CC max) |
 | **Survivor Elimination** | **25 CC** per kill | Killer-only reward |
 | **Survivor Victory** | **15 CC** | Awarded if survivor is alive when round timer expires |
 | **Killer Victory** | **30 CC** | Awarded if all survivors are eliminated |

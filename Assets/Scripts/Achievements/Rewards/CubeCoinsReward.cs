@@ -1,8 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CUBE.Achievements
 {
-    [CreateAssetMenu(fileName = "CubeCoinsReward", menuName = "CUBE/Achievements/Rewards/Cube Coins")]
     public class CubeCoinsReward : AchievementReward
     {
         [Tooltip("Amount of Cube Coins to grant.")]

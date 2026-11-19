@@ -68,6 +68,8 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
     Vector3[] _recvBonePos;
     Quaternion[] _recvBoneRot;
     Vector3[] _recvBoneVel;
+    Vector3[] _interpBonePos;
+    Quaternion[] _interpBoneRot;
 
     // ─────────────────────────────────────────────────────────────
     void Awake()
@@ -76,10 +78,12 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         keyBones ??= new List<Transform>();
         adaptedBackTime = interpolationBackTime;
 
-        int maxBones = 15;
-        _recvBonePos = new Vector3[maxBones];
-        _recvBoneRot = new Quaternion[maxBones];
-        _recvBoneVel = new Vector3[maxBones];
+        int receiveBones = Mathf.Max(1, keyBones.Count);
+        _recvBonePos = new Vector3[receiveBones];
+        _recvBoneRot = new Quaternion[receiveBones];
+        _recvBoneVel = new Vector3[receiveBones];
+        _interpBonePos = new Vector3[receiveBones];
+        _interpBoneRot = new Quaternion[receiveBones];
     }
 
     void Start()
@@ -108,6 +112,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         Quaternion targetHipRot;
         Vector3[] targetBonePos;
         Quaternion[] targetBoneRot;
+        int targetBoneCount = 0;
 
         int boneCount = keyBones.Count;
 
@@ -122,8 +127,10 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             targetHipRot = Quaternion.Slerp(a.hipRot, b.hipRot, t);
 
             int safeCount = Mathf.Min(boneCount, Mathf.Min(a.bonePos.Length, b.bonePos.Length));
-            targetBonePos = new Vector3[safeCount];
-            targetBoneRot = new Quaternion[safeCount];
+            targetBoneCount = safeCount;
+            EnsureInterpolationBuffers(safeCount);
+            targetBonePos = _interpBonePos;
+            targetBoneRot = _interpBoneRot;
             for (int i = 0; i < safeCount; i++)
             {
                 targetBonePos[i] = Vector3.Lerp(a.bonePos[i], b.bonePos[i], t);
@@ -140,8 +147,10 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
             targetHipRot = s.hipRot; // angular extrapolation rarely helps ragdolls
 
             int safeCount = Mathf.Min(boneCount, s.bonePos.Length);
-            targetBonePos = new Vector3[safeCount];
-            targetBoneRot = new Quaternion[safeCount];
+            targetBoneCount = safeCount;
+            EnsureInterpolationBuffers(safeCount);
+            targetBonePos = _interpBonePos;
+            targetBoneRot = _interpBoneRot;
             for (int i = 0; i < safeCount; i++)
             {
                 targetBonePos[i] =
@@ -191,7 +200,7 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         hip.rotation = targetHipRot;
 
         // ── Bones ────────────────────────────────────────────────
-        int applyCount = Mathf.Min(boneCount, targetBonePos.Length);
+        int applyCount = Mathf.Min(boneCount, targetBoneCount);
         for (int i = 0; i < applyCount; i++)
         {
             if (keyBones[i] == null)
@@ -232,6 +241,15 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
         smoothedHipTargetSet = true;
     }
 
+    private void EnsureInterpolationBuffers(int count)
+    {
+        if (_interpBonePos != null && _interpBonePos.Length >= count)
+            return;
+
+        _interpBonePos = new Vector3[count];
+        _interpBoneRot = new Quaternion[count];
+    }
+
     // ─────────────────────────────────────────────────────────────
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
@@ -260,13 +278,30 @@ public class RagdollNetwork : MonoBehaviour, IPunObservable
 
             // Must read the count from stream — writer always sends it
             int count = (int)stream.ReceiveNext();
+
+            // Grow the receive buffers if a rig sends more bones than the initial
+            // allocation. The old fixed 15-entry buffer stopped reading early and
+            // corrupted every field after it in the packet.
+            if (count > _recvBonePos.Length)
+            {
+                _recvBonePos = new Vector3[count];
+                _recvBoneRot = new Quaternion[count];
+                _recvBoneVel = new Vector3[count];
+            }
+
             int safeCount = Mathf.Min(count, _recvBonePos.Length);
 
-            // Read into temp buffers — no allocation
             for (int i = 0; i < safeCount; i++)
             {
                 _recvBonePos[i] = (Vector3)stream.ReceiveNext();
                 _recvBoneRot[i] = (Quaternion)stream.ReceiveNext();
+            }
+
+            // Consume any extra entries so the rest of the stream stays aligned.
+            for (int i = safeCount; i < count; i++)
+            {
+                stream.ReceiveNext();
+                stream.ReceiveNext();
             }
 
             // Copy into snapshot-owned arrays so buffer snapshots don't share references

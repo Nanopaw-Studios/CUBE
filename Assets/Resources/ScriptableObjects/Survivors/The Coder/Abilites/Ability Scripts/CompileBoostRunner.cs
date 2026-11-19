@@ -38,9 +38,44 @@ public class CompileBoostRunner : MonoBehaviour
         yield return new WaitForSeconds(freezeDuration);
 
         // --- Phase 2: Boost (Speed III) ---
+        BasePlayer killer = FindActiveKiller();
+        float preDist = killer != null ? Vector3.Distance(GetBodyPos(transform), GetBodyPos(killer.transform)) : float.MaxValue;
+
         statusManager.ApplyEffect(StatusEffectType.Speed, 3, boostDuration, boostMultiplier > 0f ? boostMultiplier : 1.75f);
+
+        yield return new WaitForSeconds(boostDuration);
+
+        BasePlayerStats myStats = GetComponent<BasePlayerStats>();
+        if (killer != null && preDist <= 22f && (myStats == null || myStats.health > 0))
+        {
+            float postDist = Vector3.Distance(GetBodyPos(transform), GetBodyPos(killer.transform));
+            if (postDist - preDist >= 3.0f)
+            {
+                CubeCoinRewardManager.NotifyLocalSuccessfulAbility("compile_boost_escape", 35);
+            }
+        }
 
         isRunning = false;
         activeSequence = null;
     }
+
+    private static BasePlayer FindActiveKiller()
+    {
+        BasePlayer[] all = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i] != null && all[i].GetPlayerType() == BasePlayer.PlayerType.Killer)
+                return all[i];
+        }
+        return null;
+    }
+
+    private static Vector3 GetBodyPos(Transform root)
+    {
+        RagdollNetwork rag = root.GetComponent<RagdollNetwork>();
+        if (rag != null && rag.hip != null)
+            return rag.hip.position;
+        return root.position;
+    }
 }
+

@@ -31,6 +31,7 @@ public class PlayerAbilityManager : MonoBehaviour
     private readonly List<Ability> activeMoveset = new List<Ability>();
     private readonly List<InputAction> abilityInputs = new List<InputAction>();
     private readonly List<float> cooldownTimers = new List<float>();
+    private readonly Dictionary<Ability, int> cooldownOverrides = new Dictionary<Ability, int>();
     private readonly List<TMP_Text> cooldownTexts = new List<TMP_Text>();
     private readonly List<AbiltySlider> abilitySliders = new List<AbiltySlider>();
 
@@ -145,6 +146,7 @@ public class PlayerAbilityManager : MonoBehaviour
         activeMoveset.Clear();
         abilityInputs.Clear();
         cooldownTimers.Clear();
+        cooldownOverrides.Clear();
         cooldownTexts.Clear();
         abilitySliders.Clear();
 
@@ -247,6 +249,7 @@ public class PlayerAbilityManager : MonoBehaviour
         activeMoveset.Clear();
         abilityInputs.Clear();
         cooldownTimers.Clear();
+        cooldownOverrides.Clear();
         cooldownTexts.Clear();
         abilitySliders.Clear();
 
@@ -322,7 +325,7 @@ public class PlayerAbilityManager : MonoBehaviour
             abilityInputs.Add(act);
 
             // Start ready
-            cooldownTimers.Add(ability.AbilityCooldown);
+            cooldownTimers.Add(GetCooldown(ability));
         }
         inputActions?.Enable();
 
@@ -346,8 +349,28 @@ public class PlayerAbilityManager : MonoBehaviour
             Debug.LogWarning($"ModifyAbilityCooldown: ability at index {abilityIndex} is NULL.");
             return;
         }
-        ability.AbilityCooldown = newCooldown;
-        Debug.Log($"Modified cooldown of ability {ability.AbilityName} to {newCooldown} seconds.");
+        int clampedCooldown = Mathf.Max(0, newCooldown);
+        cooldownOverrides[ability] = clampedCooldown;
+
+        if (abilityIndex < cooldownTimers.Count && cooldownTimers[abilityIndex] > clampedCooldown)
+            cooldownTimers[abilityIndex] = clampedCooldown;
+
+        Debug.Log($"Modified cooldown of ability {ability.AbilityName} to {clampedCooldown} seconds.");
+    }
+
+    /// <summary>
+    /// Per-instance cooldown override. Never writes to the shared Ability
+    /// ScriptableObject, which would change every player and dirty the asset
+    /// in the Editor.
+    /// </summary>
+    private int GetCooldown(Ability ability)
+    {
+        if (ability == null)
+            return 0;
+
+        return cooldownOverrides.TryGetValue(ability, out int cooldown)
+            ? cooldown
+            : ability.AbilityCooldown;
     }
 
     public int GetBaseCooldown(int abilityIndex)
@@ -363,7 +386,7 @@ public class PlayerAbilityManager : MonoBehaviour
             Debug.LogWarning($"GetBaseCooldown: ability at index {abilityIndex} is NULL.");
             return 0;
         }
-        return ability.AbilityCooldown;
+        return GetCooldown(ability);
     }
 
     private void EnsureAbilityActionsEnabled()
@@ -418,7 +441,7 @@ public class PlayerAbilityManager : MonoBehaviour
                 if (ability == null)
                     return;
 
-                if (cooldownTimers[index] < ability.AbilityCooldown)
+                if (cooldownTimers[index] < GetCooldown(ability))
                     return;
 
                 if (isChanneling)
@@ -500,7 +523,9 @@ public class PlayerAbilityManager : MonoBehaviour
             if (ability == null)
                 continue;
 
-            if (cooldownTimers[i] < ability.AbilityCooldown)
+            int cooldown = GetCooldown(ability);
+
+            if (cooldownTimers[i] < cooldown)
             {
                 float rate = 1f;
                 if (hasOverclockedMind)
@@ -513,11 +538,11 @@ public class PlayerAbilityManager : MonoBehaviour
                 }
 
                 cooldownTimers[i] += Time.deltaTime * rate;
-                if (cooldownTimers[i] > ability.AbilityCooldown)
-                    cooldownTimers[i] = ability.AbilityCooldown;
+                if (cooldownTimers[i] > cooldown)
+                    cooldownTimers[i] = cooldown;
             }
 
-            float remaining = ability.AbilityCooldown - cooldownTimers[i];
+            float remaining = cooldown - cooldownTimers[i];
 
             if (!abilitiesEnabled)
             {
@@ -533,8 +558,8 @@ public class PlayerAbilityManager : MonoBehaviour
 
             if (abilitySliders[i] != null)
             {
-                float fillPercent = ability.AbilityCooldown > 0f
-                    ? (cooldownTimers[i] / ability.AbilityCooldown) * 100f
+                float fillPercent = cooldown > 0f
+                    ? (cooldownTimers[i] / (float)cooldown) * 100f
                     : 100f;
                 abilitySliders[i].SetSliderValue(fillPercent);
             }

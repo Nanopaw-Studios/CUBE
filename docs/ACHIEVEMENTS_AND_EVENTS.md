@@ -8,7 +8,7 @@ This document outlines the architecture of the **Achievements and Statistics Sub
 
 ```mermaid
 graph TD
-    GAME["Gameplay Scripts (Puncher, Rounds, Abilities)"] -->|"GameplayEventBus.RaiseEvent(evt)"| BUS["GameplayEventBus"]
+    GAME["Gameplay Scripts (Puncher, Rounds, Abilities)"] -->|"GameplayEventBus.Publish(evt)"| BUS["GameplayEventBus"]
     
     BUS -->|"OnEventRaised"| STATS["StatisticsService (Updates StatId counters)"]
     BUS -->|"OnEventRaised"| ACH["AchievementService (Evaluates Requirement Trees)"]
@@ -28,7 +28,7 @@ The game uses a global, static event bus to eliminate tight coupling between gam
 
 ### Raising an Event
 ```csharp
-GameplayEventBus.RaiseEvent(new GameplayEvent
+GameplayEventBus.Publish(new GameplayEvent
 {
     EventType = GameplayEventType.KillerEliminatedSurvivor,
     Actor = localPlayerInstance,

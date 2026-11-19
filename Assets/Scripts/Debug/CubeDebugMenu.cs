@@ -70,8 +70,16 @@ public class CubeDebugMenu : MonoBehaviour
 
     private void Awake()
     {
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+        // The cheat menu must never exist in a shipping build. Destroying the
+        // object (rather than excluding the class) avoids a missing-script
+        // warning on the CUBE Debug object saved in Menu.unity.
+        Destroy(gameObject);
+        return;
+#else
         // Ensure this GameObject persists across scenes
         DontDestroyOnLoad(gameObject);
+#endif
     }
 
     private void Update()
@@ -520,6 +528,9 @@ public class CubeDebugMenu : MonoBehaviour
         }
 
         GUILayout.Space(6);
+        DrawMetaProgressionDebugSection();
+
+        GUILayout.Space(6);
         GUILayout.Label("Local Health & Vitals Control", headerStyle);
 
         if (stats == null)
@@ -527,6 +538,7 @@ public class CubeDebugMenu : MonoBehaviour
             GUILayout.Box("Local player stats not found.", boxStyle);
             return;
         }
+
 
         GUILayout.BeginVertical(boxStyle);
         GUILayout.Label($"<b>Health:</b> {stats.health} / {stats.maxHealth}   |   <b>Stamina:</b> {stats.stamina} / {stats.maxStamina}");
@@ -612,7 +624,68 @@ public class CubeDebugMenu : MonoBehaviour
         GUILayout.EndVertical();
     }
 
+    private int selectedMasteryCharIndex = 0;
+
+    private void DrawMetaProgressionDebugSection()
+    {
+        ProgressionManager prog = ProgressionManager.EnsureExists();
+        if (prog == null)
+            return;
+
+        GUILayout.Label("Meta Progression: Account Level & Character Mastery", headerStyle);
+
+        GUILayout.BeginVertical(boxStyle);
+        GUILayout.Label($"<b>Account Level:</b> <color=#00FFFF>LVL {prog.AccountLevel}</color>   |   <b>XP:</b> {prog.AccountXP} / {prog.AccountXPForNextLevel} (Total: {prog.TotalAccountXP})");
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("+100 Account XP")) prog.AddAccountXP(100, "debug_xp");
+        if (GUILayout.Button("+500 Account XP")) prog.AddAccountXP(500, "debug_xp");
+        if (GUILayout.Button("+1 Account Level")) prog.AddAccountXP(prog.AccountXPForNextLevel - prog.AccountXP, "debug_lvl_up");
+        if (GUILayout.Button("+10 Account Levels")) prog.SetAccountLevel(prog.AccountLevel + 10);
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(4);
+        var allChars = CharacterDatabase.GetAllCharacters();
+        if (allChars.Count > 0)
+        {
+            selectedMasteryCharIndex = Mathf.Clamp(selectedMasteryCharIndex, 0, allChars.Count - 1);
+            var curChar = allChars[selectedMasteryCharIndex];
+            string charName = curChar != null ? curChar._Name : "The Glitch";
+            int mLvl = prog.GetCharacterMasteryLevel(charName);
+            int mXp = prog.GetCharacterMasteryXP(charName);
+            int mReq = prog.GetCharacterMasteryXPRequired(charName);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Character:", GUILayout.Width(75));
+            if (GUILayout.Button($"< {charName} (LVL {mLvl} — {mXp}/{mReq} XP) >"))
+            {
+                selectedMasteryCharIndex = (selectedMasteryCharIndex + 1) % allChars.Count;
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("+100 Mastery XP")) prog.AddCharacterMasteryXP(charName, 100, "debug_mastery", true);
+            if (GUILayout.Button("+1 Mastery Level"))
+            {
+                int needed = Mathf.Max(1, mReq - mXp);
+                prog.AddCharacterMasteryXP(charName, needed, "debug_mastery_lvl", true);
+            }
+            if (GUILayout.Button("+10 Mastery Levels"))
+                prog.SetCharacterMasteryLevel(charName, Mathf.Min(ProgressionManager.MaxMasteryLevel, mLvl + 10));
+            if (GUILayout.Button("Set LVL 100"))
+                prog.SetCharacterMasteryLevel(charName, ProgressionManager.MaxMasteryLevel);
+            GUILayout.EndHorizontal();
+        }
+
+        GUILayout.Space(4);
+        if (GUILayout.Button("Reset All Progression (Account & Character Masteries)"))
+        {
+            prog.ResetAllProgression();
+        }
+        GUILayout.EndVertical();
+    }
+
     #endregion
+
 
     #region Tab 3: Roles & Abilities
 
@@ -866,6 +939,8 @@ public class CubeDebugMenu : MonoBehaviour
     }
 
     #endregion
+
+
 
     #region Tab 5: Visuals & Audio
 

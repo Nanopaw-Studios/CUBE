@@ -22,7 +22,7 @@ MonoBehaviour:
   Category: 3
   Type: 0
   Mode: 0
-  RelevantEvents: f5010000
+  RelevantEvents: f5010000i
   TargetValue: 1
   LinkedStat: 0
   LinkedStatScope: 0
@@ -30,9 +30,10 @@ MonoBehaviour:
   XboxId: 
   PlayStationId: 
   EpicId: 
+  PlayFabId: 
   PlatformMappingAssetOverride: {fileID: 0}
   InlineRequirement:
-    rid: -2
+    rid: 2131103528924217441
   RequirementAssetOverride: {fileID: 0}
   InlineRewards: []
   IsRepeatable: 0
@@ -41,5 +42,8 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
-    - rid: -2
-      type: {class: , ns: , asm: }
+    - rid: 2131103528924217441
+      type: {class: ContextValueRequirement, ns: CUBE.Achievements, asm: Assembly-CSharp}
+      data:
+        MetadataKey: AllMastery100
+        ExpectedValue: 1

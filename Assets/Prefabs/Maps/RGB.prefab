@@ -73,6 +73,10 @@ MonoBehaviour:
   enableYThresholdCheck: 1
   fallYThreshold: -20
   cooldownSeconds: 1
+  publishAchievementEvent: 1
+  eventType: 307
+  launchVelocityThreshold: 15
+  customAchievementId: 
 --- !u!1 &930031980023303015
 GameObject:
   m_ObjectHideFlags: 0
@@ -146,6 +150,10 @@ MonoBehaviour:
   enableYThresholdCheck: 1
   fallYThreshold: -20
   cooldownSeconds: 1
+  publishAchievementEvent: 1
+  eventType: 307
+  launchVelocityThreshold: 15
+  customAchievementId: 
 --- !u!1 &1416231075581946161
 GameObject:
   m_ObjectHideFlags: 0
@@ -312,6 +320,10 @@ MonoBehaviour:
   enableYThresholdCheck: 1
   fallYThreshold: -20
   cooldownSeconds: 1
+  publishAchievementEvent: 1
+  eventType: 307
+  launchVelocityThreshold: 15
+  customAchievementId: 
 --- !u!1 &4894313223997353033
 GameObject:
   m_ObjectHideFlags: 0
@@ -416,6 +428,10 @@ MonoBehaviour:
   enableYThresholdCheck: 1
   fallYThreshold: -20
   cooldownSeconds: 1
+  publishAchievementEvent: 1
+  eventType: 307
+  launchVelocityThreshold: 15
+  customAchievementId: 
 --- !u!1 &6334336900718689545
 GameObject:
   m_ObjectHideFlags: 0
@@ -551,6 +567,10 @@ MonoBehaviour:
   enableYThresholdCheck: 1
   fallYThreshold: -20
   cooldownSeconds: 1
+  publishAchievementEvent: 1
+  eventType: 307
+  launchVelocityThreshold: 15
+  customAchievementId: 
 --- !u!1 &7358223783939335180
 GameObject:
   m_ObjectHideFlags: 0
@@ -607,7 +627,6 @@ GameObject:
   - component: {fileID: 3049032094215349515}
   - component: {fileID: 5654604616654347873}
   - component: {fileID: 1850772782169092431}
-  - component: {fileID: 2764993754722041303}
   - component: {fileID: 8415460495159475602}
   m_Layer: 0
   m_Name: Static Stuff
@@ -693,26 +712,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &2764993754722041303
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7836527491310328761}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24fb3eb29eeebd04d87475bbfb984a31, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeshCombiner
-  createMultiMaterialMesh: 1
-  combineInactiveChildren: 0
-  deactivateCombinedChildren: 1
-  deactivateCombinedChildrenMeshRenderers: 0
-  generateUVMap: 1
-  destroyCombinedChildren: 0
-  folderPath: Prefabs/CombinedMeshes
-  meshFiltersToSkip: []
 --- !u!64 &8415460495159475602
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -785,7 +784,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.ProBuilder::UnityEngine.ProBuilder.ProBuilderMesh
   m_MeshFormatVersion: 2
   m_Faces:
-  - m_Indexes: 000000000100000002000000010000000300000002000000
+  - m_Indexes: 000000000100000002000000010000000300000002000000i
     m_SmoothingGroup: 0
     m_Uv:
       m_UseWorldSpace: 0
@@ -802,7 +801,7 @@ MonoBehaviour:
     m_ManualUV: 0
     elementGroup: -1
     m_TextureGroup: -1
-  - m_Indexes: 040000000500000006000000050000000700000006000000
+  - m_Indexes: 040000000500000006000000050000000700000006000000i
     m_SmoothingGroup: 0
     m_Uv:
       m_UseWorldSpace: 0
@@ -819,7 +818,7 @@ MonoBehaviour:
     m_ManualUV: 0
     elementGroup: -1
     m_TextureGroup: -1
-  - m_Indexes: 08000000090000000a000000090000000b0000000a000000
+  - m_Indexes: 08000000090000000a000000090000000b0000000a000000i
     m_SmoothingGroup: 0
     m_Uv:
       m_UseWorldSpace: 0
@@ -836,7 +835,7 @@ MonoBehaviour:
     m_ManualUV: 0
     elementGroup: -1
     m_TextureGroup: -1
-  - m_Indexes: 0c0000000d0000000e0000000d0000000f0000000e000000
+  - m_Indexes: 0c0000000d0000000e0000000d0000000f0000000e000000i
     m_SmoothingGroup: 0
     m_Uv:
       m_UseWorldSpace: 0
@@ -853,7 +852,7 @@ MonoBehaviour:
     m_ManualUV: 0
     elementGroup: -1
     m_TextureGroup: -1
-  - m_Indexes: 100000001100000012000000110000001300000012000000
+  - m_Indexes: 100000001100000012000000110000001300000012000000i
     m_SmoothingGroup: 0
     m_Uv:
       m_UseWorldSpace: 0
@@ -870,7 +869,7 @@ MonoBehaviour:
     m_ManualUV: 0
     elementGroup: -1
     m_TextureGroup: -1
-  - m_Indexes: 140000001500000016000000150000001700000016000000
+  - m_Indexes: 140000001500000016000000150000001700000016000000i
     m_SmoothingGroup: 0
     m_Uv:
       m_UseWorldSpace: 0
@@ -888,14 +887,14 @@ MonoBehaviour:
     elementGroup: -1
     m_TextureGroup: -1
   m_SharedVertices:
-  - m_Vertices: 000000000d00000016000000
-  - m_Vertices: 010000000400000017000000
-  - m_Vertices: 020000000f00000010000000
-  - m_Vertices: 030000000600000011000000
-  - m_Vertices: 050000000800000015000000
-  - m_Vertices: 070000000a00000013000000
-  - m_Vertices: 090000000c00000014000000
-  - m_Vertices: 0b0000000e00000012000000
+  - m_Vertices: 000000000d00000016000000i
+  - m_Vertices: 010000000400000017000000i
+  - m_Vertices: 020000000f00000010000000i
+  - m_Vertices: 030000000600000011000000i
+  - m_Vertices: 050000000800000015000000i
+  - m_Vertices: 070000000a00000013000000i
+  - m_Vertices: 090000000c00000014000000i
+  - m_Vertices: 0b0000000e00000012000000i
   m_SharedTextures: []
   m_Positions:
   - {x: -62.5, y: -2.5, z: 62.5}
@@ -1006,6 +1005,7 @@ MonoBehaviour:
   m_UnmodifiedMeshVersion: 1011
   m_Size: {x: 125, y: 5, z: 125}
   m_LocalCenter: {x: 0, y: 0, z: 0}
+  m_PivotRatio: {x: 0, y: 0, z: 0}
   references:
     version: 2
     RefIds:

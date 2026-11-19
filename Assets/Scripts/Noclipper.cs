@@ -13,12 +13,25 @@ public class Noclipper : MonoBehaviour
 
     void OnEnable()
     {
+        // Development-only cheat. Never ship free-fly in a release build.
+        if (!Application.isEditor && !Debug.isDebugBuild)
+        {
+            enabled = false;
+            return;
+        }
+
+        if (noclipAction == null || noclipAction.action == null)
+            return;
+
         noclipAction.action.Enable();
         noclipAction.action.performed += NoclipPressed;
     }
 
     void OnDisable()
     {
+        if (noclipAction == null || noclipAction.action == null)
+            return;
+
         noclipAction.action.performed -= NoclipPressed;
         noclipAction.action.Disable();
     }

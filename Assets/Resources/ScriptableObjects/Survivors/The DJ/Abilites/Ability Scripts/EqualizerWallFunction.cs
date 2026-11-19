@@ -48,7 +48,9 @@ public class EqualizerWallFunction : MonoBehaviourPunCallbacks
             {
                 slowedKillers.Add(pv.ViewID);
                 photonView.RPC(nameof(RPC_ApplySlow), pv.Owner, pv.ViewID, true, killerSlowMultiplier);
+                CubeCoinRewardManager.NotifyLocalSuccessfulAbility("equalizer_slowed_killer", 45);
             }
+
         }
 
         // Remove slow when killer leaves the zone

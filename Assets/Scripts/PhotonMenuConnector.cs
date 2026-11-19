@@ -196,7 +196,15 @@ public class PhotonMenuConnector : MonoBehaviourPunCallbacks
 
         if (PhotonNetwork.IsMasterClient)
         {
-            GameObject.Find("LevelLoader").GetComponent<LevelLoader>().LoadLevel("SampleScene");
+            GameObject levelLoaderObject = GameObject.Find("LevelLoader");
+            LevelLoader levelLoader = levelLoaderObject != null
+                ? levelLoaderObject.GetComponent<LevelLoader>()
+                : null;
+
+            if (levelLoader != null)
+                levelLoader.LoadLevel("SampleScene");
+            else
+                Debug.LogWarning("[PhotonMenuConnector] LevelLoader not found; cannot load SampleScene.");
         }
     }
 

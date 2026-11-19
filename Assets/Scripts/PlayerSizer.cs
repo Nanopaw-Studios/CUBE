@@ -29,20 +29,22 @@ public class PlayerSizer : MonoBehaviourPun
             subscribed = true;
         }
 
-        var camRefs = Camera.main?.GetComponent<PlayerCameraReferences>();
-        player = camRefs.GetPlayer().GetComponent<BasePlayer>();
+        var camRefs = Camera.main != null ? Camera.main.GetComponent<PlayerCameraReferences>() : null;
+        if (camRefs != null && camRefs.GetPlayer() != null)
+            player = camRefs.GetPlayer().GetComponent<BasePlayer>();
     }
 
     private void OnIntermissionStart()
     {
-        rigObj.transform.localScale = Vector3.one;
+        if (rigObj != null)
+            rigObj.transform.localScale = Vector3.one;
     }
 
     private void OnRoundStart()
     {
         if (player == null)
         {
-            var camRefs = Camera.main?.GetComponent<PlayerCameraReferences>();
+            var camRefs = Camera.main != null ? Camera.main.GetComponent<PlayerCameraReferences>() : null;
             if (camRefs != null && camRefs.GetPlayer() != null)
                 player = camRefs.GetPlayer().GetComponent<BasePlayer>();
         }

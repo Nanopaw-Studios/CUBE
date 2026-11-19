@@ -14,6 +14,9 @@ public class BasePlayer : MonoBehaviourPunCallbacks
     public const string PropEquippedKiller = "ek";
     public const string PropEquippedSurvivor = "es";
 
+    // Photon custom property key for the active character's mastery cosmetic tier.
+    public const string PropMasteryCosmeticTier = "mct";
+
     #region Player Type
     public enum PlayerType
     {
@@ -70,6 +73,13 @@ public class BasePlayer : MonoBehaviourPunCallbacks
         if (photonView.IsMine && GetComponent<StatusEffectHUD>() == null)
         {
             gameObject.AddComponent<StatusEffectHUD>();
+        }
+
+        // Present on every client so LagSpike's visual RPC can resolve here.
+        // Only the owning Coder client runs trap logic.
+        if (GetComponent<LagSpikeTrapRunner>() == null)
+        {
+            gameObject.AddComponent<LagSpikeTrapRunner>();
         }
     }
 

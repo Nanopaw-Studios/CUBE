@@ -20,6 +20,11 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
     public MapData[] maps;
     public GameObject currentMap;
 
+    private int currentMapIndex = -1;
+
+    /// <summary>Index of the map currently instantiated, or -1 when none is.</summary>
+    public int CurrentMapIndex => currentMapIndex;
+
     public static PhotonLauncher Instance { get; private set; }
 
     private void Awake()
@@ -111,7 +116,24 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         if (PhotonNetwork.InRoom)
         {
             EnsureSpawned();
+
+            // The master's OnPlayerEnteredRoom push fires before this scene exists
+            // on the joining client. Ask for a fresh snapshot now that we are alive.
+            if (!PhotonNetwork.IsMasterClient)
+                StartCoroutine(RequestStateAfterSceneLoad());
         }
+    }
+
+    private IEnumerator RequestStateAfterSceneLoad()
+    {
+        yield return null;
+
+        RoundManager rm = roundManager != null
+            ? roundManager
+            : FindFirstObjectByType<RoundManager>();
+
+        if (rm != null)
+            rm.photonView.RPC(nameof(RoundManager.RequestState), RpcTarget.MasterClient);
     }
 
     private void EnsureSpawned()
@@ -153,8 +175,11 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
         }
         else
         {
-            Color color = Resources.Load<Material>("PlayerMat").GetColor("_MainColor");
-            hex = "#" + ColorUtility.ToHtmlStringRGB(color);
+            Material playerMat = Resources.Load<Material>("PlayerMat");
+            if (playerMat != null)
+                hex = "#" + ColorUtility.ToHtmlStringRGB(playerMat.GetColor("_MainColor"));
+            else
+                hex = "FFFFFF";
         }
 
         var customizer = LocalPlayerInstance.GetComponent<PlayerCustomizer>();
@@ -216,10 +241,32 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
             return;
         }
 
+        if (mapIndex < 0 || mapIndex >= maps.Length)
+        {
+            Debug.LogWarning($"[PhotonLauncher] Ignoring invalid map index {mapIndex}.");
+            return;
+        }
+
+        // A late joiner can receive the current index while the map already exists
+        // on their client. Keep it instead of destroying and rebuilding it.
+        if (currentMap != null && currentMapIndex == mapIndex)
+        {
+            PopulateSpawns();
+
+            if (roundManager != null && intermissionSpawn != null)
+                roundManager.UpdateIntermissionSpawn(intermissionSpawn);
+
+            StartCoroutine(TeleportToRoleSpawnWhenReady());
+            return;
+        }
+
         if (currentMap != null)
         {
             Destroy(currentMap); // destroy old map if needed
+            currentMap = null;
         }
+
+        currentMapIndex = mapIndex;
 
         // Everyone instantiates the same map index
         currentMap = Instantiate(
@@ -326,20 +373,19 @@ public class PhotonLauncher : MonoBehaviourPunCallbacks
 
     private void HandleRoundStart()
     {
-        // Safety checks
+        // Only the host chooses and spawns the map. This must happen even when
+        // the master's own player has not spawned yet; otherwise nobody gets a map.
+        if (PhotonNetwork.IsMasterClient && maps != null && maps.Length > 0)
+        {
+            int mapIndex = Random.Range(0, maps.Length);
+            photonView.RPC("ChooseMap", RpcTarget.All, mapIndex);
+        }
+
         if (LocalPlayerInstance == null)
         {
             Debug.LogWarning(
                 "HandleRoundStart: LocalPlayerInstance is null. Player hasn't spawned yet."
             );
-            return;
-        }
-
-        // Only the host chooses and spawns the map
-        if (PhotonNetwork.IsMasterClient)
-        {
-            int mapIndex = Random.Range(0, maps.Length);
-            photonView.RPC("ChooseMap", RpcTarget.All, mapIndex);
         }
     }
 

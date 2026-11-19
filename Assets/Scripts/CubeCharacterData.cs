@@ -19,6 +19,13 @@ public class CubeCharacterData : ScriptableObject
     [Header("Appearance")]
     public Accessory[] accessories;
     public Material bodyMaterial;
+
+    [Header("Mastery Cosmetics")]
+    [Tooltip(
+        "Optional per-character overrides for the 25 / 50 / 75 / 100 mastery rewards. "
+            + "Leave empty to use the built-in prestige colours."
+    )]
+    public MasteryCosmeticUnlock[] masteryCosmetics;
 }
 
 [System.Serializable]

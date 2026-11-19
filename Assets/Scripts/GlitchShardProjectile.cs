@@ -83,7 +83,10 @@ public class GlitchShardProjectile : MonoBehaviourPun
 
         Debug.Log($"[GlitchShardProjectile] Hit {targetView.Owner.NickName} for {damage} damage and applied Glitch Distortion.");
 
+        CubeCoinRewardManager.NotifyLocalSuccessfulAbility("glitch_shard_hit", 40);
+
         if (isKillingBlow)
+
         {
             // Reward the throwing killer — find their CubeCoinRewardManager via PhotonView owner.
             PhotonView[] allViews = FindObjectsByType<PhotonView>(FindObjectsSortMode.None);

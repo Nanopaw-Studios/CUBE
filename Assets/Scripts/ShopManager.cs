@@ -16,10 +16,8 @@ public class ShopManager : MonoBehaviour
     {
         ShopKillers,
         ShopSurvivors,
-        ShopEmotes,
         OwnedKillers,
         OwnedSurvivors,
-        OwnedEmotes,
     }
 
     [Header("References")]
@@ -31,21 +29,17 @@ public class ShopManager : MonoBehaviour
     [Header("Shop Grids")]
     public GameObject shopKillerContent;
     public GameObject shopSurvivorContent;
-    public GameObject shopEmoteContent;
 
     [Header("Owned Grids")]
     public GameObject ownedKillerContent;
     public GameObject ownedSurvivorContent;
-    public GameObject ownedEmoteContent;
 
     [Header("Entry Prefabs")]
     public GameObject characterPrefab;
-    public GameObject emotePrefab;
 
     [Header("Data")]
     public KillerType[] killers;
     public SurvivorType[] survivors;
-    public EmoteAsset[] emotes;
 
     [Header("PlayFab")]
     public string catalogVersion = "shop";
@@ -63,18 +57,38 @@ public class ShopManager : MonoBehaviour
     public TMP_Text Stamina;
     public Button purchaseButton;
 
+    [Header("Character Mastery UI")]
+    public Button masteryButton;
+    public GameObject characterMasteryModal;
+    public Image masteryCharImage;
+    public TMP_Text masteryTitleText;
+    public TMP_Text masteryTypeText;
+    public TMP_Text masteryNameText;
+    public Button masteryCloseButton;
+    public Slider masteryLevelSlider;
+    public TMP_Text masteryLevelValueText;
+    public TMP_Text masteryXpText;
+
+    [Header("Mastery Skin Swapping")]
+    public RectTransform masterySkinsRow;
+    public Transform masterySkinButtonContainer;
+    public TMP_Text masterySkinsLabel;
+
     [Header("Behavior")]
     public DefaultTab defaultTab = DefaultTab.ShopKillers;
 
     private CubePlayerBase selectedCharacter;
-    private EmoteAsset selectedEmote;
     private HashSet<string> ownedItemIds = new HashSet<string>();
+    private readonly List<Button> masterySkinButtons = new List<Button>();
+    private bool masterySkinButtonsBound;
 
     public event Action<CubePlayerBase> OnCharacterPurchased;
-    public event Action<EmoteAsset> OnEmotePurchased;
+
 
     private void OnEnable()
     {
+        AutoBindMasteryUI();
+
         if (toggleShop != null)
             toggleShop.action.performed += ShopTriggered;
 
@@ -86,8 +100,23 @@ public class ShopManager : MonoBehaviour
             purchaseButton.onClick.AddListener(PurchaseSelected);
         }
 
+        if (masteryButton != null)
+        {
+            masteryButton.onClick.RemoveListener(OpenCharacterMastery);
+            masteryButton.onClick.AddListener(OpenCharacterMastery);
+        }
+
+        if (masteryCloseButton != null)
+        {
+            masteryCloseButton.onClick.RemoveListener(CloseCharacterMastery);
+            masteryCloseButton.onClick.AddListener(CloseCharacterMastery);
+        }
+
         if (PlayfabManager.Instance != null)
             PlayfabManager.Instance.OnCubeCoinsChanged += HandleCoinsChanged;
+
+        if (ProgressionManager.Instance != null)
+            ProgressionManager.Instance.OnCharacterMasteryChanged += HandleMasteryChanged;
     }
 
     private void OnDisable()
@@ -98,24 +127,329 @@ public class ShopManager : MonoBehaviour
         if (purchaseButton != null)
             purchaseButton.onClick.RemoveListener(PurchaseSelected);
 
+        if (masteryButton != null)
+            masteryButton.onClick.RemoveListener(OpenCharacterMastery);
+
+        if (masteryCloseButton != null)
+            masteryCloseButton.onClick.RemoveListener(CloseCharacterMastery);
+
         if (PlayfabManager.Instance != null)
             PlayfabManager.Instance.OnCubeCoinsChanged -= HandleCoinsChanged;
+
+        if (ProgressionManager.Instance != null)
+            ProgressionManager.Instance.OnCharacterMasteryChanged -= HandleMasteryChanged;
     }
 
     private bool purchaseInFlight;
 
     private void Start()
     {
+        AutoBindMasteryUI();
+
         if (shop != null)
             shop.SetActive(false);
         if (CharDetails != null)
             CharDetails.SetActive(false);
+        if (characterMasteryModal != null)
+            characterMasteryModal.SetActive(false);
         RefreshShopFromInventory();
 
         // Force-close the shop when a round begins so it can never remain open mid-round.
         if (roundManager != null)
             roundManager.OnRoundStart += ForceCloseShop;
     }
+
+    private void AutoBindMasteryUI()
+    {
+        if (shop == null)
+            return;
+
+        if (masteryButton == null && CharDetails != null)
+        {
+            Transform mTr = CharDetails.transform.Find("Mastery");
+            if (mTr != null)
+                masteryButton = mTr.GetComponent<Button>();
+        }
+
+        if (characterMasteryModal == null)
+        {
+            Transform cmTr = shop.transform.Find("CharacterMastery");
+            if (cmTr != null)
+                characterMasteryModal = cmTr.gameObject;
+        }
+
+        if (characterMasteryModal != null)
+        {
+            Transform bg = characterMasteryModal.transform.Find("BG");
+            if (bg != null)
+            {
+                if (masteryCharImage == null)
+                    masteryCharImage = bg.Find("Image")?.GetComponent<Image>();
+                if (masteryTitleText == null)
+                    masteryTitleText = bg.Find("Title")?.GetComponent<TMP_Text>();
+                if (masteryTypeText == null)
+                    masteryTypeText = bg.Find("Type")?.GetComponent<TMP_Text>();
+                if (masteryNameText == null)
+                    masteryNameText = bg.Find("Name")?.GetComponent<TMP_Text>();
+                if (masteryCloseButton == null)
+                    masteryCloseButton = bg.Find("Close")?.GetComponent<Button>();
+
+                Transform ml = bg.Find("Mastery Level");
+                if (ml != null)
+                {
+                    if (masteryLevelSlider == null)
+                        masteryLevelSlider = ml.Find("Slider")?.GetComponent<Slider>();
+                    if (masteryLevelValueText == null)
+                    {
+                        Transform valTr = ml.Find("Value");
+                        if (valTr != null)
+                        {
+                            masteryLevelValueText = valTr.GetComponent<TMP_Text>();
+                            // Ensure SliderValueText does not overwrite "LVL ___" with a raw float
+                            SliderValueText svt = valTr.GetComponent<SliderValueText>();
+                            if (svt != null)
+                                svt.enabled = false;
+                        }
+                    }
+                    if (masteryXpText == null)
+                        masteryXpText = ml.Find("XP")?.GetComponent<TMP_Text>();
+                }
+
+                if (masterySkinsRow == null)
+                    masterySkinsRow = bg.Find("Mastery Skins") as RectTransform;
+
+                if (masterySkinsRow != null)
+                {
+                    if (masterySkinsLabel == null)
+                        masterySkinsLabel = masterySkinsRow.Find("Label")?.GetComponent<TMP_Text>();
+                    if (masterySkinButtonContainer == null)
+                        masterySkinButtonContainer = masterySkinsRow.Find("Buttons");
+                }
+            }
+        }
+
+        EnsureMasterySkinButtonsBound();
+    }
+
+    private void EnsureMasterySkinButtonsBound()
+    {
+        if (masterySkinButtonsBound || masterySkinButtonContainer == null)
+            return;
+
+        masterySkinButtons.Clear();
+        for (int i = 0; i < masterySkinButtonContainer.childCount; i++)
+        {
+            Button button = masterySkinButtonContainer.GetChild(i).GetComponent<Button>();
+            if (button == null)
+                continue;
+
+            int tier = masterySkinButtons.Count;
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => OnMasterySkinSelected(tier));
+            masterySkinButtons.Add(button);
+        }
+
+        masterySkinButtonsBound = masterySkinButtons.Count > 0;
+    }
+
+    public void OnMasterySkinSelected(int tier)
+    {
+        if (selectedCharacter == null)
+            return;
+
+        ProgressionManager prog = ProgressionManager.EnsureExists();
+        if (prog == null)
+            return;
+
+        int highestUnlocked = prog.GetCharacterMasteryCosmeticTier(selectedCharacter._Name);
+        if (tier > highestUnlocked)
+            return;
+
+        prog.SetSelectedMasteryCosmeticTier(selectedCharacter._Name, tier);
+        RefreshCharacterMasteryModal();
+    }
+
+    private void RefreshMasterySkinButtons(int level)
+    {
+        EnsureMasterySkinButtonsBound();
+        if (selectedCharacter == null)
+            return;
+
+        ProgressionManager prog = ProgressionManager.EnsureExists();
+        int activeTier = prog != null
+            ? prog.GetActiveMasteryCosmeticTier(selectedCharacter._Name)
+            : 0;
+
+        for (int i = 0; i < masterySkinButtons.Count; i++)
+        {
+            Button button = masterySkinButtons[i];
+            if (button == null)
+                continue;
+
+            int tier = i;
+            int requiredLevel = tier == 0 ? 0 : MasteryCosmeticUnlock.GetRequiredLevel(tier);
+            bool unlocked = tier == 0 || level >= requiredLevel;
+            bool isSelected = unlocked && tier == activeTier;
+
+            button.interactable = unlocked;
+
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+            if (label != null)
+            {
+                if (tier == 0)
+                    label.text = LocalizationManager.Get("shop.mastery_skin_original", "Original");
+                else
+                    label.text = unlocked ? requiredLevel.ToString() : $"LVL {requiredLevel}";
+
+                label.color = isSelected
+                    ? new Color(0.06f, 0.06f, 0.06f, 1f)
+                    : new Color(1f, 1f, 1f, unlocked ? 1f : 0.35f);
+            }
+
+            Image background = button.targetGraphic as Image;
+            if (background != null)
+            {
+                background.color = isSelected
+                    ? new Color(1f, 0.78f, 0.22f, 1f)
+                    : unlocked
+                        ? new Color(0.16f, 0.16f, 0.16f, 1f)
+                        : new Color(0.1f, 0.1f, 0.1f, 0.85f);
+            }
+        }
+
+        if (masterySkinsLabel != null)
+        {
+            MasteryCosmeticUnlock activeCosmetic =
+                activeTier > 0 && selectedCharacter.character != null
+                    ? MasteryCosmeticUnlock.GetFor(selectedCharacter.character, activeTier)
+                    : null;
+
+            string activeName =
+                activeCosmetic != null && !string.IsNullOrEmpty(activeCosmetic.DisplayName)
+                    ? activeCosmetic.DisplayName
+                    : LocalizationManager.Get("shop.mastery_skin_original", "Original");
+
+            masterySkinsLabel.text = LocalizationManager.Format(
+                "shop.mastery_skins_fmt",
+                "MASTERY SKINS: {0}",
+                activeName.ToUpperInvariant()
+            );
+        }
+    }
+
+    private void HandleMasteryChanged(string charName, int level, int curXp, int reqXp)
+    {
+        if (selectedCharacter != null && string.Equals(selectedCharacter._Name, charName, StringComparison.OrdinalIgnoreCase))
+        {
+            UpdateMasteryButtonLabel();
+            if (characterMasteryModal != null && characterMasteryModal.activeInHierarchy)
+            {
+                RefreshCharacterMasteryModal();
+            }
+        }
+    }
+
+    public void OpenCharacterMastery()
+    {
+        if (selectedCharacter == null)
+            return;
+
+        AutoBindMasteryUI();
+        if (characterMasteryModal == null)
+            return;
+
+        RefreshCharacterMasteryModal();
+        characterMasteryModal.SetActive(true);
+
+        if (masteryCloseButton != null)
+            StartCoroutine(SelectDelayed(masteryCloseButton.gameObject));
+    }
+
+    public void CloseCharacterMastery()
+    {
+        if (characterMasteryModal != null)
+            characterMasteryModal.SetActive(false);
+
+        if (masteryButton != null && masteryButton.gameObject.activeInHierarchy)
+            StartCoroutine(SelectDelayed(masteryButton.gameObject));
+    }
+
+    private void RefreshCharacterMasteryModal()
+    {
+        if (selectedCharacter == null)
+            return;
+
+        ProgressionManager prog = ProgressionManager.EnsureExists();
+        int level = prog != null ? prog.GetCharacterMasteryLevel(selectedCharacter._Name) : 1;
+        int curXp = prog != null ? prog.GetCharacterMasteryXP(selectedCharacter._Name) : 0;
+        int reqXp = prog != null ? prog.GetCharacterMasteryXPRequired(selectedCharacter._Name) : 250;
+
+        if (masteryCharImage != null)
+            masteryCharImage.sprite = selectedCharacter.image;
+        if (masteryTitleText != null)
+            masteryTitleText.text = LocalizationManager.Get("shop.mastery", "Mastery");
+        if (masteryNameText != null)
+            masteryNameText.text = LocalizationManager.GetCharacterName(selectedCharacter);
+
+        if (masteryTypeText != null)
+        {
+            if (selectedCharacter is KillerType)
+            {
+                masteryTypeText.text = LocalizationManager.Get("shop.role_killer", "KILLER");
+                masteryTypeText.color = new Color(1f, 0.2f, 0.2f, 1f);
+            }
+            else
+            {
+                masteryTypeText.text = LocalizationManager.Get("shop.role_survivor", "SURVIVOR");
+                masteryTypeText.color = new Color(0.25f, 1f, 0.4f, 1f);
+            }
+        }
+
+        if (masteryLevelValueText != null)
+            masteryLevelValueText.text = $"LVL {level}";
+
+        if (level >= ProgressionManager.MaxMasteryLevel)
+        {
+            if (masteryXpText != null)
+                masteryXpText.text = LocalizationManager.Get("shop.max_level", "MAX LEVEL (100)");
+            if (masteryLevelSlider != null)
+            {
+                masteryLevelSlider.minValue = 0f;
+                masteryLevelSlider.maxValue = 1f;
+                masteryLevelSlider.value = 1f;
+            }
+        }
+        else
+        {
+            if (masteryXpText != null)
+                masteryXpText.text = $"{curXp} / {reqXp} XP";
+            if (masteryLevelSlider != null)
+            {
+                masteryLevelSlider.minValue = 0f;
+                masteryLevelSlider.maxValue = Mathf.Max(1, reqXp);
+                masteryLevelSlider.value = curXp;
+            }
+        }
+
+        RefreshMasterySkinButtons(level);
+    }
+
+    private void UpdateMasteryButtonLabel()
+    {
+        if (masteryButton == null || selectedCharacter == null)
+            return;
+
+        TMP_Text btnText = masteryButton.GetComponentInChildren<TMP_Text>(true);
+        if (btnText != null)
+        {
+            int lvl = ProgressionManager.Instance != null
+                ? ProgressionManager.Instance.GetCharacterMasteryLevel(selectedCharacter._Name)
+                : 1;
+            btnText.text = LocalizationManager.Format("shop.mastery_lvl", "Mastery (LVL {0})", lvl);
+        }
+    }
+
+
 
     private void OnDestroy()
     {
@@ -204,7 +538,6 @@ public class ShopManager : MonoBehaviour
             $"[Shop] BuildShopUI()"
                 + $" | killers={(killers == null ? -1 : killers.Length)}"
                 + $" | survivors={(survivors == null ? -1 : survivors.Length)}"
-                + $" | emotes={(emotes == null ? -1 : emotes.Length)}"
                 + $" | shopSurvivorContent={(shopSurvivorContent ? shopSurvivorContent.name : "NULL")}"
                 + $" | ownedSurvivorContent={(ownedSurvivorContent ? ownedSurvivorContent.name : "NULL")}"
         );
@@ -213,17 +546,13 @@ public class ShopManager : MonoBehaviour
         ClearChildren(ownedKillerContent?.transform);
         ClearChildren(shopSurvivorContent?.transform);
         ClearChildren(ownedSurvivorContent?.transform);
-        ClearChildren(shopEmoteContent?.transform);
-        ClearChildren(ownedEmoteContent?.transform);
 
         selectedCharacter = null;
-        selectedEmote = null;
         if (CharDetails != null)
             CharDetails.SetActive(false);
 
         int spawnedKillers = 0;
         int spawnedSurvivors = 0;
-        int spawnedEmotes = 0;
 
         // Killers
         if (killers != null)
@@ -284,37 +613,8 @@ public class ShopManager : MonoBehaviour
             }
         }
 
-        // Emotes
-        if (emotes != null)
-        {
-            foreach (var asset in emotes)
-            {
-                if (asset == null)
-                    continue;
-
-                bool isOwned =
-                    !string.IsNullOrEmpty(asset.PlayFabItemId)
-                    && ownedItemIds.Contains(asset.PlayFabItemId);
-                Transform parent = (isOwned ? ownedEmoteContent : shopEmoteContent)?.transform;
-                if (parent == null)
-                {
-                    Debug.LogWarning(
-                        "[Shop] Emote parent is null (check shopEmoteContent/ownedEmoteContent assignments)"
-                    );
-                    continue;
-                }
-
-                var prefab = (emotePrefab != null) ? emotePrefab : characterPrefab;
-                var entry = Instantiate(prefab, parent);
-                if (!TryWireEmoteEntry(entry, asset))
-                    Destroy(entry);
-                else
-                    spawnedEmotes++;
-            }
-        }
-
         Debug.Log(
-            $"[Shop] Spawned entries -> Killers:{spawnedKillers} Survivors:{spawnedSurvivors} Emotes:{spawnedEmotes}"
+            $"[Shop] Spawned entries -> Killers:{spawnedKillers} Survivors:{spawnedSurvivors}"
         );
 
         // Default active tab
@@ -338,12 +638,6 @@ public class ShopManager : MonoBehaviour
                 break;
             case DefaultTab.OwnedSurvivors:
                 SetActiveContent(ownedSurvivorContent);
-                break;
-            case DefaultTab.ShopEmotes:
-                SetActiveContent(shopEmoteContent);
-                break;
-            case DefaultTab.OwnedEmotes:
-                SetActiveContent(ownedEmoteContent);
                 break;
         }
     }
@@ -372,30 +666,6 @@ public class ShopManager : MonoBehaviour
         return true;
     }
 
-    private bool TryWireEmoteEntry(GameObject entry, EmoteAsset data)
-    {
-        if (entry == null || data == null)
-            return false;
-
-        var button = entry.GetComponent<Button>();
-        if (button == null)
-        {
-            Debug.LogError("[Shop] Emote entry prefab missing Button", entry);
-            return false;
-        }
-
-        var template = entry.GetComponent<EmoteTemplate>();
-        if (template == null)
-        {
-            Debug.LogError("[Shop] Emote entry prefab missing EmoteTemplate", entry);
-            return false;
-        }
-
-        template.AssociatedEmote = data;
-        button.onClick.AddListener(() => OnEmoteClicked(template));
-        return true;
-    }
-
     private void ClearChildren(Transform t)
     {
         if (t == null)
@@ -414,8 +684,6 @@ public class ShopManager : MonoBehaviour
             ownedKillerContent,
             shopSurvivorContent,
             ownedSurvivorContent,
-            shopEmoteContent,
-            ownedEmoteContent,
         };
 
         // Disable all
@@ -453,10 +721,6 @@ public class ShopManager : MonoBehaviour
     public void ShowShopSurvivors() => SetActiveContent(shopSurvivorContent);
 
     public void ShowOwnedSurvivors() => SetActiveContent(ownedSurvivorContent);
-
-    public void ShowShopEmotes() => SetActiveContent(shopEmoteContent);
-
-    public void ShowOwnedEmotes() => SetActiveContent(ownedEmoteContent);
 
     // --- SELECTION ---
 
@@ -523,7 +787,6 @@ public class ShopManager : MonoBehaviour
             return;
 
         selectedCharacter = template.AssociatedCharacter as CubePlayerBase;
-        selectedEmote = null;
 
         if (selectedCharacter == null)
         {
@@ -534,23 +797,30 @@ public class ShopManager : MonoBehaviour
         if (CharDetails != null)
             CharDetails.SetActive(true);
 
+        if (masteryButton != null)
+        {
+            masteryButton.gameObject.SetActive(true);
+            UpdateMasteryButtonLabel();
+        }
+
         if (Name != null)
-            Name.text = selectedCharacter._Name;
+            Name.text = LocalizationManager.GetCharacterName(selectedCharacter);
         if (Description != null)
-            Description.text = selectedCharacter.Description;
+            Description.text = LocalizationManager.GetCharacterDescription(selectedCharacter);
         if (image != null)
             image.sprite = selectedCharacter.image;
 
         if (Difficulty != null)
-            Difficulty.text = selectedCharacter.Difficulty + "/5 Difficulty";
+            Difficulty.text = LocalizationManager.Format("shop.difficulty_fmt", "{0}/5 Difficulty", selectedCharacter.Difficulty);
         if (Cost != null)
-            Cost.text = selectedCharacter.Cost + " Cubes";
+            Cost.text = LocalizationManager.Format("shop.cost_fmt", "{0} Cubes", selectedCharacter.Cost);
         if (Health != null)
-            Health.text = selectedCharacter.Health + " HP";
+            Health.text = LocalizationManager.Format("shop.hp_fmt", "{0} HP", selectedCharacter.Health);
         if (Speed != null)
-            Speed.text = selectedCharacter.Speed + " Speed";
+            Speed.text = LocalizationManager.Format("shop.speed_fmt", "{0} Speed", selectedCharacter.Speed);
         if (Stamina != null)
-            Stamina.text = selectedCharacter.Stamina + " Stamina";
+            Stamina.text = LocalizationManager.Format("shop.stamina_fmt", "{0} Stamina", selectedCharacter.Stamina);
+
 
         // If the player owns this character, equip it immediately on click so the
         // selection persists into the next round without needing a separate Equip button.
@@ -565,62 +835,19 @@ public class ShopManager : MonoBehaviour
         UpdatePurchaseButtonState();
     }
 
-    private void OnEmoteClicked(EmoteTemplate template)
-    {
-        if (template == null || template.AssociatedEmote == null)
-            return;
-
-        selectedEmote = template.AssociatedEmote;
-        selectedCharacter = null;
-
-        if (CharDetails != null)
-            CharDetails.SetActive(true);
-
-        if (Name != null)
-            Name.text = selectedEmote.emoteName;
-        if (Description != null)
-            Description.text = selectedEmote.Description;
-        if (image != null)
-            image.sprite = selectedEmote.image;
-        if (Cost != null)
-            Cost.text = selectedEmote.cost + " Cubes";
-
-        if (Difficulty != null)
-            Difficulty.text = string.Empty;
-        if (Health != null)
-            Health.text = string.Empty;
-        if (Speed != null)
-            Speed.text = string.Empty;
-        if (Stamina != null)
-            Stamina.text = string.Empty;
-
-        UpdatePurchaseButtonState();
-    }
-
     private void UpdatePurchaseButtonState()
     {
         if (purchaseButton == null)
             return;
 
-        if (selectedCharacter == null && selectedEmote == null)
+        if (selectedCharacter == null)
         {
             purchaseButton.interactable = false;
             return;
         }
 
-        string itemId;
-        int cost;
-
-        if (selectedCharacter != null)
-        {
-            itemId = selectedCharacter._PlayFabItemID;
-            cost = selectedCharacter.Cost;
-        }
-        else
-        {
-            itemId = selectedEmote.PlayFabItemId;
-            cost = selectedEmote.cost;
-        }
+        string itemId = selectedCharacter._PlayFabItemID;
+        int cost = selectedCharacter.Cost;
 
         bool owned = !string.IsNullOrEmpty(itemId) && ownedItemIds.Contains(itemId);
 
@@ -630,7 +857,8 @@ public class ShopManager : MonoBehaviour
 
         purchaseButton.interactable = !owned && canAfford;
 
-        EventSystem.current.SetSelectedGameObject(purchaseButton.gameObject);
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(purchaseButton.gameObject);
     }
 
     // --- PURCHASING (unchanged logic) ---
@@ -642,25 +870,14 @@ public class ShopManager : MonoBehaviour
             Debug.Log("[Shop] Purchase ignored: request already in flight");
             return;
         }
-        if (selectedCharacter == null && selectedEmote == null)
+        if (selectedCharacter == null)
         {
             Debug.LogWarning("[Shop] No selection");
             return;
         }
 
-        string itemId;
-        int cost;
-
-        if (selectedCharacter != null)
-        {
-            itemId = selectedCharacter._PlayFabItemID;
-            cost = selectedCharacter.Cost;
-        }
-        else
-        {
-            itemId = selectedEmote.PlayFabItemId;
-            cost = selectedEmote.cost;
-        }
+        string itemId = selectedCharacter._PlayFabItemID;
+        int cost = selectedCharacter.Cost;
 
         if (string.IsNullOrEmpty(itemId))
         {
@@ -719,12 +936,11 @@ public class ShopManager : MonoBehaviour
 
             if (selectedCharacter != null)
                 OnCharacterPurchased?.Invoke(selectedCharacter);
-            else if (selectedEmote != null)
-                OnEmotePurchased?.Invoke(selectedEmote);
 
             RefreshShopFromInventory();
         }
     }
+
 
     private void OnPurchaseError(PlayFabError error, string itemId)
     {

@@ -11,6 +11,9 @@ public class DeathSC : MonoBehaviour
 
     bool died = false;
 
+    /// <summary>True while this local copy considers the player dead.</summary>
+    public bool IsDead => died;
+
     void Awake()
     {
         if (stats == null)
@@ -87,6 +90,12 @@ public class DeathSC : MonoBehaviour
     {
         // wait respawn delay
         yield return new WaitForSeconds(5f);
+
+        // Remote copies must never revive or teleport the player. Death, spectator
+        // state and intermission revival are owned by the local client (or by the
+        // ResetToDefaultStats RPC at intermission).
+        if (stats == null || stats.photonView == null || !stats.photonView.IsMine)
+            yield break;
 
         RoundManager rm = photonLauncher != null ? photonLauncher.roundManager : FindFirstObjectByType<RoundManager>();
         bool isMidRound = rm != null && rm.roundActive && !rm.intermissionActive;

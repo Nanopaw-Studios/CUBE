@@ -16,6 +16,8 @@ public class StatusEffectManager : MonoBehaviourPun
 
     // Volume overrides for sensory character effects
     private Volume cachedVolume;
+    private Volume effectVolume;
+    private VolumeProfile effectProfile;
     private ChromaticAberration chromatic;
     private FilmGrain filmGrain;
     private LensDistortion lensDistortion;
@@ -26,6 +28,10 @@ public class StatusEffectManager : MonoBehaviourPun
     private float initialVignette;
     private bool volumeCached;
     private EZCameraShake.CameraShaker cachedCameraShaker;
+
+    // Replicated damage-taken multiplier so remote clients and the master apply
+    // the same modifiers when they simulate a hit on this player.
+    private float syncedDamageTakenMultiplier = 1f;
 
     /// <summary>Fired whenever a status effect is added or upgraded.</summary>
     public event Action<ActiveStatusEffect> OnEffectApplied;
@@ -44,6 +50,7 @@ public class StatusEffectManager : MonoBehaviourPun
         cachedMovement = GetComponentInChildren<MovementSC>();
         cachedCameraShaker = GetComponentInChildren<EZCameraShake.CameraShaker>();
         OnEffectsChanged += SyncMovementSpeedModifier;
+        OnEffectsChanged += BroadcastDamageMultiplier;
     }
 
     private void SyncMovementSpeedModifier()
@@ -278,6 +285,11 @@ public class StatusEffectManager : MonoBehaviourPun
     /// </summary>
     public float GetDamageTakenMultiplier()
     {
+        // Only the owner knows the real active-effect set. Remote copies use the
+        // value the owner replicated so health stays identical on every client.
+        if (photonView != null && !photonView.IsMine)
+            return syncedDamageTakenMultiplier;
+
         float mult = 1f;
 
         if (activeEffects.TryGetValue(StatusEffectType.Resistance, out var res))
@@ -320,6 +332,24 @@ public class StatusEffectManager : MonoBehaviourPun
 
     #region Networked RPCs
 
+    private void BroadcastDamageMultiplier()
+    {
+        if (photonView == null || !photonView.IsMine)
+            return;
+
+        photonView.RPC(
+            nameof(RPC_SyncDamageMultiplier),
+            RpcTarget.Others,
+            GetDamageTakenMultiplier()
+        );
+    }
+
+    [PunRPC]
+    private void RPC_SyncDamageMultiplier(float multiplier)
+    {
+        syncedDamageTakenMultiplier = Mathf.Clamp(multiplier, 0.05f, 10f);
+    }
+
     [PunRPC]
     public void RPC_ApplyStatusEffect(byte effectType, int tier, float duration, float customMultiplier = 0f)
     {
@@ -344,7 +374,13 @@ public class StatusEffectManager : MonoBehaviourPun
 
     private void CacheVolume()
     {
-        if (volumeCached) return;
+        if (volumeCached)
+            return;
+
+        // Only the local player renders sensory effects. Remote copies must not
+        // create a Volume per player.
+        if (photonView != null && !photonView.IsMine)
+            return;
 
         var volObj = GameObject.Find("Global Volume");
         if (volObj != null)
@@ -352,29 +388,46 @@ public class StatusEffectManager : MonoBehaviourPun
         else
             cachedVolume = FindFirstObjectByType<Volume>();
 
-        if (cachedVolume != null && cachedVolume.profile != null)
-        {
-            cachedVolume.profile.TryGet(out chromatic);
-            cachedVolume.profile.TryGet(out filmGrain);
-            cachedVolume.profile.TryGet(out lensDistortion);
-            cachedVolume.profile.TryGet(out vignette);
+        if (cachedVolume == null || cachedVolume.profile == null)
+            return;
 
-            if (chromatic != null)
-                initialChromatic = chromatic.intensity.value;
-            if (filmGrain != null)
-                initialGrain = filmGrain.intensity.value;
-            if (lensDistortion != null)
-                initialDistortion = lensDistortion.intensity.value;
-            if (vignette != null)
-                initialVignette = vignette.intensity.value;
+        // Clone the profile. Writing through the shared VolumeProfile mutated the
+        // project asset in the Editor and fought EndgameManager's ramp on the same
+        // overrides. This gameplay-only volume sits at a higher priority and is
+        // weighted to zero whenever no sensory effect is active.
+        effectProfile = Instantiate(cachedVolume.profile);
 
-            volumeCached = true;
-        }
+        GameObject effectVolumeObject = new GameObject("GameplayEffectVolume");
+        effectVolumeObject.transform.SetParent(transform, false);
+
+        effectVolume = effectVolumeObject.AddComponent<Volume>();
+        effectVolume.isGlobal = true;
+        effectVolume.priority = cachedVolume.priority + 10;
+        effectVolume.weight = 0f;
+        effectVolume.profile = effectProfile;
+
+        effectProfile.TryGet(out chromatic);
+        effectProfile.TryGet(out filmGrain);
+        effectProfile.TryGet(out lensDistortion);
+        effectProfile.TryGet(out vignette);
+
+        if (chromatic != null)
+            initialChromatic = chromatic.intensity.value;
+        if (filmGrain != null)
+            initialGrain = filmGrain.intensity.value;
+        if (lensDistortion != null)
+            initialDistortion = lensDistortion.intensity.value;
+        if (vignette != null)
+            initialVignette = vignette.intensity.value;
+
+        volumeCached = true;
     }
 
     private void ApplyGlitchDistortion(int tier)
     {
         CacheVolume();
+        if (effectVolume != null)
+            effectVolume.weight = 1f;
         if (chromatic != null)
             chromatic.intensity.value = Mathf.Clamp01(0.4f + tier * 0.2f);
         if (filmGrain != null)
@@ -383,11 +436,13 @@ public class StatusEffectManager : MonoBehaviourPun
 
     private void UpdateSensoryEffects()
     {
-        if (!volumeCached || cachedVolume == null)
+        if (!volumeCached || effectVolume == null)
             return;
 
         bool hasGlitch = activeEffects.TryGetValue(StatusEffectType.GlitchDistortion, out var glitch);
         bool hasEqualized = activeEffects.TryGetValue(StatusEffectType.Equalized, out var eq);
+
+        effectVolume.weight = (hasGlitch || hasEqualized) ? 1f : 0f;
 
         if (hasGlitch)
         {
@@ -412,6 +467,9 @@ public class StatusEffectManager : MonoBehaviourPun
 
     private void ResetVolumeOverrides()
     {
+        if (effectVolume != null)
+            effectVolume.weight = 0f;
+
         if (chromatic != null)
             chromatic.intensity.value = initialChromatic;
         if (filmGrain != null)

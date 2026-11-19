@@ -6,7 +6,14 @@ using static BasePlayer;
 // class responsible of things like: setting players type (killer, survivor)
 public class ServerManager : MonoBehaviourPunCallbacks
 {
+    public static ServerManager Instance { get; private set; }
+
     RoundManager roundManager;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     public GameObject[] allPlayers;
     public BasePlayer[] allBasePlayers;
@@ -44,6 +51,8 @@ public class ServerManager : MonoBehaviourPunCallbacks
             PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "ApplyCharacterStats");
             PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "SetPlayerType");
             PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "ResetToDefaultStats");
+            // Malice is local state; it must never be buffered for late joiners.
+            PhotonNetwork.RemoveBufferedRPCs(pv.ViewID, "AdjustMalice");
 
             pv.RPC("SetPlayerType", RpcTarget.AllBuffered, BasePlayer.PlayerType.None);
             pv.RPC("ResetToDefaultStats", RpcTarget.AllBuffered);
@@ -52,6 +61,9 @@ public class ServerManager : MonoBehaviourPunCallbacks
 
     private void OnDestroy()
     {
+        if (Instance == this)
+            Instance = null;
+
         if (roundManager != null)
         {
             roundManager.OnRoundStart -= RoundStartedRPC;
@@ -74,15 +86,23 @@ public class ServerManager : MonoBehaviourPunCallbacks
     private void CachePlayers()
     {
         allPlayers = GameObject.FindGameObjectsWithTag("Player");
-        allBasePlayers = Array.FindAll(
-            FindObjectsByType<BasePlayer>(FindObjectsSortMode.None),
-            p => p != null && p.gameObject.CompareTag("Player")
-        );
+
+        // Reuse the array and resolve components from the tag results instead of
+        // running a second scene-wide FindObjectsByType every second.
+        if (allBasePlayers == null || allBasePlayers.Length != allPlayers.Length)
+            allBasePlayers = new BasePlayer[allPlayers.Length];
+
+        for (int i = 0; i < allPlayers.Length; i++)
+        {
+            allBasePlayers[i] = allPlayers[i] != null
+                ? allPlayers[i].GetComponent<BasePlayer>()
+                : null;
+        }
     }
 
     public static KillerType GetCurrentKiller()
     {
-        var sm = FindFirstObjectByType<ServerManager>();
+        var sm = Instance != null ? Instance : FindFirstObjectByType<ServerManager>();
         if (sm == null || sm.allBasePlayers == null)
             return null;
 

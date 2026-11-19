@@ -213,7 +213,7 @@ if (targetPV != null && !targetPV.IsMine)
 ### Recipe E: Firing an Achievement / Statistics Event
 ```csharp
 // Fire anywhere in gameplay code without coupling to achievement managers
-CUBE.Achievements.GameplayEventBus.RaiseEvent(new CUBE.Achievements.GameplayEvent
+CUBE.Achievements.GameplayEventBus.Publish(new CUBE.Achievements.GameplayEvent
 {
     EventType = CUBE.Achievements.GameplayEventType.KillerEliminatedSurvivor,
     Actor = attackerGameObject,

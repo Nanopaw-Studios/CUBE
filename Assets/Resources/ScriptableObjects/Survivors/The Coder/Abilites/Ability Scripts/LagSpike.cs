@@ -4,34 +4,45 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "LagSpike", menuName = "ScriptableObjects/Survivor Abilities/LagSpike", order = 1)]
 public class LagSpike : Ability
 {
-    public float force = 400f;
-    public float shardLifetime = 5f;
-    public int damage = 15;
+    [Header("Trap")]
+    [Tooltip("How far in front of the caster the trap is placed.")]
+    public float throwDistance = 3f;
+
+    [Tooltip("Radius of the slow field.")]
+    public float radius = 4f;
+
+    [Tooltip("Status effect tier applied to the killer.")]
+    [Range(1, 3)]
+    public int tier = 2;
+
+    [Tooltip("How long the killer is slowed for, in seconds.")]
+    public float slowDuration = 4f;
+
+    [Tooltip("How long the trap remains on the ground, in seconds.")]
+    public float trapLifetime = 12f;
 
     public override void ActivateAbility(BasePlayer player)
     {
         base.ActivateAbility(player);
-        ThrowShard(player);
-    }
 
-    private void ThrowShard(BasePlayer player)
-    {
-        GameObject cam = player.transform.Find("CameraHead").Find("Cam").Find("C").gameObject;
+        if (player == null || !player.gameObject.GetPhotonView().IsMine)
+            return;
 
-        GameObject shard = PhotonNetwork.Instantiate("GlitchShard", cam.transform.position + cam.transform.forward * 1.5f, Quaternion.identity);
+        Vector3 center = player.transform.position + player.transform.forward * throwDistance;
 
-        // Wire up network auto-destroy so it cleans up on all clients.
-        PhotonAutoDestroy autoDestroy = shard.AddComponent<PhotonAutoDestroy>();
-        autoDestroy.lifetime = shardLifetime;
+        // Snap the trap to the ground so it is visible/usable on slopes and platforms.
+        if (Physics.Raycast(center + Vector3.up * 2f, Vector3.down, out RaycastHit hit, 10f, ~0, QueryTriggerInteraction.Ignore))
+            center = hit.point;
 
-        // Wire up collision and damage — mirrors GlitchShard ability setup.
-        shard.AddComponent<CollisionCallback>();
-        GlitchShardProjectile projectile = shard.AddComponent<GlitchShardProjectile>();
-        projectile.damage = damage;
+        // The runner is attached to every player in BasePlayer.Awake so the
+        // PUN visual RPC can be resolved on every client, not just the caster.
+        LagSpikeTrapRunner runner = player.GetComponent<LagSpikeTrapRunner>();
+        if (runner == null)
+        {
+            Debug.LogWarning("[LagSpike] Missing LagSpikeTrapRunner on the player prefab.");
+            return;
+        }
 
-        Rigidbody rb = shard.AddComponent<Rigidbody>();
-        rb.sleepThreshold = 0f;
-        rb.useGravity = false;
-        rb.AddForce(cam.transform.forward * force, ForceMode.Impulse);
+        runner.Begin(center, radius, tier, slowDuration, trapLifetime);
     }
 }

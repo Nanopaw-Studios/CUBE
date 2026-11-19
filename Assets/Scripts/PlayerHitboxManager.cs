@@ -171,7 +171,7 @@ public class PlayerHitboxManager : MonoBehaviourPunCallbacks
     /// <summary>
     /// Checks whether all survivors are dead. If so, the master client ends the round.
     /// </summary>
-    private void CheckKillerWinCondition()
+    public void CheckKillerWinCondition()
     {
         // Collect all survivor players in the scene.
         BasePlayer[] allPlayers = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);

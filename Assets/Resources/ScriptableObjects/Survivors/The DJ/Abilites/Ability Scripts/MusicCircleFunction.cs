@@ -16,6 +16,8 @@ public class MusicCircleFunction : MonoBehaviourPunCallbacks
 
     // Tracks ViewIDs currently boosted so we can remove the boost on exit
     private readonly HashSet<int> boostedViewIds = new HashSet<int>();
+    private readonly HashSet<int> rewardedViewIds = new HashSet<int>();
+
 
     private void Start()
     {
@@ -46,7 +48,15 @@ public class MusicCircleFunction : MonoBehaviourPunCallbacks
             {
                 boostedViewIds.Add(pv.ViewID);
                 photonView.RPC(nameof(RPC_ApplyBoost), pv.Owner, pv.ViewID, true, boostMultiplier, boostDuration);
+
+                // Award XP only once per unique teammate boosted (or if killer is within 20m)
+                if (!rewardedViewIds.Contains(pv.ViewID) && (!pv.IsMine || IsKillerNear(20f)))
+                {
+                    rewardedViewIds.Add(pv.ViewID);
+                    CubeCoinRewardManager.NotifyLocalSuccessfulAbility("music_circle_buff", 30);
+                }
             }
+
         }
 
         // EXIT: remove boost for players no longer in range
@@ -89,7 +99,24 @@ public class MusicCircleFunction : MonoBehaviourPunCallbacks
         }
     }
 
+    private bool IsKillerNear(float maxDist)
+    {
+        BasePlayer[] all = FindObjectsByType<BasePlayer>(FindObjectsSortMode.None);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i] != null && all[i].GetPlayerType() == BasePlayer.PlayerType.Killer)
+            {
+                RagdollNetwork rag = all[i].GetComponent<RagdollNetwork>();
+                Vector3 kPos = rag != null && rag.hip != null ? rag.hip.position : all[i].transform.position;
+                if (Vector3.Distance(transform.position, kPos) <= maxDist)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     private void NetworkDestroy()
+
     {
         if (photonView.IsMine)
             PhotonNetwork.Destroy(gameObject);

@@ -27,6 +27,20 @@ public class PlayerUIHandler : MonoBehaviour
     public TMP_Text maliceValue;
     public GameObject money;
     public TMP_Text moneyText;
+    public GameObject accountLevel;
+    public TMP_Text accountLevelValue;
+    public Slider accountXpSlider;
+
+    [Header("Profile UI References")]
+    public GameObject profileUI;
+    public TMP_Text profileNameText;
+    public Image profileKillerIcon;
+    public Image profileSurvivorIcon;
+    public TMP_Text profileKillsText;
+    public TMP_Text profileSurvivorWinsText;
+    public TMP_Text profileKillerWinsText;
+    public TMP_Text profileAccountLevelText;
+
 
     private float deltaTime = 0.0f;
     private float updateTimer = 0.0f;
@@ -40,6 +54,11 @@ public class PlayerUIHandler : MonoBehaviour
     public float flashFadeSpeed = 3f;
     private float currentFlashAlpha = 0f;
     private BasePlayerStats subscribedPlayerStats;
+    private bool achievementSubscribed;
+    private Slider cachedHealthSlider;
+    private TMP_Text cachedHealthValueText;
+    private Slider cachedStaminaSlider;
+    private TMP_Text cachedStaminaValueText;
 
     [Header("Achievement UI References")]
     public GameObject achievementUI;
@@ -56,6 +75,7 @@ public class PlayerUIHandler : MonoBehaviour
     private readonly System.Collections.Generic.Queue<AchievementToastData> _achievementQueue = new();
     private bool _isShowingAchievement;
     private float _achievementTimer;
+    private bool _progressionSubscribed;
 
     private void Start()
     {
@@ -84,10 +104,175 @@ public class PlayerUIHandler : MonoBehaviour
         if (achievementUI != null)
             achievementUI.SetActive(false);
 
-        if (CUBE.Achievements.AchievementService.Instance != null)
+        AutoBindProgressionAndProfileUI();
+        TrySubscribeToAchievements();
+        TrySubscribeToProgression();
+        RefreshProgressionHUD();
+        RefreshProfileUI();
+    }
+
+    private void AutoBindProgressionAndProfileUI()
+    {
+        if (stats != null)
         {
-            CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked += OnAchievementUnlocked;
+            if (accountLevel == null)
+            {
+                Transform lvlTr = stats.transform.Find("Level");
+                if (lvlTr != null)
+                    accountLevel = lvlTr.gameObject;
+            }
+            if (accountLevel != null && accountLevelValue == null)
+            {
+                Transform valTr = accountLevel.transform.Find("LevelValue") ?? accountLevel.transform.Find("MaliceValue");
+                if (valTr != null)
+                    accountLevelValue = valTr.GetComponent<TMP_Text>();
+            }
+            if (accountLevel != null && accountXpSlider == null)
+            {
+                accountXpSlider = accountLevel.GetComponentInChildren<Slider>(true);
+            }
         }
+
+        if (profileUI == null)
+        {
+            Transform pTr = transform.Find("Profile");
+            if (pTr != null)
+                profileUI = pTr.gameObject;
+        }
+
+        if (profileUI != null)
+        {
+            if (profileNameText == null)
+                profileNameText = profileUI.transform.Find("Name")?.GetComponent<TMP_Text>();
+            if (profileKillerIcon == null)
+                profileKillerIcon = profileUI.transform.Find("Icons/Killer/Icon")?.GetComponent<Image>();
+            if (profileSurvivorIcon == null)
+                profileSurvivorIcon = profileUI.transform.Find("Icons/Survivor/Icon")?.GetComponent<Image>();
+
+            Transform content = profileUI.transform.Find("Scroll View/Viewport/Content");
+            if (content != null)
+            {
+                if (profileKillsText == null)
+                    profileKillsText = content.Find("Text (TMP)")?.GetComponent<TMP_Text>();
+                if (profileSurvivorWinsText == null)
+                    profileSurvivorWinsText = content.Find("Text (TMP) (1)")?.GetComponent<TMP_Text>();
+                if (profileKillerWinsText == null)
+                    profileKillerWinsText = content.Find("Text (TMP) (2)")?.GetComponent<TMP_Text>();
+                if (profileAccountLevelText == null)
+                    profileAccountLevelText = content.Find("AccountLevelText")?.GetComponent<TMP_Text>();
+            }
+        }
+    }
+
+    private void TrySubscribeToProgression()
+    {
+        if (_progressionSubscribed)
+            return;
+
+        ProgressionManager prog = ProgressionManager.EnsureExists();
+        if (prog == null)
+            return;
+
+        prog.OnAccountXPChanged += OnAccountXPChanged;
+        prog.OnProgressionSynced += OnProgressionSynced;
+        _progressionSubscribed = true;
+    }
+
+    private void OnAccountXPChanged(int level, int currentXP, int requiredXP)
+    {
+        RefreshProgressionHUD();
+        RefreshProfileUI();
+    }
+
+    private void OnProgressionSynced()
+    {
+        RefreshProgressionHUD();
+        RefreshProfileUI();
+    }
+
+    public void RefreshProgressionHUD()
+    {
+        ProgressionManager prog = ProgressionManager.Instance;
+        if (prog == null)
+            return;
+
+        if (accountLevelValue != null)
+        {
+            accountLevelValue.text = $"LVL {prog.AccountLevel}\n<size=60%>{prog.AccountXP}/{prog.AccountXPForNextLevel} XP</size>";
+        }
+
+        if (accountXpSlider != null)
+        {
+            accountXpSlider.minValue = 0f;
+            accountXpSlider.maxValue = Mathf.Max(1, prog.AccountXPForNextLevel);
+            accountXpSlider.value = prog.AccountXP;
+        }
+    }
+
+    public void RefreshProfileUI()
+    {
+        if (profileUI == null)
+            return;
+
+        ProgressionManager prog = ProgressionManager.Instance;
+        int acctLvl = prog != null ? prog.AccountLevel : 1;
+        int acctXp = prog != null ? prog.AccountXP : 0;
+        int reqXp = prog != null ? prog.AccountXPForNextLevel : 500;
+
+        if (profileNameText != null)
+        {
+            string pName = PlayfabManager.GetPlayerName();
+            if (string.IsNullOrEmpty(pName))
+                pName = PhotonNetwork.NickName;
+            profileNameText.text = $"{pName}  <color=#00FFFF>[LVL {acctLvl}]</color>";
+        }
+
+        if (localBasePlayer != null)
+        {
+            if (profileKillerIcon != null && localBasePlayer.equippedKiller != null)
+                profileKillerIcon.sprite = localBasePlayer.equippedKiller.image;
+            if (profileSurvivorIcon != null && localBasePlayer.equippedSurvivor != null)
+                profileSurvivorIcon.sprite = localBasePlayer.equippedSurvivor.image;
+        }
+
+        var statsSvc = CUBE.Achievements.StatisticsService.Instance;
+        int kills = statsSvc != null
+            ? Mathf.RoundToInt(statsSvc.GetStat(CUBE.Achievements.StatId.PlayersEliminated, CUBE.Achievements.StatScope.Lifetime))
+            : 0;
+        int survWins = statsSvc != null
+            ? Mathf.RoundToInt(statsSvc.GetStat(CUBE.Achievements.StatId.RoundsSurvived, CUBE.Achievements.StatScope.Lifetime))
+            : 0;
+        int totalWins = statsSvc != null
+            ? Mathf.RoundToInt(statsSvc.GetStat(CUBE.Achievements.StatId.LifetimeWins, CUBE.Achievements.StatScope.Lifetime))
+            : 0;
+        int killerWins = Mathf.Max(0, totalWins - survWins);
+
+        if (profileKillsText != null)
+            profileKillsText.text = $"Kills: {kills}";
+        if (profileSurvivorWinsText != null)
+            profileSurvivorWinsText.text = $"Survivor Wins: {survWins}";
+        if (profileKillerWinsText != null)
+            profileKillerWinsText.text = $"Killer Wins: {killerWins}";
+        if (profileAccountLevelText != null)
+            profileAccountLevelText.text = $"Account Level: {acctLvl} ({acctXp}/{reqXp} XP)";
+    }
+
+
+    /// <summary>
+    /// AchievementService may initialize after this HUD, so retry cheaply until it
+    /// exists instead of unsubscribing/resubscribing every frame in Update.
+    /// </summary>
+    private void TrySubscribeToAchievements()
+    {
+        if (achievementSubscribed)
+            return;
+
+        var service = CUBE.Achievements.AchievementService.Instance;
+        if (service == null)
+            return;
+
+        service.OnAchievementUnlocked += OnAchievementUnlocked;
+        achievementSubscribed = true;
     }
 
     private void TryBindLocalPlayer()
@@ -156,18 +341,27 @@ public class PlayerUIHandler : MonoBehaviour
         if (PlayfabManager.Instance != null)
             PlayfabManager.Instance.OnCubeCoinsChanged -= OnCubeCoinsChanged;
 
-        if (CUBE.Achievements.AchievementService.Instance != null)
+        if (_progressionSubscribed && ProgressionManager.Instance != null)
+        {
+            ProgressionManager.Instance.OnAccountXPChanged -= OnAccountXPChanged;
+            ProgressionManager.Instance.OnProgressionSynced -= OnProgressionSynced;
+            _progressionSubscribed = false;
+        }
+
+        if (achievementSubscribed && CUBE.Achievements.AchievementService.Instance != null)
         {
             CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked -= OnAchievementUnlocked;
+            achievementSubscribed = false;
         }
     }
+
 
     private void OnAchievementUnlocked(CUBE.Achievements.AchievementUnlockedEventArgs args)
     {
         if (args.Definition == null) return;
 
-        string name = args.Definition.DisplayName;
-        string desc = args.Definition.Description;
+        string name = LocalizationManager.GetAchievementTitle(args.Definition);
+        string desc = LocalizationManager.GetAchievementDescription(args.Definition);
 
         _achievementQueue.Enqueue(new AchievementToastData
         {
@@ -175,6 +369,7 @@ public class PlayerUIHandler : MonoBehaviour
             Description = $"You achieved '{name}'!\n{desc}"
         });
     }
+
 
     private void AutoBindAchievementUI()
     {
@@ -213,11 +408,8 @@ public class PlayerUIHandler : MonoBehaviour
 
     private void Update()
     {
-        if (CUBE.Achievements.AchievementService.Instance != null)
-        {
-            CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked -= OnAchievementUnlocked;
-            CUBE.Achievements.AchievementService.Instance.OnAchievementUnlocked += OnAchievementUnlocked;
-        }
+        if (!achievementSubscribed)
+            TrySubscribeToAchievements();
 
         // Process Achievement Notification Queue
         if (_isShowingAchievement)
@@ -257,17 +449,28 @@ public class PlayerUIHandler : MonoBehaviour
         {
             if (healthBar != null)
             {
-                Slider healthSlider = healthBar.GetComponent<Slider>();
-                healthSlider.maxValue = playerStats.maxHealth;
-                smoothHealth = Mathf.Lerp(
-                    smoothHealth,
-                    playerStats.health,
-                    Time.deltaTime * lerpSpeed
-                );
-                healthSlider.value = smoothHealth;
+                if (cachedHealthSlider == null)
+                    cachedHealthSlider = healthBar.GetComponent<Slider>();
+
+                if (cachedHealthSlider != null)
+                {
+                    cachedHealthSlider.maxValue = playerStats.maxHealth;
+                    smoothHealth = Mathf.Lerp(
+                        smoothHealth,
+                        playerStats.health,
+                        Time.deltaTime * lerpSpeed
+                    );
+                    cachedHealthSlider.value = smoothHealth;
+                }
+
                 if (healthText != null)
-                    healthText.GetComponent<TMP_Text>().text =
-                        $"{playerStats.health}/{playerStats.maxHealth}";
+                {
+                    if (cachedHealthValueText == null)
+                        cachedHealthValueText = healthText.GetComponent<TMP_Text>();
+
+                    if (cachedHealthValueText != null)
+                        cachedHealthValueText.text = $"{playerStats.health}/{playerStats.maxHealth}";
+                }
             }
 
             if (damageVingette != null)
@@ -310,17 +513,28 @@ public class PlayerUIHandler : MonoBehaviour
 
             if (staminaBar != null)
             {
-                Slider staminaSlider = staminaBar.GetComponent<Slider>();
-                staminaSlider.maxValue = playerStats.maxStamina;
-                smoothStamina = Mathf.Lerp(
-                    smoothStamina,
-                    playerStats.stamina,
-                    Time.deltaTime * lerpSpeed
-                );
-                staminaSlider.value = smoothStamina;
+                if (cachedStaminaSlider == null)
+                    cachedStaminaSlider = staminaBar.GetComponent<Slider>();
+
+                if (cachedStaminaSlider != null)
+                {
+                    cachedStaminaSlider.maxValue = playerStats.maxStamina;
+                    smoothStamina = Mathf.Lerp(
+                        smoothStamina,
+                        playerStats.stamina,
+                        Time.deltaTime * lerpSpeed
+                    );
+                    cachedStaminaSlider.value = smoothStamina;
+                }
+
                 if (staminaText != null)
-                    staminaText.GetComponent<TMP_Text>().text =
-                        $"{playerStats.stamina}/{playerStats.maxStamina}";
+                {
+                    if (cachedStaminaValueText == null)
+                        cachedStaminaValueText = staminaText.GetComponent<TMP_Text>();
+
+                    if (cachedStaminaValueText != null)
+                        cachedStaminaValueText.text = $"{playerStats.stamina}/{playerStats.maxStamina}";
+                }
             }
         }
 
@@ -347,15 +561,28 @@ public class PlayerUIHandler : MonoBehaviour
 
                 if (!roundManager.HasEnoughPlayers())
                 {
-                    timerText.text = $"Waiting for players ({currentPlayers}/{minPlayers} minimum)... Free-play lobby active.";
+                    timerText.text = LocalizationManager.Format(
+                        "hud.waiting_players",
+                        "Waiting for players ({0}/{1} minimum)... Free-play lobby active.",
+                        currentPlayers,
+                        minPlayers
+                    );
                 }
                 else
                 {
                     int timeRemaining = roundManager.GetCurrentTime();
                     int minutes = timeRemaining / 60;
                     int seconds = timeRemaining % 60;
-                    timerText.text = $"Waiting for players ({currentPlayers}/{minPlayers} minimum)... {minutes}:{seconds:00}";
+                    timerText.text = LocalizationManager.Format(
+                        "hud.waiting_countdown",
+                        "Waiting for players ({0}/{1} minimum)... {2}:{3:00}",
+                        currentPlayers,
+                        minPlayers,
+                        minutes,
+                        seconds
+                    );
                 }
+
             }
         }
 
